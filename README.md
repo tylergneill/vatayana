@@ -1,2 +1,3 @@
-# vatayana
+# vātāyana
+
 a window onto the Sanskrit pramāṇa-NLP corpus
