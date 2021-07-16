@@ -1,0 +1,9 @@
+.table-striped > tbody > tr:nth-child(2n+1) > td, .table-striped > tbody > tr:nth-child(2n+1) > th {
+   background-color: #EDEDED;}
+
+.btn-primary .btn-primary-square
+{
+    padding: 24px 12px;
+    margin: 0 5px;  
+    border-radius: 0;
+}

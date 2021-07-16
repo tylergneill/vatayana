@@ -1,0 +1,59 @@
+<h1>$query_id <small><small>($query_section)</small></small></h1>
+
+<div class="row">
+
+	<div class="col-md-2">
+		<form method="get" action="docExplore">
+			<input type="hidden" name="doc_id" value="$prev_doc_id" />
+			<input type="submit" class="btn btn-block btn-primary" value="<< $prev_doc_id" />
+		</form>
+	</div>
+
+	<div class="col-md-2">
+		<form method="get" action="docExplore">
+			<input type="hidden" name="doc_id" value="$next_doc_id" />
+			<input type="submit" class="btn btn-block btn-primary" value="$next_doc_id >>" />
+		</form>
+	</div>
+
+</div>
+
+<div class="row">
+
+	<div class="col-md-6">
+		<h2>Original Text</h2>
+		<p>$query_original_fulltext</p>
+	</div>
+
+	<div class="col-md-6">
+		<h2>Segmented Text</h2>
+		<p>$query_segmented_fulltext</p>
+	</div>
+
+</div>
+
+<div class="row">
+
+	<div class="col-md-6">
+		<h2>Topic Analysis</h2>
+		<img id="plot" src="/assets/vatayana/doc_plot_pngs/$query_id.png" alt="oops" width="550" height="385">
+		$top_topics_summary
+	</div>
+
+	<div class="col-md-6">
+
+		<h2>Similar<span title="by topic, tf-idf">*</span> Docs of Priority Texts<span title="$priority_texts">*</span></h2>
+		<br>
+		$priority_col_content
+
+		<br><br>
+
+		<h2>Similar<span title="by topic">*</span> Docs of Non-Priority Texts<span title="$non_priority_texts">*</span></h2>
+		<br>
+		$secondary_col_content
+
+	</div>
+
+</div>
+
+</br></br>

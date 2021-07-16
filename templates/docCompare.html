@@ -1,0 +1,132 @@
+<html>
+    <head>
+
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
+
+        <title>vātāyana: docCompare</title>
+
+    </head>
+
+    <body>
+
+        <nav class="navbar navbar-inverse">
+            <div class="container">
+
+				<!-- entire top navbar -->
+				<div class="row">
+
+					<!-- skrutable brand/reset button and conditionally visibile action title -->
+	                <div class="col-md-4">
+
+						<div class="row">
+
+							<div class="col-md-4 col-xs-4">
+			                    <div class="navbar-header">
+			                        <a class="navbar-brand" style="background-color: #000;" href="./vatayana">vātāyana</a>
+		                    	</div>
+							</div>
+
+							<div class="col-md-8 col-xs-8">
+			                    <div class="navbar-header">
+			                        <a class="navbar-brand">: {{ page_subtitle }}</a>
+			                    </div>
+							</div>
+
+						</div>
+
+					</div>
+
+					<!-- about, tutorial, and conditionally visibile example links -->
+					<div class="col-md-4">
+
+						<div class="row">
+
+							<div class="col-md-4 col-xs-4">
+								<div class="navbar-header">
+		                    		<a class="navbar-brand float-right" href="./about">about</a>
+								</div>
+		                	</div>
+
+			                <div class="col-md-4 col-xs-4">
+		                        <div class="navbar-header">
+		                        	<a class="navbar-brand" href="./tutorial">tutorial</a>
+		                        </div>
+			                </div>
+
+							<div class="col-md-4 col-xs-4">
+								<div class="navbar-header" id="hiddenExample" style="visibility: hidden">
+									<a class="navbar-brand" href="./ex1">(example)</a>
+								</div>
+							</div>
+
+						</div>
+
+					</div>
+
+                </div><!-- entire top navbar row -->
+
+            </div><!-- container -->
+            
+        </nav>
+
+        <div class="container">
+
+
+        	<h1>Compare Docs</h1>
+        	<br>
+        	
+			<div class="row">
+
+				<form id="doc_compare_search_bar" action="/docCompare" method="POST">
+
+				<div class="col-md-3">
+		            <input id="doc_id_1" name="doc_id_1" type="text" class="form-control" placeholder="Enter doc id 1" value="{{ doc_id_1 }}" size="30"/>
+		        </div>
+
+		        <div class="col-md-3">
+			    </div>
+
+		    	<div class="col-md-3">
+		            <input id="doc_id_2" name="doc_id_2" type="text" class="form-control" placeholder="Enter doc id 2" value="{{ doc_id_2 }}" size="30"/>
+		        </div>
+
+		        <div class="col-md-1">
+			    </div>
+
+		        <div class="col-md-2">
+		            <input id="doc_compare_search_submit_button" type="submit" class="btn btn-block btn-primary" value="Submit"/>
+			    </div>
+
+			    </form>
+
+			</div>
+
+
+            {{ doc_compare_output | safe }}
+
+        </div><!-- container -->
+
+        <script>
+        	function conditionally_display_similar_doc_link_buttons() {
+                sim_btn_left = "{{ activate_similar_link_buttons_left }}";
+                if ( sim_btn_left.length > 0 ) {
+                    document.getElementById("similar_doc_link_btns_left").style.visibility = "visible";
+                }
+                sim_btn_right = "{{ activate_similar_link_buttons_right }}";
+                if ( sim_btn_right.length > 0 ) {
+                    document.getElementById("similar_doc_link_btns_right").style.visibility = "visible";
+                }
+            }
+
+         	window.onload = function() {
+                conditionally_display_similar_doc_link_buttons();
+            }
+        </script>
+
+    </body>
+
+</html>

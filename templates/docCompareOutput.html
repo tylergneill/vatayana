@@ -1,0 +1,167 @@
+<div class="row">
+
+	<div class="col-md-6">
+
+		<h1>
+			<span title="$doc_section_1">$doc_id_1  </span>
+			<small><small><sup>(<a href="docExplore?doc_id=$doc_id_1">docExpl</a>) (<a href="textView?doc_id=$doc_id_1">txtVw</a>)</sup></small></small>
+		</h1>
+
+		<div class="row">
+
+			<div class="col-md-4">
+				<form method="get" action="docCompare">
+					<input type="hidden" name="doc_id_1" value="$prev_doc_id_1" />
+					<input type="hidden" name="doc_id_2" value="$doc_id_2" />
+					<input type="submit" class="btn btn-block btn-primary" value="<< $prev_doc_id_1" />
+				</form>
+			</div>
+
+			<div class="col-md-4">
+				<form method="get" action="docCompare">
+					<input type="hidden" name="doc_id_1" value="$next_doc_id_1" />
+					<input type="hidden" name="doc_id_2" value="$doc_id_2" />
+					<input type="submit" class="btn btn-block btn-primary" value="$next_doc_id_1 >>" />
+				</form>
+			</div>
+
+			<p>within $doc_id_1_work_name</p>
+
+		</div>
+
+		<div class="row" id="similar_doc_link_btns_left" style="visibility: hidden">
+
+			<div class="col-md-4">
+				<form method="get" action="docCompare">
+					<input type="hidden" name="doc_id_1" value="$prev_sim_doc_id_for_2" />
+					<input type="hidden" name="doc_id_2" value="$doc_id_2" />
+					<input type="submit" class="btn btn-block btn-primary" value="(#$sim_rank_of_prev_for_2) $prev_sim_doc_id_for_2" />
+				</form>
+			</div>
+
+			<div class="col-md-4">
+				<form method="get" action="docCompare">
+					<input type="hidden" name="doc_id_1" value="$next_sim_doc_id_for_2" />
+					<input type="hidden" name="doc_id_2" value="$doc_id_2" />
+					<input type="submit" class="btn btn-block btn-primary" value="(#$sim_rank_of_next_for_2) $next_sim_doc_id_for_2" />
+				</form>
+			</div>
+
+			<p>similar doc #$sim_rank_of_1_for_2 for <br>$doc_id_2</p>
+
+		</div>
+
+	</div>
+
+	<div class="col-md-6">
+
+		<h1>
+			<span title="$doc_section_2">$doc_id_2  </span>
+			<small><small><sup>(<a href="docExplore?doc_id=$doc_id_2">docExpl</a>) (<a href="textView?doc_id=$doc_id_2">txtVw</a>)</sup></small></small>
+		</h1>
+
+		<div class="row">
+
+			<div class="col-md-4">
+				<form method="get" action="docCompare">
+					<input type="hidden" name="doc_id_1" value="$doc_id_1" />
+					<input type="hidden" name="doc_id_2" value="$prev_doc_id_2" />
+					<input type="submit" class="btn btn-block btn-primary" value="<< $prev_doc_id_2" />
+				</form>
+			</div>
+
+			<div class="col-md-4">
+				<form method="get" action="docCompare">
+					<input type="hidden" name="doc_id_1" value="$doc_id_1" />
+					<input type="hidden" name="doc_id_2" value="$next_doc_id_2" />
+					<input type="submit" class="btn btn-block btn-primary" value="$next_doc_id_2 >>" />
+				</form>
+			</div>
+
+			<p>within $doc_id_2_work_name</p>
+
+		</div>
+
+		<div class="row" id="similar_doc_link_btns_right" style="visibility: hidden">
+
+			<div class="col-md-4">
+				<form method="get" action="docCompare">
+					<input type="hidden" name="doc_id_1" value="$doc_id_1" />
+					<input type="hidden" name="doc_id_2" value="$prev_sim_doc_id_for_1" />
+					<input type="submit" class="btn btn-block btn-primary" value="(#$sim_rank_of_prev_for_1) $prev_sim_doc_id_for_1" />
+				</form>
+			</div>
+
+			<div class="col-md-4">
+				<form method="get" action="docCompare">
+					<input type="hidden" name="doc_id_1" value="$doc_id_1" />
+					<input type="hidden" name="doc_id_2" value="$next_sim_doc_id_for_1" />
+					<input type="submit" class="btn btn-block btn-primary" value="(#$sim_rank_of_next_for_1) $next_sim_doc_id_for_1" />
+				</form>
+			</div>
+
+			<p>similar doc #$sim_rank_of_2_for_1 for <br>$doc_id_1</p>
+
+		</div>
+
+	</div>
+
+</div>
+
+<div class="row">
+
+	<div class="col-md-6">
+		<h2>Text Segmented and Highlighted</h2>
+		<p>$doc_segmented_highlighted_fulltext_1</p>
+	</div>
+
+	<div class="col-md-6">
+		<h2>Text Segmented and Highlighted</h2>
+		<p>$doc_segmented_highlighted_fulltext_2</p>
+	</div>
+
+</div>
+
+<div class="row">
+
+	<div class="col-md-6">
+		<h2>Topic Analysis</h2>
+		<img id="plot" src="/assets/vatayana/doc_plot_pngs/$doc_id_1.png" alt="oops" width="550" height="385">
+		$top_topics_summary_1
+	</div>
+
+
+	<div class="col-md-6">
+		<h2>Topic Analysis</h2>
+		<img id="plot" src="/assets/vatayana/doc_plot_pngs/$doc_id_2.png" alt="oops" width="550" height="385">
+		$top_topics_summary_2
+	</div>
+
+</div>
+
+</br></br>
+
+<div class="row">
+
+	<span style="text-align: center;">
+		<h2>Doc Similarity Scores</h2>
+		<table class='display' style="margin-left: auto; margin-right: auto;">
+			<tr>
+				<td><h2><small>Topic Similarity<span title="K-dim vector cosine similarity, weights: $topic_weights">*</span></small></h2></td>
+				<td><h2><small>$topic_similiarity_score</small></h2></td>
+			</tr>
+			<tr>
+				<td><h2><small>TF.IDF Similarity<span title="reduced-vocab-dim vector cosine similarity">*</span></small></h2></td>
+				<td><h2><small>$TF_IDF_comparison_score</small></h2></td>
+			</tr>
+			<tr>
+				<td><h2><small>Smith-Waterman Alignment Score<span title="based on char-level comparison of best word-level match">*</span></small></h2></td>
+				<td><h2><small>$sw_w_align_score</small></h2></td>
+			</tr>
+			<tr>
+				<td><h2><small>Composite Alignment Score<span title="char-level, Needleman-Wunsch primed with Smith-Waterman, number of chars highlighted dark green">*</span></small></h2></td>
+				<td><h2><small>$sw_nw_score</small></h2></td>
+			</tr>
+		</table>
+	</span>
+	</br></br>

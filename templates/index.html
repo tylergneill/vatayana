@@ -1,0 +1,181 @@
+<html>
+    <head>
+
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
+        <link rel="stylesheet" href="custom.css" type="text/css">
+
+        <title>vātāyana</title>
+
+    </head>
+
+    <body>
+
+        <nav class="navbar navbar-inverse">
+            <div class="container">
+
+				<!-- entire top navbar -->
+				<div class="row">
+
+					<!-- skrutable brand/reset button and conditionally visibile action title -->
+	                <div class="col-md-4">
+
+						<div class="row">
+
+							<div class="col-md-4 col-xs-4">
+			                    <div class="navbar-header">
+			                        <a class="navbar-brand" style="background-color: #000;" href="./vatayana">vātāyana</a>
+		                    	</div>
+							</div>
+
+							<div class="col-md-8 col-xs-8">
+			                    <div class="navbar-header">
+			                        <a class="navbar-brand">: {{ page_subtitle }}</a>
+			                    </div>
+							</div>
+
+						</div>
+
+					</div>
+
+					<!-- about, tutorial, and conditionally visibile example links -->
+					<div class="col-md-4">
+
+						<div class="row">
+
+							<div class="col-md-4 col-xs-4">
+								<div class="navbar-header">
+		                    		<a class="navbar-brand float-right" href="./about">about</a>
+								</div>
+		                	</div>
+
+			                <div class="col-md-4 col-xs-4">
+		                        <div class="navbar-header">
+		                        	<a class="navbar-brand" href="./tutorial">tutorial</a>
+		                        </div>
+			                </div>
+
+							<div class="col-md-4 col-xs-4">
+								<div class="navbar-header" id="hiddenExample" style="visibility: hidden">
+									<a class="navbar-brand" href="./ex1">(example)</a>
+								</div>
+							</div>
+
+						</div>
+
+					</div>
+
+                </div><!-- entire top navbar row -->
+
+            </div><!-- container -->
+            
+        </nav>
+
+        <div class="container">
+
+
+        	<h1>vātāyana</h1>
+        	<br>
+
+        	<p><i>a window onto the Sanskrit pramāṇa-NLP corpus</i></p>
+        	<p>(note: a "doc" , i.e., document is roughly a paragraph)</p>
+        	
+        	<br><br>
+        	
+        	<div class="row">
+	        	<div class="col-md-3">
+					<form method="get" action="docExplore">
+						<input type="submit" class="btn btn-block btn-primary" value="Explore Docs" />
+					</form>
+				</div>
+	        	<div class="col-md-3">
+					<form method="get" action="docCompare">
+						<input type="submit" class="btn btn-block btn-primary" value="Compare Docs" />
+					</form>
+				</div>
+				<div class="col-md-3">
+					<form method="get" action="textView">
+						<input type="submit" class="btn btn-block btn-primary" value="View Texts" />
+					</form>
+				</div>
+			</div>
+			
+			<br><br>
+
+			<h2>Go Deeper</h2>
+        	<br>
+
+        	<p>Vātāyana illuminates intertextual connections 
+        		by performing detailed pairwise comparison 
+        		(TF-IDF, Smith-Waterman)
+        		on a targeted subset of all corpus documents 
+        		(currently ≈ 22k).
+        		This preliminary targeting is accomplished both with
+        		LDA topic comparison, which identifies the 
+        		most "topically relevant" %15 of documents,
+        		and (more simply)
+        		with user-specific text prioritization.
+        		Depending on the specific use case, however, 
+        		one or the other of these constraints may not be desired.
+        		The controls below are meant to encourage advanced users to 
+        		experiment and find what works best for them.
+        	</p>
+
+        	<br><br>
+
+			<div class="row">	        	
+				<div class="col-md-3">
+					<form method="get" action="textPrioritize">
+						<input type="submit" class="btn btn-block btn-primary" value="Prioritize Texts" />
+					</form>
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="col-md-3">
+					<form method="get" action="topicToggle">
+						<input type="submit" class="btn btn-block btn-primary" value="Toggle Use of Topics" />
+					</form>
+				</div>
+				<div class="col-md-3">
+					<form method="get" action="topicVisualize">
+						<input type="submit" class="btn btn-block btn-primary" value="Visualize Topics" />
+					</form>
+				</div>
+				<div class="col-md-3">
+					<form method="get" action="topicAdjust">
+						<input type="submit" class="btn btn-block btn-primary" value="Adjust Topic Weighting" />
+					</form>
+				</div>
+			</div>
+
+ 		<!-- <div class="row">
+				<div class="col-md-3"></div>
+				<div class="col-md-3">
+					<form method="get" action="BrucheionAlign">
+						<input type="submit" class="btn btn-block btn-primary" value="Demo Fancy Alignment" />
+					</form>
+				</div>
+			</div> -->
+
+			<br><br>
+
+			<h2>Technical</h2>
+        	<br>
+        	<p>documentation on GitHub
+        		<ul>
+        			<li><a href="https://github.com/tylergneill/pramana-nlp">pramāṇa-nlp</a></li>
+        			<li><a href="https://github.com/tylergneill/skrutable_front_end">vātāyana</a></li>
+        			<li><a href="https://github.com/tylergneill/skrutable">skrutable</a></li>
+        		</ul>
+        	</p>
+
+        </div><!-- container -->
+
+
+    </body>
+
+</html>

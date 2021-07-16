@@ -1,0 +1,174 @@
+<html>
+    <head>
+
+        <title>vātāyana: BrucheionAlign</title>
+
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
+
+		<script type="text/javascript" src="{{ assets_path }}/js/jquery-3.2.1.min.js"></script>
+	    <script type="text/javascript" src="{{ assets_path }}/js/openseadragon.js"></script>
+	    <script type="text/javascript" src="{{ assets_path }}/js/openseadragon-guides.js"></script>
+	    <script type="text/javascript" src="{{ assets_path }}/js/selection.js"></script>
+	    <script type="text/javascript" src="{{ assets_path }}/js/selectionoverlay.js"></script>
+	    <script type="text/javascript" src="{{ assets_path }}/js/selectionrect.js"></script>
+	    <script type="text/javascript" src="{{ assets_path }}/js/dragging.js"></script>
+	    <script type="text/javascript" src="{{ assets_path }}/js/bootstrap.min.js"></script>
+	    
+	    <link rel="stylesheet" type="text/css" href="{{ assets_path }}/css/bootstrap.min.css">
+	    <link rel="stylesheet" type="text/css" href="{{ assets_path }}/css/bootstrap-theme.min.css">
+	    <link rel="stylesheet" type="text/css" href="{{ assets_path }}/css/application.css">
+	    <link rel="stylesheet" href="{{ assets_path }}/css/font-awesome.min.css">
+	    <link rel="stylesheet" type="text/css" href="{{ assets_path }}/css/brulma.css">
+		
+		<style>
+        .tile-resizable {
+            resize: both;
+            overflow: hidden
+        }
+
+        .yourClass {
+            font-weight: bold;
+            color: black;
+        }
+
+        .yourClass2 {
+            font-weight: bold;
+            color: hsl(0, 0%, 21%);
+        }
+
+        div.items div:not(:target) {
+            display: none
+        }
+
+        div.items div:target {
+            display: block
+        }
+
+        .initiallyHidden {
+            display: none;
+        }
+		</style>
+
+    </head>
+
+    <body>
+
+        <!-- <nav class="navbar navbar-inverse">
+            <div class="container">
+
+				<!- - entire top navbar - ->
+				<div class="row">
+
+					<!- - skrutable brand/reset button and conditionally visibile action title - ->
+	                <div class="col-md-4">
+
+						<div class="row">
+
+							<div class="col-md-4 col-xs-4">
+			                    <div class="navbar-header">
+			                        <a class="navbar-brand" style="background-color: #000;" href="./pramanaNLP">vātāyana</a>
+		                    	</div>
+							</div>
+
+							<div class="col-md-8 col-xs-8">
+			                    <div class="navbar-header">
+			                        <a class="navbar-brand">: {{ page_subtitle }}</a>
+			                    </div>
+							</div>
+
+						</div>
+
+					</div>
+
+					<!- - about, tutorial, and conditionally visibile example links - ->
+					<div class="col-md-4">
+
+						<div class="row">
+
+							<div class="col-md-4 col-xs-4">
+								<div class="navbar-header">
+		                    		<a class="navbar-brand float-right" href="./about">about</a>
+								</div>
+		                	</div>
+
+			                <div class="col-md-4 col-xs-4">
+		                        <div class="navbar-header">
+		                        	<a class="navbar-brand" href="./tutorial">tutorial</a>
+		                        </div>
+			                </div>
+
+							<div class="col-md-4 col-xs-4">
+								<div class="navbar-header" id="hiddenExample" style="visibility: hidden">
+									<a class="navbar-brand" href="./ex1">(example)</a>
+								</div>
+							</div>
+
+						</div>
+
+					</div>
+
+                </div><!- - entire top navbar row - ->
+
+            </div><!- - container - ->
+            
+        </nav> -->
+
+        <div class="container-fluid">
+
+        	<br>
+
+        	<div class="row">
+        		<div class="col-md-12">
+        			
+        		</div>
+        	</div>
+
+        	<br>
+
+        	<div class="row">
+        		
+        		<div class="col-md-1"></div>
+
+        		<div class="col-md-4">
+        			<p style="text-align: justify;">
+        				This is a simple fixed demo of the Needleman-Wunsch alignment 
+        				with nice color and interactivity features, 
+        				as implemented in the “Multicompare” feature of Brucheion by Thomas Koentges 
+        				(<a href="https://github.com/Brucheion/Brucheion" target="_blank">see on GitHub</a>).
+        			</p>
+        			<br>
+        			<p style="text-align: justify;">
+        				The text is that of passage “NBhū 113,2;1" (i.e., first chunk of paragraph starting at page 113, line 2), with printed edition Yogindrananda 1968 as the base text (left) and critical edition (Neill, forthcoming) and manuscripts P1, P2, and VS as comparands (right).
+        			</p>
+        		</div>
+        		
+        		<div class="col-md-1"></div>
+
+        		<div class="col-md-4">
+        			<p style="text-align: justify;">
+        				Green color on the right indicates pairwise difference of the individual comparand on the right with the base-text the left. Yellow color on the left is a measure of cumulative difference between the base-text on the left and all comparands on the right taken together. Darker color indicates more difference.
+        			</p>
+        			<br>
+        			<p style="text-align: justify;">
+        				Sanskrit orthography (punctuation, gemination, etc.) has been normalized so that the alignment's color highlighting can show more meaningful differences.
+        			</p>
+        		</div>
+
+        		<div class="col-md-2"></div>
+
+        	</div>
+
+        	<br><br>
+
+            {{ Brucheion_HTML_body | safe }}
+
+        </div><!-- container-fluid -->
+
+
+    </body>
+
+</html>

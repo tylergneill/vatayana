@@ -1,0 +1,106 @@
+<html>
+    <head>
+
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
+
+        <title>vātāyana: textView</title>
+
+    </head>
+
+    <body>
+
+        <nav class="navbar navbar-inverse">
+            <div class="container">
+
+				<!-- entire top navbar -->
+				<div class="row">
+
+					<!-- skrutable brand/reset button and conditionally visibile action title -->
+	                <div class="col-md-4">
+
+						<div class="row">
+
+							<div class="col-md-4 col-xs-4">
+			                    <div class="navbar-header">
+			                        <a class="navbar-brand" style="background-color: #000;" href="./vatayana">vātāyana</a>
+		                    	</div>
+							</div>
+
+							<div class="col-md-8 col-xs-8">
+			                    <div class="navbar-header" id="hiddenActionTitle">
+			                        <a class="navbar-brand">: {{ page_subtitle }}</a>
+			                    </div>
+							</div>
+
+						</div>
+
+					</div>
+
+					<!-- about, tutorial, and conditionally visibile example links -->
+					<div class="col-md-4">
+
+						<div class="row">
+
+							<div class="col-md-4 col-xs-4">
+								<div class="navbar-header">
+		                    		<a class="navbar-brand float-right" href="./about">about</a>
+								</div>
+		                	</div>
+
+			                <div class="col-md-4 col-xs-4">
+		                        <div class="navbar-header">
+		                        	<a class="navbar-brand" href="./tutorial">tutorial</a>
+		                        </div>
+			                </div>
+
+							<div class="col-md-4 col-xs-4">
+								<div class="navbar-header" id="hiddenExample" style="visibility: hidden">
+									<a class="navbar-brand" href="./ex1">(example)</a>
+								</div>
+							</div>
+
+						</div>
+
+					</div>
+
+                </div><!-- entire top navbar row -->
+
+            </div><!-- container -->
+            
+        </nav>
+
+        <div class="container">
+
+			<h1>View Text</h1>
+			<br>
+			<form id="textView_input" action="/textView" method="POST">
+
+				<!-- input -->
+                <div class="row">
+                	<div class="col-md-3">
+	                    <input id="text_abbreviation_input" name="text_abbreviation_input" type="text" class="form-control" placeholder="Enter text abbreviation here" value="{{ text_abbreviation }}" size="30"/>
+	                </div>
+	                <div class="col-md-3">
+	                    <input id="local_doc_id_input" name="local_doc_id_input" type="text" class="form-control" placeholder="Enter doc id here" value="{{ local_doc_id }}" size="30"/>
+	                </div>
+	                <div class="col-md-2">
+		                <input id="text_view_submit_button" type="submit" class="btn btn-block btn-primary" value="Submit"/>
+		            </div>
+                </div>
+
+			</form>
+
+            <h1>{{ text_title }}</h1>
+
+			{{ text_HTML | safe }}
+
+        </div><!-- container -->
+
+
+    </body>
+
+</html>

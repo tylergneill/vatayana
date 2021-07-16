@@ -1,0 +1,65 @@
+<h2>Prioritize Individual Texts</h2>
+
+<form method="post" action="textPrioritize">
+
+	$text_priority_HTML
+	</br>
+
+	<div class="row">
+		<div class="col-md-5">
+			<input id="text_priority_submit_button" type="submit" class="btn btn-block btn-primary" value="Save Changes"/>
+		</div>
+	</div>
+
+</form>
+
+</br></br>
+
+<h2>Reset to Prioritizing All Texts</h2>
+
+<form method="post" id="prioritize_all_texts_form" action="textPrioritize">
+
+	<div class="row">
+		<div class="col-md-5">
+			<input type="hidden" name="prioritize_all_texts" id="prioritize_all_texts_hidden_input"/>
+			<input id="prioritize_all_texts_button" type="submit" class="btn btn-block btn-primary" value="Reset to All Texts"/>
+		</div>
+	</div>
+
+</form>
+
+</br></br>
+
+<h2>Re-Prioritize Around Single Text</h2>
+
+<div class="row">
+
+	<form method="post" id="prioritize_one_text_form" action="textPrioritize">
+
+	<div class="col-md-3">
+		<input id="prioritize_one_text_text_input" name="prioritize_one_text" type="text" class="form-control" placeholder="Enter text abbreviation" size="30"/>
+		</br>
+		<div class="row">
+			<div class="col-md-8">
+				<p>Also earlier than this text</p>
+			</div>
+			<div class="col-md-4">
+				<input type='checkbox' id="prioritize_earlier_checkbox" name="prioritize_earlier_checkbox"/>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-8">
+				<p>Also later than this text</p>
+			</div>
+			<div class="col-md-4">
+				<input type='checkbox' id="prioritize_later_checkbox" name="prioritize_later_checkbox"/>
+			</div>
+		</div>
+	</div>
+
+	<div class="col-md-2">
+		<input id="prioritize_one_text_button" type="submit" class="btn btn-block btn-primary" value="Submit"/>
+	</div>
+	</form>
+
+</div>
