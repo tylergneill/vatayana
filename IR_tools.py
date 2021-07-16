@@ -23,7 +23,7 @@ global topic_top_words, topic_interpretations, topic_wordcloud_fns
 global stopwords, error_words, too_common_doc_freq_cutoff, too_rare_doc_freq_cutoff, corpus_vocab_reduced
 global doc_freq, IDF, stored_topic_comparison_scores #, preferred_works
 global current_tf_idf_data_work_name, current_tf_idf_data
-global docExploreOutput_results_HTML_template, docCompareOutput_results_HTML_template, topicAdjustOutput_results_HTML_template, textPrioritizeOutput_HTML_template, topicToggleOutput_HTML
+global docExploreInner_results_HTML_template, docCompareInner_results_HTML_template, topicAdjustInner_results_HTML_template, textPrioritizeInner_HTML_template, topicToggleInner_HTML
 
 # set up paths and load main output template
 
@@ -35,30 +35,30 @@ def load_dict_from_json(relative_path_fn):
         loaded_dict = json.loads( f_in.read() )
     return loaded_dict
 
-docExploreOutput_results_HTML_template_relative_path = 'templates/docExploreOutput.html'
-docExploreOutput_results_HTML_template_fn = os.path.join(CURRENT_FOLDER, docExploreOutput_results_HTML_template_relative_path)
-with open(docExploreOutput_results_HTML_template_fn,'r') as f_in:
-    docExploreOutput_results_HTML_template = Template(f_in.read())
+docExploreInner_results_HTML_template_relative_path = 'templates/docExploreInner.html'
+docExploreInner_results_HTML_template_fn = os.path.join(CURRENT_FOLDER, docExploreInner_results_HTML_template_relative_path)
+with open(docExploreInner_results_HTML_template_fn,'r') as f_in:
+    docExploreInner_results_HTML_template = Template(f_in.read())
 
-docCompareOutput_results_HTML_template_relative_path = 'templates/docCompareOutput.html'
-docCompareOutput_results_HTML_template_fn = os.path.join(CURRENT_FOLDER, docCompareOutput_results_HTML_template_relative_path)
-with open(docCompareOutput_results_HTML_template_fn,'r') as f_in:
-    docCompareOutput_results_HTML_template = Template(f_in.read())
+docCompareInner_results_HTML_template_relative_path = 'templates/docCompareInner.html'
+docCompareInner_results_HTML_template_fn = os.path.join(CURRENT_FOLDER, docCompareInner_results_HTML_template_relative_path)
+with open(docCompareInner_results_HTML_template_fn,'r') as f_in:
+    docCompareInner_results_HTML_template = Template(f_in.read())
 
-topicAdjustOutput_results_HTML_template_relative_path = 'templates/topicAdjustOutput.html'
-topicAdjustOutput_results_HTML_template_fn = os.path.join(CURRENT_FOLDER, topicAdjustOutput_results_HTML_template_relative_path)
-with open(topicAdjustOutput_results_HTML_template_fn,'r') as f_in:
-    topicAdjustOutput_results_HTML_template = Template(f_in.read())
+topicAdjustInner_results_HTML_template_relative_path = 'templates/topicAdjustInner.html'
+topicAdjustInner_results_HTML_template_fn = os.path.join(CURRENT_FOLDER, topicAdjustInner_results_HTML_template_relative_path)
+with open(topicAdjustInner_results_HTML_template_fn,'r') as f_in:
+    topicAdjustInner_results_HTML_template = Template(f_in.read())
 
-textPrioritizeOutput_HTML_template_relative_path = 'templates/textPrioritizeOutput.html'
-textPrioritizeOutput_HTML_template_fn = os.path.join(CURRENT_FOLDER, textPrioritizeOutput_HTML_template_relative_path)
-with open(textPrioritizeOutput_HTML_template_fn,'r') as f_in:
-    textPrioritizeOutput_HTML_template = Template(f_in.read())
+textPrioritizeInner_HTML_template_relative_path = 'templates/textPrioritizeInner.html'
+textPrioritizeInner_HTML_template_fn = os.path.join(CURRENT_FOLDER, textPrioritizeInner_HTML_template_relative_path)
+with open(textPrioritizeInner_HTML_template_fn,'r') as f_in:
+    textPrioritizeInner_HTML_template = Template(f_in.read())
 
-topicToggleOutput_HTML_template_relative_path = 'templates/topicToggleOutput.html'
-topicToggleOutput_HTML_template_fn = os.path.join(CURRENT_FOLDER, topicToggleOutput_HTML_template_relative_path)
-with open(topicToggleOutput_HTML_template_fn,'r') as f_in:
-    topicToggleOutput_HTML_template = Template(f_in.read())
+topicToggleInner_HTML_template_relative_path = 'templates/topicToggleInner.html'
+topicToggleInner_HTML_template_fn = os.path.join(CURRENT_FOLDER, topicToggleInner_HTML_template_relative_path)
+with open(topicToggleInner_HTML_template_fn,'r') as f_in:
+    topicToggleInner_HTML_template = Template(f_in.read())
 
 ##########################################################
 # on server start, load corpus and statistics into memory
@@ -675,7 +675,7 @@ def get_closest_docs(   query_id,
 
     # handle blank
     if doc_fulltext[query_id] == '':
-        results_HTML = docExploreOutput_results_HTML_template.substitute(
+        results_HTML = docExploreInner_results_HTML_template.substitute(
             query_id = query_id, query_section = section_labels[query_id], prev_doc_id = doc_links[query_id]['prev'], next_doc_id = doc_links[query_id]['next'],
             query_original_fulltext = doc_original_fulltext[query_id], query_segmented_fulltext = '', top_topics_summary='', priority_results_list_content = '', secondary_results_list_content = '', priority_texts=str(priority_texts), non_priority_texts=str(non_priority_texts)
             )
@@ -727,7 +727,7 @@ def get_closest_docs(   query_id,
         )
     if priority_col_HTML == "": priority_col_HTML = "<p>(none)</p>"
     if secondary_col_HTML == "": secondary_col_HTML = "<p>(none)</p>"
-    results_HTML = docExploreOutput_results_HTML_template.substitute(
+    results_HTML = docExploreInner_results_HTML_template.substitute(
                         query_id = query_id,
                         query_section = section_labels[query_id],
                         prev_doc_id = doc_links[query_id]['prev'],
@@ -954,7 +954,7 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
     doc_1_TF_IDF_vector, doc_2_TF_IDF_vector = get_tiny_TF_IDF_vectors(doc_id_1, doc_id_2)
     TF_IDF_comparison_score = fastdist.cosine(doc_1_TF_IDF_vector, doc_2_TF_IDF_vector)
 
-    results_HTML = docCompareOutput_results_HTML_template.substitute(
+    results_HTML = docCompareInner_results_HTML_template.substitute(
                     doc_id_1=doc_id_1, doc_id_2=doc_id_2,
 
                     doc_id_1_work_name=parse_complex_doc_id(doc_id_1)[0],
@@ -1111,13 +1111,13 @@ slider_{}.oninput = function() {{
     overall_buffer = overall_buffer + topic_slider_JS_buffer
     # this isn't the bottom of the HTML body, but oh well for now
 
-    topicAdjustOutput_HTML = topicAdjustOutput_results_HTML_template.substitute(
+    topicAdjustInner_HTML = topicAdjustInner_results_HTML_template.substitute(
                                 slider_and_label_HTML=overall_buffer
                                 )
-    return topicAdjustOutput_HTML
+    return topicAdjustInner_HTML
 
 num_docs_by_text = {}
-for txt_abbrv in tqdm(list(text_abbrev2fn.keys())):
+for txt_abbrv in list(text_abbrev2fn.keys()):
     num_docs_by_text[txt_abbrv] = len([ doc_id
                                 for doc_id in doc_ids
                                 if parse_complex_doc_id(doc_id)[0] == txt_abbrv
@@ -1180,11 +1180,11 @@ def format_text_prioritize_output(*priority_texts_input):
         # }
         # </script>
 
-    textPrioritizeOutput_HTML = textPrioritizeOutput_HTML_template.substitute(
+    textPrioritizeInner_HTML = textPrioritizeInner_HTML_template.substitute(
                                     text_priority_HTML=overall_buffer
                                     )
 
-    return textPrioritizeOutput_HTML
+    return textPrioritizeInner_HTML
 
 def auto_reweight_topics(doc_id):
     doc_topic_vector = thetas[doc_id]
@@ -1204,8 +1204,8 @@ def format_topic_toggle_output(topic_toggle_value):
         topic_toggle_checkbox_status = "checked"
     else:
         topic_toggle_checkbox_status = ""
-    topicToggleOutput_HTML = topicToggleOutput_HTML_template.substitute(
+    topicToggleInner_HTML = topicToggleInner_HTML_template.substitute(
                                     topic_toggle_checkbox_status=topic_toggle_checkbox_status
                                     )
 
-    return topicToggleOutput_HTML
+    return topicToggleInner_HTML
