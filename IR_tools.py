@@ -542,7 +542,7 @@ def conditionally_do_batch_tf_idf_comparisons(*doc_ids_to_do, N=500):
 
 def format_topic_explore_links(topic_index):
     return """<a
-href='topicExplore#topic={}&lambda=0.8&term=' target='_blank'>#{:02}</a> <a
+href='topicVisualizeLDAvis#topic={}&lambda=0.8&term=' target='_blank'>#{:02}</a> <a
 href='{}' title='{}' target='_wordcloud'>☁️</a>""".format(
         # topic_interpretations[topic_index],
         topic_index+1,
