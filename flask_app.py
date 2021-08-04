@@ -41,9 +41,7 @@ flask_session_variable_names = [
 def ensure_keys():
     # just in case, make sure all keys in session
     for var_name in flask_session_variable_names:
-        if var_name not in session:
-            import pdb; pdb.set_trace()
-            print("HERE")
+        if var_name not in session:            
             reset_variables()
 
 @app.route('/reset')
