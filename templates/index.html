@@ -110,25 +110,25 @@
 
         	<p>
         		Vātāyana illuminates intertextual connections 
-        		by performing pairwise comparisons of corpus documents
-        		(current total ≈ 22k docs)
-        		of three different sorts.
+        		by performing three kinds of pairwise comparisons 
+        		on corpus documents (current total ≈ 22k docs).
 
-        		Comparison by LDA topics is fast and captures abstract semantics,
-        		whereas TF-IDF and Smith-Waterman home in on word-level correspondences,
+        		Comparison by modeled LDA topics is fast and captures abstract semantics,
+        		whereas TF-IDF and Smith-Waterman emphasize word-level correspondences,
         		albeit at relatively greater computational cost.
-
+        	</p>
+        	<p>
         		The advanced settings below aim to accomodate various use cases
         		by allowing users to control:
         		<ol>
         		<li>the number of expensive TF-IDF and Smith-Waterman comparisons to perform,
-        		both in normal ("shallow") and "deep" search modes;</li>
+        		in two distinct search depth modes ("shallow" and "deep");</li>
         		<li>the subset of texts to restrict these more expensive comparisons to; and</li>
         		<li>the qualitative interpretation of individual LDA topics,
-        		as well as their relative weighting during preliminary document comparison by topics.</li>
+        		as well as their optional relative weighting during preliminary document comparison by topics.</li>
         		</ol>
-				As all of these factors gradually become clearer by using the site,
-				users are encouraged to experiment to find which parameters work best for them.
+				As these components of the search algorithm gradually become clearer through using the site,
+				users are encouraged to experiment with which parameters work best for them.
         	</p>
 
         	<br><br>
