@@ -81,7 +81,7 @@
         	<br>
 
         	<p><i>a window onto the Sanskrit pramāṇa-NLP corpus</i></p>
-        	<p>(note: a "doc" , i.e., document is roughly a paragraph)</p>
+        	<p>(note: a "doc", i.e., document is roughly a paragraph)</p>
         	
         	<br><br>
         	
@@ -96,13 +96,6 @@
 						<input type="submit" class="btn btn-block btn-primary" value="Compare Docs" />
 					</form>
 				</div>
-			</div>
-			<div class="row">	        	
-				<div class="col-md-3">
-					<form method="get" action="textPrioritize">
-						<input type="submit" class="btn btn-block btn-primary" value="Prioritize Texts" />
-					</form>
-				</div>
 				<div class="col-md-3">
 					<form method="get" action="textView">
 						<input type="submit" class="btn btn-block btn-primary" value="View Texts" />
@@ -115,39 +108,52 @@
 			<h2>Go Deeper</h2>
         	<br>
 
-        	<p>Vātāyana illuminates intertextual connections 
-        		by performing detailed pairwise comparison 
-        		(TF-IDF, Smith-Waterman)
-        		on a targeted subset of all corpus documents 
-        		(currently ≈ 22k).
-        		This preliminary targeting is accomplished both with
-        		LDA topic comparison, which identifies the 
-        		most "topically relevant" %15 of documents,
-        		and (more simply)
-        		with user-specific text prioritization.
-        		Depending on the specific use case, however, 
-        		the first of these constraints (topic similarity)
-        		may not be desired.
-        		The controls below are meant to encourage advanced users to 
-        		experiment and find what works best for them.
+        	<p>
+        		Vātāyana illuminates intertextual connections 
+        		by performing pairwise comparisons of corpus documents
+        		(current total ≈ 22k docs)
+        		of three different sorts.
+
+        		Comparison by LDA topics is fast and captures abstract semantics,
+        		whereas TF-IDF and Smith-Waterman home in on word-level correspondences,
+        		albeit at relatively greater computational cost.
+
+        		The advanced settings below aim to accomodate various use cases
+        		by allowing users to control:
+        		<ol>
+        		<li>the number of expensive TF-IDF and Smith-Waterman comparisons to perform,
+        		both in normal ("shallow") and "deep" search modes;</li>
+        		<li>the subset of texts to restrict these more expensive comparisons to; and</li>
+        		<li>the qualitative interpretation of individual LDA topics,
+        		as well as their relative weighting during preliminary document comparison by topics.</li>
+        		</ol>
+				As all of these factors gradually become clearer by using the site,
+				users are encouraged to experiment to find which parameters work best for them.
         	</p>
 
         	<br><br>
 
 			<div class="row">
 				<div class="col-md-3">
-					<form method="get" action="topicToggle">
-						<input type="submit" class="btn btn-block btn-primary" value="Toggle Use of Topics" />
+					<form method="get" action="searchSettings">
+						<input type="submit" class="btn btn-block btn-primary" value="Adjust Search Settings" />
+					</form>
+				</div>
+				<div class="col-md-3">
+					<form method="get" action="textPrioritize">
+						<input type="submit" class="btn btn-block btn-primary" value="Prioritize Texts" />
+					</form>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-md-3">
+					<form method="get" action="topicAdjust">
+						<input type="submit" class="btn btn-block btn-primary" value="Adjust Topic Settings" />
 					</form>
 				</div>
 				<div class="col-md-3">
 					<form method="get" action="topicVisualizeLDAvis">
 						<input type="submit" class="btn btn-block btn-primary" value="Visualize Topics (LDAvis)" />
-					</form>
-				</div>
-				<div class="col-md-3">
-					<form method="get" action="topicAdjust">
-						<input type="submit" class="btn btn-block btn-primary" value="Adjust Topic Weighting" />
 					</form>
 				</div>
 			</div>

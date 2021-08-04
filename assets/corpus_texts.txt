@@ -24,6 +24,10 @@ NB	dharmakīrti_nyāyabindu
 VN	dharmakīrti_vādanyāya
 SAS	dharmakīrti_saṃtānāntarasiddhi
 SP	dharmakīrti_saṃbandhaparīkṣā
+BhāV	maṇḍana_bhāvanāviveka
+BrS	maṇḍana_brahmasiddhi
+VibhrV	maṇḍana_vibhramaviveka
+VidhV	maṇḍana_vidhiviveka
 PSṬ	jinendrabuddhi_pramāṇasamuccayaṭīkā
 NBṬ	dharmottara_nyāyabinduṭīkā
 PVA	prajñākaragupta_pramāṇavārtikālaṃkāra

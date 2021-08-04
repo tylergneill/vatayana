@@ -3,13 +3,14 @@ import html
 import re
 
 from datetime import datetime, date
-from flask import Flask, redirect, render_template, request, url_for, session, send_from_directory, send_file, make_response
+from flask import Flask, session, redirect, render_template, request, url_for, send_from_directory #, send_file
+
 
 import IR_tools
 
 app = Flask(__name__)
 app.config["DEBUG"] = True
-app.config["SECRET_KEY"] = "safaksdfhjlakjdshfkajshfka" # for session, no actual need for secrecy
+app.config["SECRET_KEY"] = "safaksdfakjdshfkajshfka" # for session, no actual need for secrecy
 
 # for serving static files from assets folder
 @app.route('/assets/<path:name>')
@@ -31,13 +32,18 @@ flask_session_variable_names = [
     "topic_weights",
     "topic_labels",
     "priority_texts",
-    "topic_toggle_value"
+    "topic_toggle_value",
+    "N_tf_idf_shallow", "N_sw_w_shallow",
+    "N_tf_idf_deep", "N_sw_w_deep",
+    "search_depth_default"
     ]
 
 def ensure_keys():
     # just in case, make sure all keys in session
     for var_name in flask_session_variable_names:
         if var_name not in session:
+            import pdb; pdb.set_trace()
+            print("HERE")
             reset_variables()
 
 @app.route('/reset')
@@ -48,6 +54,11 @@ def reset_variables():
     session["topic_labels"] = IR_tools.topic_interpretations
     session["priority_texts"] = list(IR_tools.text_abbrev2fn.keys())
     session["topic_toggle_value"] = True
+    session["N_tf_idf_shallow"] = IR_tools.search_N_defaults["N_tf_idf_shallow"]
+    session["N_tf_idf_deep"] = IR_tools.search_N_defaults["N_tf_idf_deep"]
+    session["N_sw_w_shallow"] = IR_tools.search_N_defaults["N_sw_w_shallow"]
+    session["N_sw_w_deep"] = IR_tools.search_N_defaults["N_sw_w_deep"]
+    session["search_depth_default"] = "shallow"
     session.modified = True
     return redirect(url_for('index'))
 
@@ -70,7 +81,7 @@ def index():
     )
 
 @app.route('/topicVisualizeLDAvis')
-def vatayana_topic_visualize():
+def topic_visualize():
 
     relative_path_to_LDAvis_HTML_fn = "assets/ldavis_prepared_50.html"
     LDAvis_HTML_full_fn = os.path.join(CURRENT_FOLDER, relative_path_to_LDAvis_HTML_fn)
@@ -83,7 +94,7 @@ def vatayana_topic_visualize():
     )
 
 @app.route('/docExplore', methods=["GET", "POST"])
-def vatayana_doc_explore():
+def doc_explore():
 
     ensure_keys()
 
@@ -108,7 +119,9 @@ def vatayana_doc_explore():
                 topic_weights=session['topic_weights'],
                 topic_labels=session['topic_labels'],
                 priority_texts=session["priority_texts"],
-                topic_toggle_value=session["topic_toggle_value"]
+                # topic_toggle_value=session["topic_toggle_value"]
+                N_tf_idf=session["N_tf_idf_shallow"],
+                N_sw_w=session["N_sw_w_shallow"]
                 )
         else:
             docExploreInner_HTML = "<br><p>Please enter valid doc ids like " + str(IR_tools.ex_doc_ids)[1:-1] + " etc.</p><p>See <a href='assets/doc_id_list.txt' target='_blank'>doc id list</a> and <a href='assets/corpus_texts.txt' target='_blank'>corpus text list</a> for hints to get started.</p>"
@@ -128,7 +141,7 @@ def vatayana_doc_explore():
                                 )
 
 @app.route('/docCompare', methods=["GET", "POST"])
-def vatayana_doc_compare():
+def doc_compare():
 
     ensure_keys()
 
@@ -161,7 +174,9 @@ def vatayana_doc_compare():
                 topic_weights=session['topic_weights'],
                 topic_labels=session['topic_labels'],
                 priority_texts=session["priority_texts"],
-                topic_toggle_value=session["topic_toggle_value"]
+                # topic_toggle_value=session["topic_toggle_value"]
+                N_tf_idf=session["N_tf_idf_shallow"],
+                N_sw_w=session["N_sw_w_shallow"]
                 )
         else:
             docCompareInner_HTML = "<br><p>Please enter two valid doc ids like " + str(IR_tools.ex_doc_ids)[1:-1] + " etc.</p><p>See <a href='assets/doc_id_list.txt' target='_blank'>doc id list</a> and <a href='assets/corpus_texts.txt' target='_blank'>corpus text list</a> for hints to get started.</p>"
@@ -185,7 +200,7 @@ def vatayana_doc_compare():
                                 )
 
 @app.route('/textView', methods=["GET", "POST"])
-def vatayana_text_view():
+def text_view():
 
     if request.method == "POST" or 'text_abbrv' in request.args or 'doc_id' in request.args:
 
@@ -236,7 +251,7 @@ def vatayana_text_view():
                                 )
 
 @app.route('/BrucheionAlign')
-def vatayana_Brucheion_align():
+def Brucheion_align():
 
     relative_path_to_assets = "assets"
     full_path_to_assets = os.path.join(CURRENT_FOLDER, relative_path_to_assets)
@@ -254,7 +269,7 @@ def vatayana_Brucheion_align():
 
 
 @app.route('/topicAdjust', methods=["GET", "POST"])
-def vatayana_topic_adjust():
+def topic_adjust():
 
     ensure_keys()
 
@@ -271,9 +286,10 @@ def vatayana_topic_adjust():
             elif key.startswith("topic_label_"):
                 topic_label_input.append(val)
 
-        session["topic_weights"] = topic_weight_input
-        session["topic_labels"] = topic_label_input
-        session.modified = True
+        if topic_weight_input != []:
+            session["topic_weights"] = topic_weight_input
+            session["topic_labels"] = topic_label_input
+            session.modified = True
 
     else:
         pass
@@ -290,7 +306,7 @@ def vatayana_topic_adjust():
 
 
 @app.route('/textPrioritize', methods=["GET", "POST"])
-def vatayana_text_prioritize():
+def text_prioritize():
 
     ensure_keys()
 
@@ -339,7 +355,7 @@ def vatayana_text_prioritize():
                             )
 
 @app.route('/topicToggle', methods=["GET", "POST"])
-def vatayana_topic_toggle():
+def topic_toggle():
 
     ensure_keys()
 
@@ -360,4 +376,44 @@ def vatayana_topic_toggle():
     return render_template(    "topicToggle.html",
                             page_subtitle="topicToggle",
                             topicToggleInner_HTML=topicToggleInner_HTML
+                            )
+
+@app.route('/searchSettings', methods=["GET", "POST"])
+def search_settings():
+
+    ensure_keys()
+
+    if request.method == "POST":
+
+        for key, val in request.form.items():
+            if key == "N_tf_idf_shallow_slider":
+                session["N_tf_idf_shallow"] = int(val)
+            elif key == "N_tf_idf_deep_slider":
+                session["N_tf_idf_deep"] = int(val)
+            elif key == "N_sw_w_shallow_slider":
+                session["N_sw_w_shallow"] = int(val)
+            elif key == "N_sw_w_deep_slider":
+                session["N_sw_w_deep"] = int(val)
+            elif key == "search_settings_use_defaults":
+                session["N_tf_idf_shallow"] = IR_tools.search_N_defaults["N_tf_idf_shallow"]
+                session["N_tf_idf_deep"] = IR_tools.search_N_defaults["N_tf_idf_deep"]
+                session["N_sw_w_shallow"] = IR_tools.search_N_defaults["N_sw_w_shallow"]
+                session["N_sw_w_deep"] = IR_tools.search_N_defaults["N_sw_w_deep"]
+            elif key == "search_depth_radio":
+                session["search_depth_default"] = val
+
+
+        session.modified = True
+
+    searchSettingsInner_HTML = IR_tools.format_search_settings_output(
+        N_tf_idf_shallow=session["N_tf_idf_shallow"],
+        N_sw_w_shallow=session["N_sw_w_shallow"],
+        N_tf_idf_deep=session["N_tf_idf_deep"],
+        N_sw_w_deep=session["N_sw_w_deep"],
+        search_depth_default=session["search_depth_default"]
+        )
+
+    return render_template(    "searchSettings.html",
+                            page_subtitle="searchSettings",
+                            searchSettingsInner_HTML=searchSettingsInner_HTML
                             )

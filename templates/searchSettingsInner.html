@@ -1,0 +1,60 @@
+<form method="post" action="searchSettings">
+
+	<h2>Shallow Search</h2>
+
+		$shallow_slider_HTML
+
+	</br>
+
+	<h2>Deep Search</h2>
+
+		$deep_slider_HTML
+
+	</br>
+
+	<h2>Default Depth</h2>
+
+	<!-- save changes button -->
+	<div class="row">
+		<div class="col-md-3">
+			<input type="radio" name="search_depth_radio" id="search_depth_radio_shallow" value="shallow" $search_depth_radio_shallow_checked_status />
+  			<label for="search_depth_radio_shallow">Shallow</label>
+			<input type="radio" name="search_depth_radio" id="search_depth_radio_deep" value="deep" $search_depth_radio_deep_checked_status />
+  			<label for="search_depth_radio_deep">Deep</label>
+		</div>
+	</div>	
+
+	<!-- save changes button -->
+	<div class="row">
+		<div class="col-md-3">
+			<input id="search_settings_submit_button" type="submit" class="btn btn-block btn-primary" value="Save Changes"/>
+		</div>
+	</div>
+
+</form>
+
+</br></br>
+
+
+<form method="post" id="search_settings_reset" action="searchSettings">
+
+	<h2>Reset to Default Values</h2>
+
+	<p>Default values = $search_N_defaults</p>
+
+	<div class="row">
+		<div class="col-md-3">
+			<input type="hidden" name="search_settings_use_defaults" id="search_settings_use_defaults"/>
+			<input id="search_settings_reset_submit_button" type="submit" class="btn btn-block btn-primary" value="Reset Search Settings"/>
+		</div>
+	</div>
+
+</form>
+
+</br></br></br>
+
+$JS_preamble
+
+$shallow_slider_JS
+
+$deep_slider_JS
