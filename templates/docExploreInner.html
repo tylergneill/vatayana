@@ -50,8 +50,9 @@
 
 		<br><br>
 
-		<div style='display: none;'>
+		<button class="btn btn-block btn-primary" onclick="show_secondary()">Show Non-Priority Results</button>
 
+		<div id="secondary_col_div" style='display: none;'>
 			<h2>Similar<span title="by topic">*</span> Docs of Non-Priority Texts<span title="$non_priority_texts">*</span></h2>
 			<br>
 			$secondary_col_content
@@ -61,4 +62,9 @@
 
 </div>
 
-</br></br>
+<script>
+	function show_secondary() {
+	  var secondary_col_div = document.getElementById("secondary_col_div");
+	  secondary_col_div.style.display = "block";
+	}
+</script>

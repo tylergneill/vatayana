@@ -78,8 +78,20 @@
            <h1>Search Settings</h1>
            <br>
 
-           <p>Here you can modify the depth of the search for related passages.
-           The deeper the search, the longer the loading time.</p>
+           <p>
+           	Here you can modify the depth of the search for related passages.
+           	There are two depth levels to choose from.
+           	You can also change the parameters of each depth level,
+           	in that you can change the number of TF-IDF comparisons and, in turn,
+           	the number of Smith-Waterman comparisons that will be performed.
+           </p>
+           <p>
+           	The deeper the search, the longer the loading time for results.
+           	Loading time is estimated here for a docExplore query.
+           	For docCompare, which involves two docExplore queries, multiply the estimate by 2.
+           </p>
+
+           </br>
 
            {{ searchSettingsInner_HTML | safe }}
 

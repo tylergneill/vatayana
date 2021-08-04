@@ -713,21 +713,38 @@ def get_closest_docs(   query_id,
     # else:
     #     N = len(doc_ids) # i.e., do not discard any of ranked list
 
-    all_topic_candidates = rank_all_candidates_by_topic_similarity(query_id, topic_weights)
+    all_topic_candidates = rank_all_candidates_by_topic_similarity(
+        query_id,
+        topic_weights
+        )
 
     # prioritize candidates by text name
-    priority_candidate_ids, secondary_candidate_ids = divide_doc_id_list_by_work_priority( list(all_topic_candidates.keys()), priority_texts )
-    priority_topic_candidates = { doc_id: all_topic_candidates[doc_id] for doc_id in priority_candidate_ids }
-    secondary_topic_candidates = { doc_id: all_topic_candidates[doc_id] for doc_id in secondary_candidate_ids }
+    priority_candidate_ids, secondary_candidate_ids = divide_doc_id_list_by_work_priority(
+        list(all_topic_candidates.keys()),
+        priority_texts
+        )
+    priority_topic_candidates = { doc_id: all_topic_candidates[doc_id]
+        for doc_id in priority_candidate_ids
+        }
+    secondary_topic_candidates = { doc_id: all_topic_candidates[doc_id]
+        for doc_id in secondary_candidate_ids
+        }
 
-    # limit further computation to only top N_tf_idf of sorted candidates
-    pruned_priority_topic_candidates = { k:v for (k,v) in list(priority_topic_candidates.items())[:N_tf_idf+1] }
+    # limit further computation to only top N_tf_idf of sorted candidates (minus query itself)
+    pruned_priority_topic_candidates = { k:v
+        for (k,v) in list(priority_topic_candidates.items())[:N_tf_idf-1]
+        }
 
     # further rank candidates by tiny tf-idf
-    tf_idf_candidates = rank_candidates_by_tiny_TF_IDF_similarity(query_id, pruned_priority_topic_candidates)
+    tf_idf_candidates = rank_candidates_by_tiny_TF_IDF_similarity(
+        query_id,
+        list(pruned_priority_topic_candidates.keys())
+        )
 
     # limit further computation to only top N_sw_w of sorted candidates
-    pruned_tf_idf_candidates = { k:v for (k,v) in list(priority_topic_candidates.items())[:N_sw_w+1] }
+    pruned_tf_idf_candidates = { k:v
+        for (k,v) in list(tf_idf_candidates.items())[:N_sw_w-1]
+        }
     # further rank candidates by sw_w
     sw_w_alignment_candidates = rank_candidates_by_sw_w_alignment_score(
         query_id,
@@ -743,9 +760,10 @@ def get_closest_docs(   query_id,
         if k not in sw_w_alignment_candidates:
             sw_w_alignment_candidates[k] = ""
 
-    # final results list has sw_w candidates on top and tf_idf candidates after that
-    priority_ranked_results_ids = list(sw_w_alignment_candidates.keys())[:N_sw_w]
-    priority_ranked_results_ids += list(tf_idf_candidates.keys())[N_sw_w:]
+    # thus final results list has sw_w candidates on top and tf_idf candidates after that
+
+    priority_ranked_results_ids = list(sw_w_alignment_candidates.keys())
+    # priority_ranked_results_ids += list(tf_idf_candidates.keys())[N_sw_w:]
 
     if results_as_links_only:
         similarity_result_doc_links = list2linkingDict(priority_ranked_results_ids)
@@ -1414,9 +1432,9 @@ var total_deep_computation_time_p;
         JS_preamble=JS_preamble,
         shallow_slider_JS=shallow_slider_JS,
         deep_slider_JS=deep_slider_JS,
-        search_N_defaults="shallow: {} tf-idf, {} sw_w; deep: {} tf-idf, {} sw_w".format(
-            search_N_defaults["N_tf_idf_shallow"],search_N_defaults["N_tf_idf_deep"],
-            search_N_defaults["N_sw_w_shallow"], search_N_defaults["N_sw_w_deep"]
+        search_N_defaults="shallow (default depth): {} tf-idf, {} sw_w; deep: {} tf-idf, {} sw_w".format(
+            search_N_defaults["N_tf_idf_shallow"], search_N_defaults["N_sw_w_shallow"],
+            search_N_defaults["N_tf_idf_deep"], search_N_defaults["N_sw_w_deep"]
             ),
         search_depth_radio_shallow_checked_status=search_depth_radio_shallow_checked_status,
         search_depth_radio_deep_checked_status=search_depth_radio_deep_checked_status
