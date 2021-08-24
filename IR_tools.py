@@ -13,7 +13,7 @@ from collatex import *
 from lxml import etree
 from difflib import SequenceMatcher
 
-# global variables (needed only for purposes of documentation and convenience in PDB)
+# global variable declarations (needed only for purposes of convenience in PDB and documentation)
 global CURRENT_FOLDER, text_abbrev2fn, text_abbrev2title
 global doc_ids, ex_doc_ids, doc_fulltext, doc_original_fulltext, disallowed_fulltexts
 global num_docs, doc_links, section_labels, num_docs_by_text
@@ -27,7 +27,10 @@ global HTML_templates
 global docExploreInner_results_HTML_template, docCompareInner_results_HTML_template, topicAdjustInner_results_HTML_template, textPrioritizeInner_HTML_template, topicToggleInner_HTML
 global topic_secs_per_comparison, tf_idf_secs_per_comparison, sw_w_secs_per_comparison
 
-# set up paths and load main output template
+
+########################################################
+# set up absolute path, JSON loader, and HTML templates
+########################################################
 
 CURRENT_FOLDER = os.path.dirname(os.path.abspath(__file__))
 
@@ -38,7 +41,6 @@ def load_dict_from_json(relative_path_fn):
     return loaded_dict
 
 HTML_templates = {}
-
 template_names = [
     'docExploreInner',
     'docCompareInner',
@@ -53,29 +55,23 @@ for template_name in template_names:
     with open(HTML_template_fn,'r') as f_in:
         HTML_templates[template_name] = Template(f_in.read())
 
-# docCompareInner_results_HTML_template_relative_path = 'templates/docCompareInner.html'
-# docCompareInner_results_HTML_template_fn = os.path.join(CURRENT_FOLDER, docCompareInner_results_HTML_template_relative_path)
-# with open(docCompareInner_results_HTML_template_fn,'r') as f_in:
-#     docCompareInner_results_HTML_template = Template(f_in.read())
-#
-# topicAdjustInner_results_HTML_template_relative_path = 'templates/topicAdjustInner.html'
-# topicAdjustInner_results_HTML_template_fn = os.path.join(CURRENT_FOLDER, topicAdjustInner_results_HTML_template_relative_path)
-# with open(topicAdjustInner_results_HTML_template_fn,'r') as f_in:
-#     topicAdjustInner_results_HTML_template = Template(f_in.read())
-#
-# textPrioritizeInner_HTML_template_relative_path = 'templates/textPrioritizeInner.html'
-# textPrioritizeInner_HTML_template_fn = os.path.join(CURRENT_FOLDER, textPrioritizeInner_HTML_template_relative_path)
-# with open(textPrioritizeInner_HTML_template_fn,'r') as f_in:
-#     textPrioritizeInner_HTML_template = Template(f_in.read())
-#
-# topicToggleInner_HTML_template_relative_path = 'templates/topicToggleInner.html'
-# topicToggleInner_HTML_template_fn = os.path.join(CURRENT_FOLDER, topicToggleInner_HTML_template_relative_path)
-# with open(topicToggleInner_HTML_template_fn,'r') as f_in:
-#     topicToggleInner_HTML_template = Template(f_in.read())
 
-##########################################################
-# on server start, load corpus and statistics into memory
-##########################################################
+######################################
+# load accessory pre-processsing data
+######################################
+
+# load lookup table of section headers by doc_id
+section_labels = load_dict_from_json("assets/section_labels.json")
+# e.g. section_labels[DOC_ID] = STRING
+
+# load sister dict of doc_fulltext with original punctuation (only some!) and unsplit text
+doc_original_fulltext = load_dict_from_json("assets/doc_original_fulltext.json")
+# e.g. doc_original_fulltext[DOC_ID] = STRING
+
+
+######################################
+# load corpus and topic modeling data
+######################################
 
 # get theta data
 theta_fn = 'assets/theta.tsv'
@@ -155,27 +151,6 @@ for row in phi_rows:
     word, phi_values = cells[0], cells[1:]
     phis[word] = [ float(ph) for ph in phi_values ]
 
-# load three illustrations of topic meaning (topic_top_words, topic_interpretations, topic_wordclouds)
-
-topic_top_words_fn = 'assets/topic_top_words.txt'
-topic_top_words_fn_full_path = os.path.join(CURRENT_FOLDER, topic_top_words_fn)
-with open(topic_top_words_fn_full_path,'r') as f_in:
-    topic_top_words = f_in.readlines()
-
-topic_interpretation_fn = 'assets/topic_interpretations.txt'
-topic_interpretation_fn_full_path = os.path.join(CURRENT_FOLDER, topic_interpretation_fn)
-with open(topic_interpretation_fn_full_path,'r') as f_in:
-    topic_interpretations = f_in.readlines()
-
-topic_wordclouds_relative_path = 'assets/topic_wordclouds'
-topic_wordclouds_full_path = os.path.join(CURRENT_FOLDER, topic_wordclouds_relative_path)
-topic_wordcloud_fns = [ os.path.join(topic_wordclouds_relative_path, img_fn) # relative for img src
-                            for img_fn in os.listdir(topic_wordclouds_full_path) # full to reach img_fn here
-                            if os.path.isfile(os.path.join(topic_wordclouds_full_path, img_fn))
-                            and img_fn != '.DS_Store'
-                        ]
-topic_wordcloud_fns.sort()
-
 # count each term's document frequency
 doc_freq = {} # e.g. doc_freq[WORD] = INT for each word in vocab
 for doc_id in doc_ids:
@@ -225,7 +200,6 @@ corpus_vocab_reduced = [
 #         if not (word in (stopwords + error_words) or freq_w[word] < 3)
 # ]
 
-
 # turns list of elements into linking dictionary with 'prev' and 'next' keys
 def list2linkingDict(elem_list):
     L = len(elem_list)
@@ -251,13 +225,34 @@ corpus_texts_list_full_fn = os.path.join(CURRENT_FOLDER, corpus_texts_list_relat
 with open(corpus_texts_list_full_fn,'w') as f_out:
     f_out.write('\n'.join([abbrv+'\t'+fn for (abbrv, fn) in text_abbrev2title.items()]))
 
-# load lookup table of section headers by doc_id
-section_labels = load_dict_from_json("assets/section_labels.json")
-# e.g. section_labels[DOC_ID] = STRING
 
-# load sister dict of doc_fulltext with original punctuation (only some!) and unsplit text
-doc_original_fulltext = load_dict_from_json("assets/doc_original_fulltext.json")
-# e.g. doc_original_fulltext[DOC_ID] = STRING
+###################################################
+# load post-processed illustrations of topic meaning
+###################################################
+
+topic_top_words_fn = 'assets/topic_top_words.txt'
+topic_top_words_fn_full_path = os.path.join(CURRENT_FOLDER, topic_top_words_fn)
+with open(topic_top_words_fn_full_path,'r') as f_in:
+    topic_top_words = f_in.readlines()
+
+topic_interpretation_fn = 'assets/topic_interpretations.txt'
+topic_interpretation_fn_full_path = os.path.join(CURRENT_FOLDER, topic_interpretation_fn)
+with open(topic_interpretation_fn_full_path,'r') as f_in:
+    topic_interpretations = f_in.readlines()
+
+topic_wordclouds_relative_path = 'assets/topic_wordclouds'
+topic_wordclouds_full_path = os.path.join(CURRENT_FOLDER, topic_wordclouds_relative_path)
+topic_wordcloud_fns = [ os.path.join(topic_wordclouds_relative_path, img_fn) # relative for img src
+                            for img_fn in os.listdir(topic_wordclouds_full_path) # full to reach img_fn here
+                            if os.path.isfile(os.path.join(topic_wordclouds_full_path, img_fn))
+                            and img_fn != '.DS_Store'
+                        ]
+topic_wordcloud_fns.sort()
+
+
+#######################################################
+# create/load simple HTML transformations for textView
+#######################################################
 
 stored_textView_HTML_relative_path = "assets/textView_HTML"
 stored_textView_HTML_full_path = os.path.join(CURRENT_FOLDER, stored_textView_HTML_relative_path)
@@ -268,6 +263,18 @@ stored_textView_HTML_fns = [ os.path.join(stored_textView_HTML_full_path, HTML_f
                             and HTML_fn != '.DS_Store'
                             ]
 
+# for offline use
+# create more textView HTML pages
+# import pdb; pdb.set_trace()
+# for txt_abbrv in tqdm(list(text_abbrev2fn.keys())):
+#     if txt_abbrv not in disallowed_fulltexts:
+#         get_text_view(txt_abbrv)
+
+
+
+##########################################################
+# various functions for interface modes (docExplore etc.)
+##########################################################
 
 def parse_complex_doc_id(doc_id):
 # NB: returns only first original doc id from any resizing modifications
@@ -297,7 +304,7 @@ def rank_all_candidates_by_topic_similarity(query_id, topic_weights=topic_weight
     if doc_fulltext[query_id] == '': return {}
 
     # use previously calculated result if available
-    # disable for now while implementing topic weighting
+    # phasing out...
     # if     (    N in stored_topic_comparison_scores.keys() and
     #         query_id in stored_topic_comparison_scores[N].keys()
     #     ):
@@ -322,32 +329,16 @@ def rank_all_candidates_by_topic_similarity(query_id, topic_weights=topic_weight
     sorted_results = dict( sorted(topic_similiarity_score.items(), key=lambda item: item[1], reverse=True) )
     return sorted_results
 
+
 # load whatever done ahead of time and feasible to keep in memory
-
-stored_topic_comparison_scores = {1000:{}}
-topic_scores_1000_pickle_relative_fn = 'assets/topic_scores_1000.p'
-topic_scores_1000_pickle_fn = os.path.join(CURRENT_FOLDER, topic_scores_1000_pickle_relative_fn)
-try:
-    with open(topic_scores_1000_pickle_fn,'rb') as f_in:
-        stored_topic_comparison_scores[1000] = pickle.load(f_in)
-except FileNotFoundError: pass
-
-# # set up groups for chronological work prioritization
-
-# # pre-Dharmakīrti
-period_1_works = ['AP', 'PSV', 'NS', 'SK', 'MS', 'VS', 'MMK', 'ViVy', 'YSBh', 'PDhS', 'YD', 'NPS', 'TriṃśBh', 'NV', 'ViṃśV', 'NBh']
-
-# # from Candrakīrti and Dharmakīrti to Prajñākaragupta and Jayarāśi
-period_2_works = ['PPad', 'HB', 'NB', 'PV', 'PVSV', 'PVin', 'SAS', 'SP', 'VN', 'NBṬ', 'TUS', 'PSṬ', 'ŚV', 'PVA', 'YD']
-
-# # around same time as NBhū, no mutual quoting
-period_3_works = ['NBhū', 'VSṬ', 'NyKal', 'NM', 'VyV']
-
-# # definitely after NBhū
-period_4_works = ['ŚVK', 'AvNir']
-
-# # pre-NBhū
-# preferred_works = period_1_works + period_2_works
+# phasing out...
+# stored_topic_comparison_scores = {1000:{}}
+# topic_scores_1000_pickle_relative_fn = 'assets/topic_scores_1000.p'
+# topic_scores_1000_pickle_fn = os.path.join(CURRENT_FOLDER, topic_scores_1000_pickle_relative_fn)
+# try:
+#     with open(topic_scores_1000_pickle_fn,'rb') as f_in:
+#         stored_topic_comparison_scores[1000] = pickle.load(f_in)
+# except FileNotFoundError: pass
 
 
 def divide_doc_id_list_by_work_priority(list_of_doc_ids_to_prune, priority_works):
@@ -387,6 +378,16 @@ def get_TF_IDF_vector(doc_id):
     return TF_IDF_vector
 
 
+# for offline use:
+# build more tf-idf pickles
+# phasing out...
+# import pdb; pdb.set_trace()
+# conditionally_do_batch_tf_idf_comparisons(*doc_ids[:5], N=1000)
+# NBhu_doc_ids = [ di for di in doc_ids if parse_complex_doc_id(di)[0] == 'NBhū' ]
+# print(len(NBhu_doc_ids))
+# conditionally_do_batch_tf_idf_comparisons(*NBhu_doc_ids, N=1000)
+
+# phasing out...
 def load_stored_TF_IDF_results(work_name):
     work_pickle_relative_fn = 'assets/tf-idf_pickles/{}.p'.format(work_name)
     work_pickle_fn = os.path.join(CURRENT_FOLDER, work_pickle_relative_fn)
@@ -635,7 +636,7 @@ def format_similarity_result_columns(query_id, priority_results_list_content, se
             i+1,
             format_docView_link(doc_id),
             results[0], # topic score
-            "{:.2f}".format(results[1]), # tf-idf score
+            results[1], # tf-idf score
             results[2], # alignment score
             format_textView_link(doc_id),
             format_docCompare_link(query_id, doc_id)
@@ -695,6 +696,8 @@ def get_closest_docs(   query_id,
                         results_as_links_only=False
                         ):
 
+    # import pdb; pdb.set_trace()
+
     # handiLe blank
     if doc_fulltext[query_id] == '':
         results_HTML = HTML_templates['docExploreInner'].substitute(
@@ -732,7 +735,7 @@ def get_closest_docs(   query_id,
 
     # limit further computation to only top N_tf_idf of sorted candidates (minus query itself)
     pruned_priority_topic_candidates = { k:v
-        for (k,v) in list(priority_topic_candidates.items())[:N_tf_idf-1]
+        for (k,v) in list(priority_topic_candidates.items())[:N_tf_idf]
         }
 
     # further rank candidates by tiny tf-idf
@@ -741,29 +744,42 @@ def get_closest_docs(   query_id,
         list(pruned_priority_topic_candidates.keys())
         )
 
+    # post-ranking, convert to strings (round to two decimal places, empty replaces 0.0)
+    for k,v in tf_idf_candidates.items():
+        if v == 0.0: tf_idf_candidates[k] = ""
+        else: tf_idf_candidates[k] = "{:.2f}".format(tf_idf_candidates[k])
+
+    # would like to bottom of priority list other priority-text docs for which only topics compared
+    # but very inefficient on page render
+    # for now, thereofre, shunt these to secondary results (end of list for now)...
+    for k,v in priority_topic_candidates.items():
+       if k not in tf_idf_candidates:
+           secondary_topic_candidates[k] = v
+
     # limit further computation to only top N_sw_w of sorted candidates
     pruned_tf_idf_candidates = { k:v
-        for (k,v) in list(tf_idf_candidates.items())[:N_sw_w-1]
+        for (k,v) in list(tf_idf_candidates.items())[:N_sw_w]
         }
+
     # further rank candidates by sw_w
     sw_w_alignment_candidates = rank_candidates_by_sw_w_alignment_score(
         query_id,
         list(pruned_tf_idf_candidates.keys())
         )
 
-    # post-ranking, convert 0.0 to empty string
+    # post-ranking, convert to strings (empty replaces 0.0, no need for rounding)
     for k,v in sw_w_alignment_candidates.items():
-        if v == 0.0:
-            sw_w_alignment_candidates[k] = ""
-    # also add blank entries for all docs for which sw_w comparison not performed
-    for k in tf_idf_candidates.keys():
+        if v == 0.0: sw_w_alignment_candidates[k] = ""
+        else: sw_w_alignment_candidates[k] = str(sw_w_alignment_candidates[k])
+
+    # again add blank entries to bottom of list for all docs for which sw_w comparison not performed
+    for k in tf_idf_candidates.keys(): # contains priority_topic_candidates.keys() too
         if k not in sw_w_alignment_candidates:
             sw_w_alignment_candidates[k] = ""
 
-    # thus final results list has sw_w candidates on top and tf_idf candidates after that
+    # thus final results list has sw_w candidates on top, tf_idf candidates after that, and priority_topic_candidates after that
 
     priority_ranked_results_ids = list(sw_w_alignment_candidates.keys())
-    # priority_ranked_results_ids += list(tf_idf_candidates.keys())[N_sw_w:]
 
     if results_as_links_only:
         similarity_result_doc_links = list2linkingDict(priority_ranked_results_ids)
@@ -780,7 +796,8 @@ def get_closest_docs(   query_id,
         secondary_topic_candidates
         )
     if priority_col_HTML == "": priority_col_HTML = "<p>(none)</p>"
-    if secondary_col_HTML == "": secondary_col_HTML = "<p>(none)</p>"
+    # if secondary_col_HTML == "": secondary_col_HTML = "<p>(none)</p>"
+    secondary_col_HTML = "<p>(none)</p>" # just neutralize for now until i can make faster
     results_HTML = HTML_templates['docExploreInner'].substitute(
                         query_id = query_id,
                         query_section = section_labels[query_id],
@@ -1180,20 +1197,6 @@ for txt_abbrv in list(text_abbrev2fn.keys()):
                                 for doc_id in doc_ids
                                 if parse_complex_doc_id(doc_id)[0] == txt_abbrv
                            ])
-
-# for offline use
-
-# build more tf-idf pickles
-# import pdb; pdb.set_trace()
-# conditionally_do_batch_tf_idf_comparisons(*doc_ids[:5], N=1000)
-# NBhu_doc_ids = [ di for di in doc_ids if parse_complex_doc_id(di)[0] == 'NBhū' ]
-# print(len(NBhu_doc_ids))
-# conditionally_do_batch_tf_idf_comparisons(*NBhu_doc_ids, N=1000)
-
-# build textView HTML pages
-# for txt_abbrv in tqdm(list(text_abbrev2fn.keys())):
-#     if txt_abbrv not in disallowed_fulltexts:
-#         get_text_view(txt_abbrv)
 
 
 def format_text_prioritize_output(*priority_texts_input):
