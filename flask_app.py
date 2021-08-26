@@ -41,7 +41,7 @@ flask_session_variable_names = [
 def ensure_keys():
     # just in case, make sure all keys in session
     for var_name in flask_session_variable_names:
-        if var_name not in session:            
+        if var_name not in session:
             reset_variables()
 
 @app.route('/reset')
@@ -81,7 +81,7 @@ def index():
 @app.route('/topicVisualizeLDAvis')
 def topic_visualize():
 
-    relative_path_to_LDAvis_HTML_fn = "assets/ldavis_prepared_50.html"
+    relative_path_to_LDAvis_HTML_fn = "assets/ldavis_prepared_75.html"
     LDAvis_HTML_full_fn = os.path.join(CURRENT_FOLDER, relative_path_to_LDAvis_HTML_fn)
     with open(LDAvis_HTML_full_fn, 'r') as f_in:
         LDAvis_HTML = html.unescape(f_in.read())
@@ -214,7 +214,6 @@ def text_view():
             local_doc_id_input = request.form.get("local_doc_id_input")
             if local_doc_id_input != "":
                 # re-parse to discard unwanted parts of local_doc_id_input
-                import pdb; pdb.set_trace()
                 doc_id = text_abbreviation_input + '_' + local_doc_id_input
                 text_abbreviation_input, local_doc_id_input = IR_tools.parse_complex_doc_id(doc_id)
             return redirect('/textView?text_abbrv={}#{}'.format(text_abbreviation_input, local_doc_id_input))

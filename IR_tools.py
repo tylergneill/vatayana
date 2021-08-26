@@ -249,6 +249,18 @@ topic_wordcloud_fns = [ os.path.join(topic_wordclouds_relative_path, img_fn) # r
                         ]
 topic_wordcloud_fns.sort()
 
+#######################################################
+# some handy general functions ...
+#######################################################
+
+def parse_complex_doc_id(doc_id):
+# NB: returns only first original doc id from any resizing modifications
+    first_underscore_pos = doc_id.find('_')
+    work_abbrv = doc_id[:first_underscore_pos]
+    local_doc_id = re.search('[^_\^:]+', doc_id[first_underscore_pos+1:]).group()
+    return work_abbrv, local_doc_id
+
+
 
 #######################################################
 # create/load simple HTML transformations for textView
@@ -263,25 +275,73 @@ stored_textView_HTML_fns = [ os.path.join(stored_textView_HTML_full_path, HTML_f
                             and HTML_fn != '.DS_Store'
                             ]
 
+def format_text_view(text_abbreviation):
+
+    # use text_abbreviation to read in text string
+    text_fn = text_abbrev2fn[text_abbreviation] + '.txt'
+    relative_path_to_text = "assets/texts"
+    text_full_fn = os.path.join(CURRENT_FOLDER, relative_path_to_text, text_fn)
+    with open(text_full_fn,'r') as f_in:
+        text_string = f_in.read()
+
+    # wrap in <div>
+    text_HTML = "<div>%s</div>" % text_string
+
+    # use re to wrap {...} content in <h1> and [...] in <h2>
+    # for each, also make content into id attribute for tag (>> # link)
+    text_HTML = re.sub("{([^}]*?)}", "<h1 id='\\1'>\\1</h1>", text_HTML)
+
+    h2s = re.findall("\[([^\]]*?)\]", text_HTML)
+    work_doc_ids = [    doc_id
+                        for doc_id in doc_ids
+                        if parse_complex_doc_id(doc_id)[0] == text_abbreviation
+                        ]
+    for h2 in h2s:
+        links_addendum = "<small><small>"
+        relevant_work_doc_ids = [    doc_id for doc_id in work_doc_ids
+                                    if parse_complex_doc_id(doc_id)[1] == h2
+                                ]
+        links_addendum += '  '.join( [ "(<a href='docExplore?doc_id={}'>{}</a>)".format(doc_id, doc_id) for doc_id in relevant_work_doc_ids ] )
+        links_addendum += "</small></small>"
+        try:
+            text_HTML = re.sub("\[({})\]".format(h2), "<h2 id='\\1'>\\1 {}</h2>".format(links_addendum), text_HTML)
+        except:
+            # this detects encoding errors in the original text which mess up the HTML formatting
+            import pdb; pdb.set_trace()
+
+    # (possibly escape characters like tab, <>, etc.)
+    # for example, anything tertiary note that begins <s ...> or <S ...> (e.g. 'Seite') will be interpreted as strikethrough
+
+    return text_HTML
+
+def get_text_view(text_abbreviation):
+
+    viewText_HTML_fn = text_abbrev2fn[text_abbreviation] + '.html'
+    viewText_HTML_fn_full_path = os.path.join(stored_textView_HTML_full_path, viewText_HTML_fn)
+    if viewText_HTML_fn_full_path in stored_textView_HTML_fns:
+        # print("FOUND STORED HTML")
+        with open(viewText_HTML_fn_full_path, 'r') as f_in:
+            viewText_HTML = f_in.read()
+            return viewText_HTML
+    else:
+        # print("MAKING NEW HTML")
+        viewText_HTML = format_text_view(text_abbreviation)
+        with open(viewText_HTML_fn_full_path, 'w') as f_out:
+            f_out.write(viewText_HTML)
+        return viewText_HTML
+
 # for offline use
 # create more textView HTML pages
 # import pdb; pdb.set_trace()
-# for txt_abbrv in tqdm(list(text_abbrev2fn.keys())):
-#     if txt_abbrv not in disallowed_fulltexts:
-#         get_text_view(txt_abbrv)
+for txt_abbrv in tqdm(list(text_abbrev2fn.keys())):
+    if txt_abbrv not in disallowed_fulltexts:
+        get_text_view(txt_abbrv)
 
 
 
 ##########################################################
 # various functions for interface modes (docExplore etc.)
 ##########################################################
-
-def parse_complex_doc_id(doc_id):
-# NB: returns only first original doc id from any resizing modifications
-    first_underscore_pos = doc_id.find('_')
-    work_abbrv = doc_id[:first_underscore_pos]
-    local_doc_id = re.search('[^_\^:]+', doc_id[first_underscore_pos+1:]).group()
-    return work_abbrv, local_doc_id
 
 # handy general function for getting indices of N max (descending) values in list
 def indices_of_top_N_elements(L, N):
@@ -1075,61 +1135,6 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
 
     return results_HTML, activate_similar_link_buttons_left, activate_similar_link_buttons_right
 
-
-def format_text_view(text_abbreviation):
-
-    # use text_abbreviation to read in text string
-    text_fn = text_abbrev2fn[text_abbreviation] + '.txt'
-    relative_path_to_text = "assets/texts"
-    text_full_fn = os.path.join(CURRENT_FOLDER, relative_path_to_text, text_fn)
-    with open(text_full_fn,'r') as f_in:
-        text_string = f_in.read()
-
-    # wrap in <div>
-    text_HTML = "<div>%s</div>" % text_string
-
-    # use re to wrap {...} content in <h1> and [...] in <h2>
-    # for each, also make content into id attribute for tag (>> # link)
-    text_HTML = re.sub("{([^}]*?)}", "<h1 id='\\1'>\\1</h1>", text_HTML)
-
-    h2s = re.findall("\[([^\]]*?)\]", text_HTML)
-    work_doc_ids = [    doc_id
-                        for doc_id in doc_ids
-                        if parse_complex_doc_id(doc_id)[0] == text_abbreviation
-                        ]
-    for h2 in h2s:
-        links_addendum = "<small><small>"
-        relevant_work_doc_ids = [    doc_id for doc_id in work_doc_ids
-                                    if parse_complex_doc_id(doc_id)[1] == h2
-                                ]
-        links_addendum += '  '.join( [ "(<a href='docExplore?doc_id={}'>{}</a>)".format(doc_id, doc_id) for doc_id in relevant_work_doc_ids ] )
-        links_addendum += "</small></small>"
-        try:
-            text_HTML = re.sub("\[({})\]".format(h2), "<h2 id='\\1'>\\1 {}</h2>".format(links_addendum), text_HTML)
-        except:
-            # this detects encoding errors in the original text which mess up the HTML formatting
-            import pdb; pdb.set_trace()
-
-    # (possibly escape characters like tab, <>, etc.)
-    # for example, anything tertiary note that begins <s ...> or <S ...> (e.g. 'Seite') will be interpreted as strikethrough
-
-    return text_HTML
-
-def get_text_view(text_abbreviation):
-
-    viewText_HTML_fn = text_abbrev2fn[text_abbreviation] + '.html'
-    viewText_HTML_fn_full_path = os.path.join(stored_textView_HTML_full_path, viewText_HTML_fn)
-    if viewText_HTML_fn_full_path in stored_textView_HTML_fns:
-        # print("FOUND STORED HTML")
-        with open(viewText_HTML_fn_full_path, 'r') as f_in:
-            viewText_HTML = f_in.read()
-            return viewText_HTML
-    else:
-        # print("MAKING NEW HTML")
-        viewText_HTML = format_text_view(text_abbreviation)
-        with open(viewText_HTML_fn_full_path, 'w') as f_out:
-            f_out.write(viewText_HTML)
-        return viewText_HTML
 
 
 def format_topic_adjust_output(topic_weight_input, topic_label_input):
