@@ -235,7 +235,7 @@ topic_top_words_fn_full_path = os.path.join(CURRENT_FOLDER, topic_top_words_fn)
 with open(topic_top_words_fn_full_path,'r') as f_in:
     topic_top_words = f_in.readlines()
 
-topic_interpretation_fn = 'assets/topic_interpretations.txt'
+topic_interpretation_fn = 'assets/topic_interpretations_28k_75t.txt'
 topic_interpretation_fn_full_path = os.path.join(CURRENT_FOLDER, topic_interpretation_fn)
 with open(topic_interpretation_fn_full_path,'r') as f_in:
     topic_interpretations = f_in.readlines()
