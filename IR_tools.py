@@ -333,9 +333,9 @@ def get_text_view(text_abbreviation):
 # for offline use
 # create more textView HTML pages
 # import pdb; pdb.set_trace()
-for txt_abbrv in tqdm(list(text_abbrev2fn.keys())):
-    if txt_abbrv not in disallowed_fulltexts:
-        get_text_view(txt_abbrv)
+# for txt_abbrv in tqdm(list(text_abbrev2fn.keys())):
+#     if txt_abbrv not in disallowed_fulltexts:
+#         get_text_view(txt_abbrv)
 
 
 
