@@ -438,6 +438,8 @@ def get_TF_IDF_vector(doc_id):
     return TF_IDF_vector
 
 
+
+
 # for offline use:
 # build more tf-idf pickles
 # phasing out...
@@ -1228,6 +1230,24 @@ def format_text_prioritize_output(*priority_texts_input):
         </div>
         """.format(abbrev, abbrev, checked_string, abbrev, title, num_docs_by_text[abbrev])
 
+    # get num of docs in priority_texts to use for comupatation time calculations
+    num_priority_docs = sum([ num_docs_by_text[text_name] for text_name in priority_texts_input ])
+
+    overall_buffer += """
+    <div class="row">
+        <div class='col-md-1'>
+        </div>
+        <div class='col-md-1'>
+        </div>
+        <div class='col-md-3'>
+            <p><b>Total number of prioritized documents:</b></p>
+        </div>
+        <div class='col-md-2'>
+            <p>[{}]</p>
+        </div>
+    </div>
+    """.format(num_priority_docs)
+
 # """
 # <input type="checkbox" id="{}" name="scan_detail" value="morae" checked/>
 # """.format(abbrev, title)
@@ -1277,7 +1297,10 @@ def format_topic_toggle_output(topic_toggle_value):
     return topicToggleInner_HTML
 
 
-def format_search_settings_slider_pair(N_tf_idf, N_sw_w, depth):
+def format_search_settings_slider_pair(N_tf_idf, N_sw_w, priority_texts, depth):
+
+    # get num of docs in priority_texts to use for comupatation time calculations
+    num_priority_docs = sum([ num_docs_by_text[text_name] for text_name in priority_texts ])
 
     N_vals = {
         'N_tf_idf_'+depth : N_tf_idf,
@@ -1285,19 +1308,28 @@ def format_search_settings_slider_pair(N_tf_idf, N_sw_w, depth):
     }
 
     N_max_vals = {
-        'N_tf_idf_'+depth : num_docs,
+        'N_tf_idf_'+depth : num_priority_docs,
         'N_sw_w_'+depth : N_tf_idf,
     }
 
     HTML_buffer = """
 <div class='row'><!-- topic no-slider -->
     <div class='col-md-8'>
-       <p>(Topic comparison is always performed for all candidates.)</p>
+       <p>(Topic comparison is always performed for all docs.)</p>
     </div>
     <div class="col-md-4">
        <p>({} or 100% of docs) * ( {:.7f} s / topic comparison) = {:.2f} s</p>
     </div>
-</div><!-- topic no-slider -->""".format(num_docs, topic_secs_per_comparison, num_docs*topic_secs_per_comparison)
+</div><!-- topic no-slider -->
+<div class='row'><!-- note no-slider -->
+    <div class='col-md-8'>
+       <p>(TF-IDF and Smith-Waterman comparisons performed only for max {} priority docs, for which see <a href='textPrioritize'>text prioritization</a>.)</p>
+    </div>
+    <div class="col-md-4">
+       <p></p>
+    </div>
+</div><!-- note no-slider -->
+""".format(num_docs, topic_secs_per_comparison, num_docs*topic_secs_per_comparison, num_priority_docs)
 
     slider_JS_buffer = """
 <script>"""
@@ -1380,7 +1412,7 @@ total_{}_computation_time_p.innerHTML = `total: ${{ total_{}_computation_time }}
 
     return HTML_buffer, slider_JS_buffer
 
-def format_search_settings_output(N_tf_idf_shallow, N_sw_w_shallow, N_tf_idf_deep, N_sw_w_deep, search_depth_default):
+def format_search_settings_output(N_tf_idf_shallow, N_sw_w_shallow, N_tf_idf_deep, N_sw_w_deep, priority_texts, search_depth_default):
 
     # N_vals = {
     #     'N_tf_idf_shallow' : N_tf_idf_shallow,
@@ -1421,8 +1453,8 @@ var total_deep_computation_time_p;
 </script>
 """.format(topic_secs_per_comparison, tf_idf_secs_per_comparison, sw_w_secs_per_comparison, num_docs*topic_secs_per_comparison)
 
-    shallow_slider_HTML, shallow_slider_JS = format_search_settings_slider_pair(N_tf_idf_shallow, N_sw_w_shallow, depth='shallow')
-    deep_slider_HTML, deep_slider_JS = format_search_settings_slider_pair(N_tf_idf_deep, N_sw_w_deep, depth='deep')
+    shallow_slider_HTML, shallow_slider_JS = format_search_settings_slider_pair(N_tf_idf_shallow, N_sw_w_shallow, priority_texts, depth='shallow')
+    deep_slider_HTML, deep_slider_JS = format_search_settings_slider_pair(N_tf_idf_deep, N_sw_w_deep, priority_texts, depth='deep')
 
     search_depth_radio_shallow_checked_status = ( search_depth_default == "shallow" ) * "checked"
     search_depth_radio_deep_checked_status = ( search_depth_default == "deep" ) * "checked"

@@ -407,6 +407,7 @@ def search_settings():
         N_sw_w_shallow=session["N_sw_w_shallow"],
         N_tf_idf_deep=session["N_tf_idf_deep"],
         N_sw_w_deep=session["N_sw_w_deep"],
+        priority_texts=session["priority_texts"],
         search_depth_default=session["search_depth_default"]
         )
 
