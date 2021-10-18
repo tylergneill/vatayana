@@ -1323,7 +1323,7 @@ def format_search_settings_slider_pair(N_tf_idf, N_sw_w, priority_texts, depth):
 </div><!-- topic no-slider -->
 <div class='row'><!-- note no-slider -->
     <div class='col-md-8'>
-       <p>(TF-IDF and Smith-Waterman comparisons performed only for max {} priority docs, for which see <a href='textPrioritize'>text prioritization</a>.)</p>
+       <p>(TF-IDF and Smith-Waterman comparisons performed only for max <a href='textPrioritize'>{} priority docs</a>.)</p>
     </div>
     <div class="col-md-4">
        <p></p>
