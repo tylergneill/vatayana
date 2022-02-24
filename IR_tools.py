@@ -9,6 +9,7 @@ from collections import OrderedDict, Counter
 from fastdist import fastdist
 from string import Template
 from tqdm import tqdm
+from datetime import datetime, date
 from collatex import *
 from lxml import etree
 from difflib import SequenceMatcher
@@ -747,6 +748,10 @@ def rank_candidates_by_sw_w_alignment_score(query_id, candidate_ids):
 
     return sorted_results
 
+def calc_dur(start, end):
+    delta = datetime.combine(date.today(), end) - datetime.combine(date.today(), start)
+    duration_secs = delta.seconds + delta.microseconds / 1000000
+    return duration_secs
 
 def get_closest_docs(   query_id,
                         topic_weights=topic_weights_default,
@@ -760,7 +765,15 @@ def get_closest_docs(   query_id,
 
     # import pdb; pdb.set_trace()
 
-    # handiLe blank
+    start0 = datetime.now().time()
+    # get num of docs in priority_texts to use for comupatation time calculations
+    num_priority_docs = sum([ num_docs_by_text[text_name] for text_name in priority_texts ])
+
+    # start1 = datetime.now().time()
+    # end1 = datetime.now().time()
+    # topic_time = calc_dur(start1, end1)
+
+    # handle blank
     if doc_fulltext[query_id] == '':
         results_HTML = HTML_templates['docExploreInner'].substitute(
             query_id = query_id, query_section = section_labels[query_id], prev_doc_id = doc_links[query_id]['prev'], next_doc_id = doc_links[query_id]['next'],
@@ -778,10 +791,15 @@ def get_closest_docs(   query_id,
     # else:
     #     N = len(doc_ids) # i.e., do not discard any of ranked list
 
+    start1 = datetime.now().time()
+
     all_topic_candidates = rank_all_candidates_by_topic_similarity(
         query_id,
         topic_weights
         )
+
+    end1 = datetime.now().time()
+    topic_time = calc_dur(start1, end1)
 
     # prioritize candidates by text name
     priority_candidate_ids, secondary_candidate_ids = divide_doc_id_list_by_work_priority(
@@ -800,11 +818,16 @@ def get_closest_docs(   query_id,
         for (k,v) in list(priority_topic_candidates.items())[:N_tf_idf]
         }
 
+    start2 = datetime.now().time()
+
     # further rank candidates by tiny tf-idf
     tf_idf_candidates = rank_candidates_by_tiny_TF_IDF_similarity(
         query_id,
         list(pruned_priority_topic_candidates.keys())
         )
+
+    end2 = datetime.now().time()
+    tf_idf_time = calc_dur(start2, end2)
 
     # post-ranking, convert to strings (round to two decimal places, empty replaces 0.0)
     for k,v in tf_idf_candidates.items():
@@ -823,11 +846,17 @@ def get_closest_docs(   query_id,
         for (k,v) in list(tf_idf_candidates.items())[:N_sw_w]
         }
 
+    start3 = datetime.now().time()
+
     # further rank candidates by sw_w
     sw_w_alignment_candidates = rank_candidates_by_sw_w_alignment_score(
         query_id,
         list(pruned_tf_idf_candidates.keys())
         )
+
+    end3 = datetime.now().time()
+    sw_time = calc_dur(start3, end3)
+
 
     # post-ranking, convert to strings (empty replaces 0.0, no need for rounding)
     for k,v in sw_w_alignment_candidates.items():
@@ -877,6 +906,15 @@ def get_closest_docs(   query_id,
                         priority_texts=str(priority_texts),
                         non_priority_texts=str(non_priority_texts)
                         )
+
+    end0 = datetime.now().time()
+    overall_time = calc_dur(start0, end0)
+    print(f"topic_time: {topic_time} sec, len(all_topic_candidates): {len(all_topic_candidates)},  {topic_time/len(all_topic_candidates)} s / topic comparison")
+    print(f"tf_idf_time: {tf_idf_time} sec, len(tf_idf_candidates): {len(tf_idf_candidates)}, {tf_idf_time/len(tf_idf_candidates)} s / tf_idf comparison")
+    print(f"sw_time: {sw_time} sec, len(pruned_tf_idf_candidates): {len(pruned_tf_idf_candidates)}, {sw_time/len(pruned_tf_idf_candidates)} s / sw comparison")
+    print(f"overall_time: {overall_time} sec")
+    # import pdb; pdb.set_trace()
+
     return results_HTML
 
 
