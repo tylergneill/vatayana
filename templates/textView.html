@@ -82,11 +82,24 @@
 				<!-- input -->
                 <div class="row">
                 	<div class="col-md-3">
-	                    <input id="text_abbreviation_input" name="text_abbreviation_input" type="text" class="form-control" placeholder="Enter text abbreviation here" value="{{ text_abbreviation }}" size="30"/>
+	                    
+	                    <!-- <input id="text_abbreviation_input" name="text_abbreviation_input" type="text" class="form-control" placeholder="Enter text abbreviation here" value="{{ text_abbreviation }}" size="30"/> -->
+
+						<select name="text_abbreviation_input" id="text_abbreviation_input">
+							<option value="{{ text_abbreviation }}" size="30" selected="selected">Select text</option>
+						</select>
+
 	                </div>
 	                <div class="col-md-3">
-	                    <input id="local_doc_id_input" name="local_doc_id_input" type="text" class="form-control" placeholder="Enter doc id here" value="{{ local_doc_id }}" size="30"/>
+
+	                    <!-- <input id="local_doc_id_input" name="local_doc_id_input" type="text" class="form-control" placeholder="Enter doc id here" value="{{ local_doc_id }}" size="30"/> -->
+
+						<select name="local_doc_id_input" id="local_doc_id_input">
+							<option value="{{ local_doc_id }}" size="30" selected="selected">Select doc id</option>
+						</select>
+
 	                </div>
+
 	                <div class="col-md-2">
 		                <input id="text_view_submit_button" type="submit" class="btn btn-block btn-primary" value="Submit"/>
 		            </div>
@@ -102,5 +115,20 @@
 
 
     </body>
+
+    <script type="text/javascript">
+    	var abbrv2docs = {{ abbrv2docs|tojson|safe }};
+		var textAbbrevSel = document.getElementById("text_abbreviation_input");
+		var docIdSel = document.getElementById("local_doc_id_input");
+		for (var x in abbrv2docs) {
+			textAbbrevSel.options[textAbbrevSel.options.length] = new Option(x, x);
+		}
+		textAbbrevSel.onchange = function() {		    
+			docIdSel.length = 1;
+			for (var y of abbrv2docs[this.value]) {
+			  docIdSel.options[docIdSel.options.length] = new Option(y, y);
+			}
+		}
+    </script>
 
 </html>

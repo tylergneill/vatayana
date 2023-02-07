@@ -234,7 +234,8 @@ def text_view():
                                 text_abbreviation=text_abbreviation_input,
                                 local_doc_id=local_doc_id_input,
                                 text_title=text_title,
-                                text_HTML=text_HTML
+                                text_HTML=text_HTML,
+                                abbrv2docs=IR_tools.abbrv2docs,
                                 )
 
     else: # request.method == "GET" or no URL params
@@ -244,7 +245,8 @@ def text_view():
                                 text_abbreviation="",
                                 local_doc_id="",
                                 text_title="",
-                                text_HTML=""
+                                text_HTML="",
+                                abbrv2docs=IR_tools.abbrv2docs,
                                 )
 
 @app.route('/BrucheionAlign')
