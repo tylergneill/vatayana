@@ -85,7 +85,7 @@
 	                    
 	                    <!-- <input id="text_abbreviation_input" name="text_abbreviation_input" type="text" class="form-control" placeholder="Enter text abbreviation here" value="{{ text_abbreviation }}" size="30"/> -->
 
-						<select name="text_abbreviation_input" id="text_abbreviation_input">
+						<select name="text_abbreviation_input" id="text_abbreviation_input" class="form-control">
 							<option value="{{ text_abbreviation }}" size="30" selected="selected">Select text</option>
 						</select>
 
@@ -94,8 +94,8 @@
 
 	                    <!-- <input id="local_doc_id_input" name="local_doc_id_input" type="text" class="form-control" placeholder="Enter doc id here" value="{{ local_doc_id }}" size="30"/> -->
 
-						<select name="local_doc_id_input" id="local_doc_id_input">
-							<option value="{{ local_doc_id }}" size="30" selected="selected">Select doc id</option>
+						<select name="local_doc_id_input" id="local_doc_id_input" class="form-control">
+							<option value="{{ local_doc_id }}" size="30" selected="selected">Select doc id (optional)</option>
 						</select>
 
 	                </div>
@@ -118,15 +118,19 @@
 
     <script type="text/javascript">
     	var abbrv2docs = {{ abbrv2docs|tojson|safe }};
+    	var abbrev2title = {{ text_abbrev2title|tojson|safe }};
+    	var section_labels = {{ section_labels|tojson|safe }};
+
 		var textAbbrevSel = document.getElementById("text_abbreviation_input");
 		var docIdSel = document.getElementById("local_doc_id_input");
+		textAbbrevSel.length = 1;
 		for (var x in abbrv2docs) {
-			textAbbrevSel.options[textAbbrevSel.options.length] = new Option(x, x);
+			textAbbrevSel.options[textAbbrevSel.options.length] = new Option(x + ' ' + abbrev2title[x], x);
 		}
 		textAbbrevSel.onchange = function() {		    
 			docIdSel.length = 1;
 			for (var y of abbrv2docs[this.value]) {
-			  docIdSel.options[docIdSel.options.length] = new Option(y, y);
+			  docIdSel.options[docIdSel.options.length] = new Option(y + ' ' + section_labels[this.value + '_' + y], y);
 			}
 		}
     </script>
