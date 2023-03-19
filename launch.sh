@@ -1,3 +1,3 @@
 #!/bin/bash
 export FLASK_APP=flask_app.py
-flask run
+flask run -p 4999
