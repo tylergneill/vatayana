@@ -152,22 +152,25 @@ def doc_compare():
 
     ensure_keys()
 
-    if request.method == "POST" or 'doc_id_1' in request.args:
+    if request.method == "POST" or 'text_abbrv' in request.args or 'doc_id_1' in request.args:
 
         doc_id_1 = doc_id_2 = ""
-        if 'doc_id_1' in request.form:
-            doc_id_1 = request.form.get("doc_id_1")
-            doc_id_2 = request.form.get("doc_id_2")
-        elif 'doc_id_1' in request.args:
+        if 'doc_id_1' in request.args:
             doc_id_1 = request.args.get("doc_id_1")
             doc_id_2 = request.args.get("doc_id_2")
+        else:
+            text_abbreviation_input_1 = request.form.get("text_abbreviation_input_1")
+            local_doc_id_input_1 = request.form.get("local_doc_id_input_1")
+            doc_id_1 = text_abbreviation_input_1 + '_' + local_doc_id_input_1
+            text_abbreviation_input_2 = request.form.get("text_abbreviation_input_2")
+            local_doc_id_input_2 = request.form.get("local_doc_id_input_2")
+            doc_id_2 = text_abbreviation_input_2 + '_' + local_doc_id_input_2
 
         valid_doc_ids = IR_tools.doc_ids
         sim_btn_left = sim_btn_right = ""
         if doc_id_1 == doc_id_2:
-            output_HTML = "<br><p>Those are the same, please enter two different doc ids to compare.</p>"
+            docCompareInner_HTML = "<br><p>Those are the same, please enter two different doc ids to compare.</p>"
         elif doc_id_1 in valid_doc_ids and doc_id_2 in valid_doc_ids:
-            # output_HTML = "<br><p>Good, those are valid.</p>"
 
             auto_reweight_topics_option = False
             if auto_reweight_topics_option:
