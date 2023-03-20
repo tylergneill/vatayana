@@ -5,7 +5,7 @@ import re
 import math
 import numpy as np
 
-from collections import OrderedDict, Counter
+from collections import OrderedDict, Counter, defaultdict
 from fastdist import fastdist
 from string import Template
 from tqdm import tqdm
@@ -219,6 +219,13 @@ text_abbrev2fn = load_dict_from_json("assets/text_abbreviations_IASTreduced.json
 text_abbrev2title = load_dict_from_json("assets/text_abbreviations.json") # for human eyes
 # e.g. text_abbrev2fn[TEXT_ABBRV] = STRING
 # don't sort these yet because they're in chronological order for presenting prioritization options
+
+# create lookup table of local_doc_ids by text abbreviation
+abbrv2docs = defaultdict(lambda:[])
+for doc_id in doc_ids:
+    first_underscore = doc_id.find('_')
+    abbrv, local_doc_id = doc_id[:first_underscore], doc_id[first_underscore+1:]
+    abbrv2docs[abbrv].append(local_doc_id)
 
 # save fresh corpus text list to file
 corpus_texts_list_relative_path_fn = 'assets/corpus_texts.txt'

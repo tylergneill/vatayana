@@ -96,12 +96,15 @@ def doc_explore():
 
     ensure_keys()
 
-    if request.method == "POST" or 'doc_id' in request.args:
+    if request.method == "POST" or 'text_abbrv' in request.args or 'doc_id' in request.args:
 
-        if 'doc_id' in request.form:
-            doc_id = request.form.get("doc_id")
-        elif 'doc_id' in request.args:
+
+        if 'doc_id' in request.args:
             doc_id = request.args.get("doc_id")
+        else:
+            text_abbreviation_input = request.form.get("text_abbreviation_input")
+            local_doc_id_input = request.form.get("local_doc_id_input")
+            doc_id = text_abbreviation_input + '_' + local_doc_id_input
 
         valid_doc_ids = IR_tools.doc_ids
         if doc_id in valid_doc_ids:
@@ -127,7 +130,10 @@ def doc_explore():
         return render_template(    "docExplore.html",
                                 page_subtitle="docExplore",
                                 doc_id=doc_id,
-                                docExploreInner_HTML=docExploreInner_HTML
+                                docExploreInner_HTML=docExploreInner_HTML,
+                                abbrv2docs=IR_tools.abbrv2docs,
+                                text_abbrev2title=IR_tools.text_abbrev2title,
+                                section_labels=IR_tools.section_labels,
                                 )
 
     else: # request.method == "GET" or URL query malformed
@@ -135,7 +141,10 @@ def doc_explore():
         return render_template(    "docExplore.html",
                                 page_subtitle="docExplore",
                                 doc_id="",
-                                doc_explore_output=""
+                                doc_explore_output="",
+                                abbrv2docs=IR_tools.abbrv2docs,
+                                text_abbrev2title=IR_tools.text_abbrev2title,
+                                section_labels=IR_tools.section_labels,
                                 )
 
 @app.route('/docCompare', methods=["GET", "POST"])
@@ -143,22 +152,25 @@ def doc_compare():
 
     ensure_keys()
 
-    if request.method == "POST" or 'doc_id_1' in request.args:
+    if request.method == "POST" or 'text_abbrv' in request.args or 'doc_id_1' in request.args:
 
         doc_id_1 = doc_id_2 = ""
-        if 'doc_id_1' in request.form:
-            doc_id_1 = request.form.get("doc_id_1")
-            doc_id_2 = request.form.get("doc_id_2")
-        elif 'doc_id_1' in request.args:
+        if 'doc_id_1' in request.args:
             doc_id_1 = request.args.get("doc_id_1")
             doc_id_2 = request.args.get("doc_id_2")
+        else:
+            text_abbreviation_input_1 = request.form.get("text_abbreviation_input_1")
+            local_doc_id_input_1 = request.form.get("local_doc_id_input_1")
+            doc_id_1 = text_abbreviation_input_1 + '_' + local_doc_id_input_1
+            text_abbreviation_input_2 = request.form.get("text_abbreviation_input_2")
+            local_doc_id_input_2 = request.form.get("local_doc_id_input_2")
+            doc_id_2 = text_abbreviation_input_2 + '_' + local_doc_id_input_2
 
         valid_doc_ids = IR_tools.doc_ids
         sim_btn_left = sim_btn_right = ""
         if doc_id_1 == doc_id_2:
-            output_HTML = "<br><p>Those are the same, please enter two different doc ids to compare.</p>"
+            docCompareInner_HTML = "<br><p>Those are the same, please enter two different doc ids to compare.</p>"
         elif doc_id_1 in valid_doc_ids and doc_id_2 in valid_doc_ids:
-            # output_HTML = "<br><p>Good, those are valid.</p>"
 
             auto_reweight_topics_option = False
             if auto_reweight_topics_option:
@@ -185,7 +197,10 @@ def doc_compare():
                                 doc_id_2=doc_id_2,
                                 activate_similar_link_buttons_left=sim_btn_left,
                                 activate_similar_link_buttons_right=sim_btn_right,
-                                docCompareInner_HTML=docCompareInner_HTML
+                                docCompareInner_HTML=docCompareInner_HTML,
+                                abbrv2docs=IR_tools.abbrv2docs,
+                                text_abbrev2title=IR_tools.text_abbrev2title,
+                                section_labels=IR_tools.section_labels,
                                 )
 
     else: # request.method == "GET" or URL query malformed
@@ -194,7 +209,10 @@ def doc_compare():
                                 page_subtitle="docCompare",
                                 doc_id_1="",
                                 doc_id_2="",
-                                doc_explore_output=""
+                                doc_explore_output="",
+                                abbrv2docs=IR_tools.abbrv2docs,
+                                text_abbrev2title=IR_tools.text_abbrev2title,
+                                section_labels=IR_tools.section_labels,
                                 )
 
 @app.route('/textView', methods=["GET", "POST"])
@@ -234,7 +252,10 @@ def text_view():
                                 text_abbreviation=text_abbreviation_input,
                                 local_doc_id=local_doc_id_input,
                                 text_title=text_title,
-                                text_HTML=text_HTML
+                                text_HTML=text_HTML,
+                                abbrv2docs=IR_tools.abbrv2docs,
+                                text_abbrev2title=IR_tools.text_abbrev2title,
+                                section_labels=IR_tools.section_labels,
                                 )
 
     else: # request.method == "GET" or no URL params
@@ -244,7 +265,10 @@ def text_view():
                                 text_abbreviation="",
                                 local_doc_id="",
                                 text_title="",
-                                text_HTML=""
+                                text_HTML="",
+                                abbrv2docs=IR_tools.abbrv2docs,
+                                text_abbrev2title=IR_tools.text_abbrev2title,
+                                section_labels=IR_tools.section_labels,
                                 )
 
 @app.route('/BrucheionAlign')

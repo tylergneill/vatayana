@@ -83,23 +83,52 @@
 
 				<form id="doc_compare_search_bar" action="/docCompare" method="POST">
 
-				<div class="col-md-3">
-		            <input id="doc_id_1" name="doc_id_1" type="text" class="form-control" placeholder="Enter doc id 1" value="{{ doc_id_1 }}" size="30"/>
-		        </div>
+<!--				<div class="col-md-3">-->
+<!--		            <input id="doc_id_1" name="doc_id_1" type="text" class="form-control" placeholder="Enter doc id 1" value="{{ doc_id_1 }}" size="30"/>-->
+<!--		        </div>-->
 
-		        <div class="col-md-3">
-			    </div>
+<!--		        <div class="col-md-3">-->
+<!--			    </div>-->
 
-		    	<div class="col-md-3">
-		            <input id="doc_id_2" name="doc_id_2" type="text" class="form-control" placeholder="Enter doc id 2" value="{{ doc_id_2 }}" size="30"/>
-		        </div>
+<!--		    	<div class="col-md-3">-->
+<!--		            <input id="doc_id_2" name="doc_id_2" type="text" class="form-control" placeholder="Enter doc id 2" value="{{ doc_id_2 }}" size="30"/>-->
+<!--		        </div>-->
 
-		        <div class="col-md-1">
-			    </div>
+<!--		        <div class="col-md-1">-->
+<!--			    </div>-->
 
-		        <div class="col-md-2">
-		            <input id="doc_compare_search_submit_button" type="submit" class="btn btn-block btn-primary" value="Submit"/>
-			    </div>
+<!--		        <div class="col-md-2">-->
+<!--		            <input id="doc_compare_search_submit_button" type="submit" class="btn btn-block btn-primary" value="Submit"/>-->
+<!--			    </div>-->
+
+					<!-- input -->
+					<div class="row">
+						<div class="col-md-2">
+							<select name="text_abbreviation_input_1" id="text_abbreviation_input_1" class="form-control">
+								<option value="{{ text_abbreviation_1 }}" size="15" selected="selected">Select text</option>
+							</select>
+						</div>
+						<div class="col-md-3">
+							<select name="local_doc_id_input_1" id="local_doc_id_input_1" class="form-control">
+								<option value="{{ local_doc_id_1 }}" size="15" selected="selected">Select doc id</option>
+							</select>
+						</div>
+						<div class="col-md-1">
+						</div>
+						<div class="col-md-2">
+							<select name="text_abbreviation_input_2" id="text_abbreviation_input_2" class="form-control">
+								<option value="{{ text_abbreviation_2 }}" size="15" selected="selected">Select text</option>
+							</select>
+						</div>
+						<div class="col-md-3">
+							<select name="local_doc_id_input_2" id="local_doc_id_input_2" class="form-control">
+								<option value="{{ local_doc_id_2 }}" size="15" selected="selected">Select doc id</option>
+							</select>
+						</div>
+						<div class="col-md-1">
+							<input id="doc_compare_submit_button" type="submit" class="btn btn-block btn-primary" value="Submit"/>
+						</div>
+					</div>
 
 			    </form>
 
@@ -125,6 +154,38 @@
          	window.onload = function() {
                 conditionally_display_similar_doc_link_buttons();
             }
+
+			var abbrv2docs = {{ abbrv2docs|tojson|safe }};
+			var abbrev2title = {{ text_abbrev2title|tojson|safe }};
+			var section_labels = {{ section_labels|tojson|safe }};
+
+			var textAbbrevSel_1 = document.getElementById("text_abbreviation_input_1");
+			var docIdSel_1 = document.getElementById("local_doc_id_input_1");
+			textAbbrevSel_1.length = 1;
+			for (var x in abbrv2docs) {
+				textAbbrevSel_1.options[textAbbrevSel_1.options.length] = new Option(x + ' ' + abbrev2title[x], x);
+			}
+			textAbbrevSel_1.onchange = function() {
+				docIdSel_1.length = 1;
+				for (var y of abbrv2docs[this.value]) {
+				  docIdSel_1.options[docIdSel_1.options.length] = new Option(y + ' ' + section_labels[this.value + '_' + y], y);
+				}
+			}
+
+			var textAbbrevSel_2 = document.getElementById("text_abbreviation_input_2");
+			var docIdSel_2 = document.getElementById("local_doc_id_input_2");
+			textAbbrevSel_2.length = 1;
+			for (var x in abbrv2docs) {
+				textAbbrevSel_2.options[textAbbrevSel_2.options.length] = new Option(x + ' ' + abbrev2title[x], x);
+			}
+			textAbbrevSel_2.onchange = function() {
+				docIdSel_2.length = 1;
+				for (var y of abbrv2docs[this.value]) {
+				  docIdSel_2.options[docIdSel_2.options.length] = new Option(y + ' ' + section_labels[this.value + '_' + y], y);
+				}
+			}
+
+    </script>
         </script>
 
     </body>
