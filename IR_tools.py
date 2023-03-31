@@ -392,7 +392,7 @@ def rank_all_candidates_by_topic_similarity(query_id, topic_weights=topic_weight
         if doc_fulltext[doc_id] == '':
             topic_similiarity_score[doc_id] = 0
         else:
-            topic_similiarity_score[doc_id] = fastdist.cosine(query_vector, candidate_vector)
+            topic_similiarity_score[doc_id] = round(1-fastdist.cosine(query_vector, candidate_vector), 4)
 
     topic_similiarity_score.pop(query_id) # remove query itself
 
@@ -521,7 +521,7 @@ def rank_candidates_by_TF_IDF_similarity(query_id, candidate_ids):
                  # basically skip empties to avoid div_by_zero in cosine calculation (could also use doc_fulltext)
                 new_TF_IDF_comparison_scores[doc_id] = 0
             else:
-                new_TF_IDF_comparison_scores[doc_id] = fastdist.cosine(query_vector, candidate_vector)
+                new_TF_IDF_comparison_scores[doc_id] = round(1-fastdist.cosine(query_vector, candidate_vector), 4)
             TF_IDF_comparison_scores[doc_id] = new_TF_IDF_comparison_scores[doc_id]
 
     # merge new dict into old cumulative results dict and save both to memory and to disk
