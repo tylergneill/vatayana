@@ -574,7 +574,7 @@ def rank_candidates_by_tiny_TF_IDF_similarity(query_id, candidate_ids):
     TF_IDF_comparison_scores = {} # e.g. TF_IDF_comparison_scores[DOC_ID] = FLOAT
     for doc_id in candidate_ids:
         query_vector, candidate_vector = get_tiny_TF_IDF_vectors(query_id, doc_id)
-        TF_IDF_comparison_scores[doc_id] = fastdist.cosine(query_vector, candidate_vector)
+        TF_IDF_comparison_scores[doc_id] = round(1-fastdist.cosine(query_vector, candidate_vector), 4)
 
     sorted_results = dict(sorted(TF_IDF_comparison_scores.items(), key=lambda item: item[1], reverse=True))
     return sorted_results
