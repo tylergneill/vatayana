@@ -767,11 +767,22 @@ def calc_dur(start, end):
     return duration_secs
 
 
+def truncate_dict(dictionary: Dict, n: int) -> Dict:
+    """
+    Returns the first n items of the dict. For use with sorted dicts.
+    """
+    return {
+        k: v
+        for (k, v) in list(dictionary.items())[:n]
+    }
+
+N_TDIDF_SAVE_LIMIT=4000
+N_SW_SAVE_LIMIT=200
 def get_closest_docs_with_db(
         similarity_data: PymongoCollection,
         doc_id,
-        N_tfidf=4300,
-        N_sw=200,
+        N_tfidf=N_TDIDF_SAVE_LIMIT,
+        N_sw=N_SW_SAVE_LIMIT,
         priority_texts: List[str]=list(text_abbrev2fn.keys()),
     ) -> Dict[str, Dict[str, float]]:
     start = datetime.now().time()
@@ -818,9 +829,16 @@ def get_closest_docs_with_db(
             'sw_w': sw_w_similar_docs
         }
 
+    # truncate what gets saved to prevent writing too much to db
+    similar_docs_to_save = {
+        'topic': topic_similar_docs,
+        'tf_idf': truncate_dict(tf_idf_similar_docs, N_TDIDF_SAVE_LIMIT),
+        'sw_w': truncate_dict(sw_w_similar_docs, N_SW_SAVE_LIMIT),
+    }
+
     # save results
     query = {"query_id": doc_id}
-    update = {"$set": {"similar_docs": similar_docs}}
+    update = {"$set": {"similar_docs": similar_docs_to_save}}
     insertion_result = similarity_data.update_one(
         query,
         update,
@@ -994,9 +1012,7 @@ def get_closest_docs(   query_id,
             }
 
         # limit further computation to only top N_tf_idf of sorted candidates (minus query itself)
-        pruned_priority_topic_candidates = { k:v
-            for (k,v) in list(priority_topic_candidates.items())[:N_tf_idf]
-            }
+        pruned_priority_topic_candidates = truncate_dict(priority_topic_candidates, N_tf_idf)
 
         start2 = datetime.now().time()
 
@@ -1017,9 +1033,7 @@ def get_closest_docs(   query_id,
                 secondary_topic_candidates[k] = v
 
             # limit further computation to only top N_sw_w of sorted candidates
-        pruned_tf_idf_candidates = {k: v
-                                    for (k, v) in list(tf_idf_candidates.items())[:N_sw_w]
-                                    }
+        pruned_tf_idf_candidates = truncate_dict(tf_idf_candidates, N_sw_w)
 
         start3 = datetime.now().time()
 
@@ -1068,6 +1082,32 @@ def get_closest_docs(   query_id,
         k: (priority_topic_candidates[k], tf_idf_candidates[k], sw_w_alignment_candidates[k])
         for k in priority_ranked_results_ids
     }
+
+    if similarity_data != None:
+        # need to filter for priority texts at this point
+        # this is relatively computationally expensive!
+
+        start4 = datetime.now().time()
+
+        FILTRATION_LIMIT = 2000
+        # truncate results at reasonable limit to speed up following steps
+        # filter out non-priority texts
+        priority_ranked_results_complete = {
+            k: v for k, v in list(priority_ranked_results_complete.items())[:FILTRATION_LIMIT]
+            if parse_complex_doc_id(k)[0] in priority_texts
+        }
+
+        LOADING_LIMIT = 500
+        # further truncate what gets loaded on page
+        priority_ranked_results_complete = truncate_dict(priority_ranked_results_complete, LOADING_LIMIT)
+        # TODO: add "Load more" button that loads rest into table (repurpose "secondary" structure)
+        # additional_ranked_results_complete = {
+        #     k: v for k, v in list(priority_ranked_results_complete.items())[LOADING_LIMIT:]
+        # }
+
+        end4 = datetime.now().time()
+        filtering_time = calc_dur(start4, end4)
+        print("filtering_time:", filtering_time)
 
     priority_col_HTML, secondary_col_HTML = format_similarity_result_columns(
         query_id,
