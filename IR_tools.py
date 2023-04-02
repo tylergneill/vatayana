@@ -1347,10 +1347,10 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
 
     doc_1_topic_vector = np.array(thetas[doc_id_1]) * topic_weights
     doc_2_topic_vector = np.array(thetas[doc_id_2]) * topic_weights
-    topic_similiarity_score = fastdist.cosine(doc_1_topic_vector, doc_2_topic_vector)
+    topic_similiarity_score = 1-fastdist.cosine(doc_1_topic_vector, doc_2_topic_vector)
 
     doc_1_TF_IDF_vector, doc_2_TF_IDF_vector = get_tiny_TF_IDF_vectors(doc_id_1, doc_id_2)
-    TF_IDF_comparison_score = fastdist.cosine(doc_1_TF_IDF_vector, doc_2_TF_IDF_vector)
+    TF_IDF_comparison_score = 1-fastdist.cosine(doc_1_TF_IDF_vector, doc_2_TF_IDF_vector)
 
     results_HTML = HTML_templates['docCompareInner'].substitute(
                     doc_id_1=doc_id_1, doc_id_2=doc_id_2,
