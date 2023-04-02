@@ -792,7 +792,7 @@ def get_closest_docs_with_db(
             len(topic_similar_docs := record["similar_docs"]["topic"]) != len(doc_ids)
     ):
         # simply do from scratch
-        similar_docs = get_similar_docs(doc_id, N_tfidf, N_sw)
+        similar_docs = calculate_similar_docs(doc_id, N_tfidf, N_sw)
 
     else:
         # all topic comparisons done
@@ -831,9 +831,9 @@ def get_closest_docs_with_db(
 
     # truncate what gets saved to prevent writing too much to db
     similar_docs_to_save = {
-        'topic': topic_similar_docs,
-        'tf_idf': truncate_dict(tf_idf_similar_docs, N_TDIDF_SAVE_LIMIT),
-        'sw_w': truncate_dict(sw_w_similar_docs, N_SW_SAVE_LIMIT),
+        'topic': similar_docs['topic'],
+        'tf_idf': truncate_dict(similar_docs['tf_idf'], N_TDIDF_SAVE_LIMIT),
+        'sw_w': truncate_dict(similar_docs['sw_w'], N_SW_SAVE_LIMIT),
     }
 
     # save results
@@ -913,7 +913,7 @@ def get_closest_docs_with_db(
     return similar_docs
 
 
-def get_similar_docs(query_id, N_tfidf=4300, N_sw=200) -> Dict[str, Dict[str, float]]:
+def calculate_similar_docs(query_id, N_tfidf=4300, N_sw=200) -> Dict[str, Dict[str, float]]:
     topic_similar_docs = rank_all_candidates_by_topic_similarity(query_id)
     tf_idf_similar_docs = rank_candidates_by_tiny_TF_IDF_similarity(
         query_id,
