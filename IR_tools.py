@@ -786,52 +786,69 @@ N_TDIDF_SAVE_LIMIT=4000
 N_SW_SAVE_LIMIT=200
 def get_closest_docs_with_db(
         similarity_data: PymongoCollection,
-        doc_id,
+        query_id,
         N_tfidf=N_TDIDF_SAVE_LIMIT,
         N_sw=N_SW_SAVE_LIMIT,
         priority_texts: List[str]=list(text_abbrev2fn.keys()),
     ) -> Dict[str, Dict[str, float]]:
-    start = datetime.now().time()
+    # start = datetime.now().time()
     if not (
-            record := similarity_data.find_one({"query_id": doc_id})
+            record := similarity_data.find_one({"query_id": query_id})
     ) or not (
             len(topic_similar_docs := record["similar_docs"]["topic"]) != len(doc_ids)
     ):
         # simply do from scratch
-        similar_docs = calculate_similar_docs(doc_id, N_tfidf, N_sw)
+        similar_docs = calculate_similar_docs(query_id, N_tfidf, N_sw)
 
     else:
         # all topic comparisons done
 
-        if not (
-                len(tf_idf_similar_docs := record["similar_docs"]["tf_idf"]) >= N_tfidf
-        ):
-            breakpoint()
+        tf_idf_similar_docs = record["similar_docs"]["tf_idf"]
+        sw_w_similar_docs = record["similar_docs"]["sw_w"]
+        additional_tfidf = None
+        if not (len(tf_idf_similar_docs) >= N_tfidf):
             # not enough tf-idf comparisons already done, do more
             additional_tfidf = rank_candidates_by_tiny_TF_IDF_similarity(
-                doc_id,
+                query_id,
                 list(topic_similar_docs.keys())[len(tf_idf_similar_docs):N_tfidf]
             )
-            tf_idf_similar_docs = dict(tf_idf_similar_docs, **additional_tfidf)  # can't use .update()
-            tf_idf_similar_docs = sort_score_dict(tf_idf_similar_docs)
             print("len(additional_tfidf):", len(additional_tfidf))
+            tf_idf_similar_docs = dict(tf_idf_similar_docs, **additional_tfidf)  # can't use .update()
+            breakpoint()
+            tf_idf_similar_docs = sort_score_dict(tf_idf_similar_docs)
 
-        # enough tf-idf comparisons done
+            # cache for sw_w now unreliable since new possibilities just added
+            # existing scores still correct, just not necessarily correct rank
+            # immediately refresh sw_w cache by replacing with new scores as needed, keep at same size
+            existing_sw_cache_size = len(sw_w_similar_docs)
+            doc_ids_for_sw_comparison = []
+            for doc_id in truncate_dict(tf_idf_similar_docs, existing_sw_cache_size):
+                if doc_id not in sw_w_similar_docs:
+                    doc_ids_for_sw_comparison.append(doc_id)
+            additional_sw = rank_candidates_by_sw_w_alignment_score(
+                query_id,
+                doc_ids_for_sw_comparison,
+            )
+            print("len(additional_sw) due to additional_tfidf:", len(additional_sw))
+            sw_w_similar_docs = dict(sw_w_similar_docs, **additional_sw)  # can't use .update()
+            sw_w_similar_docs = sort_score_dict(sw_w_similar_docs)
+            sw_w_similar_docs = truncate_dict(sw_w_similar_docs, existing_sw_cache_size)
 
-        if not (
-                len(sw_w_similar_docs := record["similar_docs"]["sw_w"]) >= N_sw
-        ):
+            # enough tf-idf comparisons done now
+
+        if not (len(sw_w_similar_docs) >= N_sw):
             # not enough sw comparisons already done, do more
 
             additional_sw = rank_candidates_by_sw_w_alignment_score(
-                doc_id,
+                query_id,
                 list(tf_idf_similar_docs.keys())[len(sw_w_similar_docs):N_sw]
             )
+            print("len(additional_sw):", len(additional_sw))
             sw_w_similar_docs = dict(sw_w_similar_docs, **additional_sw)  # can't use .update()
             sw_w_similar_docs = sort_score_dict(sw_w_similar_docs)
-            print("len(additional_sw):", len(additional_sw))
 
-        # enough sw comparisons done
+        # enough sw comparisons done now
+
         similar_docs = {
             'topic': topic_similar_docs,
             'tf_idf': tf_idf_similar_docs,
@@ -840,13 +857,13 @@ def get_closest_docs_with_db(
 
     # truncate what gets saved to prevent writing too much to db
     similar_docs_to_save = {
-        'topic': similar_docs['topic'],
+        'topic': similar_docs['topic'],  # TODO: possibly drop? since biggest by far
         'tf_idf': truncate_dict(similar_docs['tf_idf'], N_TDIDF_SAVE_LIMIT),
         'sw_w': truncate_dict(similar_docs['sw_w'], N_SW_SAVE_LIMIT),
     }
 
     # save results
-    query = {"query_id": doc_id}
+    query = {"query_id": query_id}
     update = {"$set": {"similar_docs": similar_docs_to_save}}
     insertion_result = similarity_data.update_one(
         query,
@@ -854,9 +871,9 @@ def get_closest_docs_with_db(
         upsert=True
     )
 
-    end = datetime.now().time()
-    overall_time = calc_dur(start, end)
-    print("just getting stuff from db:", overall_time)
+    # end = datetime.now().time()
+    # overall_time = calc_dur(start, end)
+    # print("just getting stuff from db:", overall_time)
     # start = datetime.now().time()
     #
     # # perform filtering and result supplementation based on priority doc list
