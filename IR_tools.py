@@ -370,6 +370,12 @@ def get_top_topic_indices(doc_id, max_N=5, threshold=0.03):
     return qualifying_indices
 
 
+def sort_score_dict(dictionary: Dict) -> Dict:
+    """
+    Takes a dict of the form {'key_1': value_1, 'key_n': value_n} and returns sorted according to values.
+    """
+    return dict( sorted(dictionary.items(), key=lambda item: item[1], reverse=True) )
+
 def rank_all_candidates_by_topic_similarity(query_id, topic_weights=topic_weights_default):
 
     if doc_fulltext[query_id] == '': return {}
@@ -397,7 +403,7 @@ def rank_all_candidates_by_topic_similarity(query_id, topic_weights=topic_weight
     topic_similiarity_score.pop(query_id) # remove query itself
 
     # return sorted dict in descending order by value
-    sorted_results = dict( sorted(topic_similiarity_score.items(), key=lambda item: item[1], reverse=True) )
+    sorted_results = sort_score_dict(topic_similiarity_score)
     return sorted_results
 
 
@@ -535,7 +541,7 @@ def rank_candidates_by_TF_IDF_similarity(query_id, candidate_ids):
     # i.e., always save to disk, but only load from disk when switching works, to save some time but still reliably save
 
     # sort and return ranked results
-    sorted_results = sorted(TF_IDF_comparison_scores.items(), key=lambda item: item[1], reverse=True)
+    sorted_results = sort_score_dict(TF_IDF_comparison_scores)
     candidate_ranking_results_dict = { res[0]: res[1] for res in sorted_results }
     return candidate_ranking_results_dict
 
@@ -576,7 +582,7 @@ def rank_candidates_by_tiny_TF_IDF_similarity(query_id, candidate_ids):
         query_vector, candidate_vector = get_tiny_TF_IDF_vectors(query_id, doc_id)
         TF_IDF_comparison_scores[doc_id] = round(1-fastdist.cosine(query_vector, candidate_vector), 4)
 
-    sorted_results = dict(sorted(TF_IDF_comparison_scores.items(), key=lambda item: item[1], reverse=True))
+    sorted_results = sort_score_dict(TF_IDF_comparison_scores)
     return sorted_results
 
 
@@ -757,7 +763,7 @@ def rank_candidates_by_sw_w_alignment_score(query_id, candidate_ids):
             _, _, _, _, score = sw_align(subseq1, subseq2, words=False)
             sw_alignment_scores[doc_id] = score / 10
 
-    sorted_results = dict(sorted(sw_alignment_scores.items(), key=lambda item: item[1], reverse=True))
+    sorted_results = sort_score_dict(sw_alignment_scores)
 
     return sorted_results
 
@@ -800,12 +806,14 @@ def get_closest_docs_with_db(
         if not (
                 len(tf_idf_similar_docs := record["similar_docs"]["tf_idf"]) >= N_tfidf
         ):
+            breakpoint()
             # not enough tf-idf comparisons already done, do more
             additional_tfidf = rank_candidates_by_tiny_TF_IDF_similarity(
                 doc_id,
                 list(topic_similar_docs.keys())[len(tf_idf_similar_docs):N_tfidf]
             )
             tf_idf_similar_docs = dict(tf_idf_similar_docs, **additional_tfidf)  # can't use .update()
+            tf_idf_similar_docs = sort_score_dict(tf_idf_similar_docs)
             print("len(additional_tfidf):", len(additional_tfidf))
 
         # enough tf-idf comparisons done
@@ -820,6 +828,7 @@ def get_closest_docs_with_db(
                 list(tf_idf_similar_docs.keys())[len(sw_w_similar_docs):N_sw]
             )
             sw_w_similar_docs = dict(sw_w_similar_docs, **additional_sw)  # can't use .update()
+            sw_w_similar_docs = sort_score_dict(sw_w_similar_docs)
             print("len(additional_sw):", len(additional_sw))
 
         # enough sw comparisons done
