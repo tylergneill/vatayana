@@ -4,13 +4,26 @@ import re
 
 from datetime import datetime, date
 from flask import Flask, session, redirect, render_template, request, url_for, send_from_directory #, send_file
-
+from flask_pymongo import PyMongo
 
 import IR_tools
 
 app = Flask(__name__)
 app.config["DEBUG"] = True
 app.config["SECRET_KEY"] = "safaksdfakjdshfkajshfka" # for session, no actual need for secrecy
+MONGO_CRED = open('mongo_cred.txt').read().strip()
+# app.config["MONGO_URI"] = "mongodb://localhost:27017/my_db"
+app.config["MONGO_URI"] = f"mongodb+srv://tyler:{MONGO_CRED}@sanskrit.doxamlm.mongodb.net/vatayana?retryWrites=true&w=majority"
+
+
+# setup Mongo DB
+mongo_db_client = PyMongo(app)
+# similarity_data = mongo_db_client.db.my_collection  # local
+similarity_data = mongo_db_client.db.similarity  # remote
+print("num of records in collection:", similarity_data.count_documents({}))
+
+# result = IR_tools.get_closest_docs_with_db(similarity_data, IR_tools.doc_ids[629], priority_texts=['VS'])
+
 
 # for serving static files from assets folder
 @app.route('/assets/<path:name>')
@@ -122,7 +135,8 @@ def doc_explore():
                 priority_texts=session["priority_texts"],
                 # topic_toggle_value=session["topic_toggle_value"]
                 N_tf_idf=session["N_tf_idf_"+session["search_depth_default"]],
-                N_sw_w=session["N_sw_w_"+session["search_depth_default"]]
+                N_sw_w=session["N_sw_w_"+session["search_depth_default"]],
+                similarity_data=similarity_data,
                 )
         else:
             docExploreInner_HTML = "<br><p>Please enter valid doc ids like " + str(IR_tools.ex_doc_ids)[1:-1] + " etc.</p><p>See <a href='assets/doc_id_list.txt' target='_blank'>doc id list</a> and <a href='assets/corpus_texts.txt' target='_blank'>corpus text list</a> for hints to get started.</p>"
