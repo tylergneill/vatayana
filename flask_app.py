@@ -119,31 +119,100 @@ def doc_explore():
             local_doc_id_input = request.form.get("local_doc_id_input")
             doc_id = text_abbreviation_input + '_' + local_doc_id_input
 
+        doc_id_2 = ""
+        if 'doc_id_2' in request.args:
+            doc_id_2 = request.args.get("doc_id_2")
+        else:
+            text_abbreviation_input = request.form.get("text_abbreviation_input")
+            local_doc_id_input_2 = request.form.get("local_doc_id_input_2")
+            if local_doc_id_input_2 != "":
+                doc_id_2 = text_abbreviation_input + '_' + local_doc_id_input_2
+
         valid_doc_ids = IR_tools.doc_ids
-        if doc_id in valid_doc_ids:
-
-            auto_reweight_topics_option = False
-            if auto_reweight_topics_option:
-                topic_weights = IR_tools.auto_reweight_topics(doc_id)
-                session['topic_weights'] = topic_weights
-                session.modified = True
-
-            docExploreInner_HTML = IR_tools.get_closest_docs(
-                doc_id,
-                topic_weights=session['topic_weights'],
-                topic_labels=session['topic_labels'],
-                priority_texts=session["priority_texts"],
-                # topic_toggle_value=session["topic_toggle_value"]
-                N_tf_idf=session["N_tf_idf_"+session["search_depth_default"]],
-                N_sw_w=session["N_sw_w_"+session["search_depth_default"]],
-                similarity_data=similarity_data,
+        if (
+                doc_id in valid_doc_ids
+        ) and (
+                doc_id_2 == ""
+        ) or (
+                (
+                    doc_id_2 in valid_doc_ids
+                ) and (
+                    IR_tools.doc_ids.index(doc_id) < IR_tools.doc_ids.index(doc_id_2)
                 )
+        ):
+
+            # auto_reweight_topics_option = False
+            # if auto_reweight_topics_option:
+            #     topic_weights = IR_tools.auto_reweight_topics(doc_id)
+            #     session['topic_weights'] = topic_weights
+            #     session.modified = True
+
+            if doc_id_2 != "":
+                # batch mode
+
+                # begin with head of table
+                docExploreInner_HTML = """
+                <h1 align="center">Search Result for {}</h1>""".format(
+                    '{} – {}'.format(doc_id, doc_id_2)
+                )
+                docExploreInner_HTML += """
+                <table border="1px solid #dddddd;" width="100%">
+                  <thead>
+                    <tr align="center">
+                      <th width="10%">{}</th>
+                      <th width="10%">{}</th>
+                      <th width="5%">{}</th>
+                      <th width="5%">{}</th>
+                      <th width="5%">{}</th>
+                      <th width="25%">{}</th>
+                      <th width="5%">{}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                """.format('doc_id_1',
+                           'doc_id_2',
+                           'topic',
+                           'tf-idf',
+                           'sw',
+                           'text of best match (doc 1)',
+                           'dcCp url'
+                           )
+
+                # loop through all queries
+                for i in range(IR_tools.doc_ids.index(doc_id), IR_tools.doc_ids.index(doc_id_2)+1):
+                    # carry out query, get output in form of next batch of HTML rows
+                    docExploreInner_HTML += IR_tools.get_closest_docs(
+                        query_id=IR_tools.doc_ids[i],
+                        topic_weights=session['topic_weights'],
+                        topic_labels=session['topic_labels'],
+                        priority_texts=session["priority_texts"],
+                        # topic_toggle_value=session["topic_toggle_value"]
+                        N_tf_idf=session["N_tf_idf_" + session["search_depth_default"]],
+                        N_sw_w=session["N_sw_w_" + session["search_depth_default"]],
+                        similarity_data=similarity_data,
+                        batch_mode=True,
+                    )
+
+            else:
+                # single-query mode
+                docExploreInner_HTML = IR_tools.get_closest_docs(
+                    query_id=doc_id,
+                    topic_weights=session['topic_weights'],
+                    topic_labels=session['topic_labels'],
+                    priority_texts=session["priority_texts"],
+                    # topic_toggle_value=session["topic_toggle_value"]
+                    N_tf_idf=session["N_tf_idf_"+session["search_depth_default"]],
+                    N_sw_w=session["N_sw_w_"+session["search_depth_default"]],
+                    similarity_data=similarity_data,
+                    )
         else:
             docExploreInner_HTML = "<br><p>Please enter valid doc ids like " + str(IR_tools.ex_doc_ids)[1:-1] + " etc.</p><p>See <a href='assets/doc_id_list.txt' target='_blank'>doc id list</a> and <a href='assets/corpus_texts.txt' target='_blank'>corpus text list</a> for hints to get started.</p>"
 
         return render_template(    "docExplore.html",
                                 page_subtitle="docExplore",
-                                doc_id=doc_id,
+                                text_abbreviation=text_abbreviation_input,
+                                local_doc_id=local_doc_id_input,
+                                local_doc_id_2=local_doc_id_input_2,
                                 docExploreInner_HTML=docExploreInner_HTML,
                                 abbrv2docs=IR_tools.abbrv2docs,
                                 text_abbrev2title=IR_tools.text_abbrev2title,

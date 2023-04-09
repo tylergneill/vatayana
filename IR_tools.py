@@ -814,7 +814,6 @@ def get_closest_docs_with_db(
             )
             print("len(additional_tfidf):", len(additional_tfidf))
             tf_idf_similar_docs = dict(tf_idf_similar_docs, **additional_tfidf)  # can't use .update()
-            breakpoint()
             tf_idf_similar_docs = sort_score_dict(tf_idf_similar_docs)
 
             # cache for sw_w now unreliable since new possibilities just added
@@ -966,6 +965,8 @@ def get_closest_docs(   query_id,
                         N_sw_w=search_N_defaults["N_sw_w_shallow"],
                         results_as_links_only=False,
                         similarity_data: Optional[PymongoCollection]=None,
+                        batch_mode: Optional[bool]=False,
+                        sw_w_min_threshold: Optional[int]=50,
                         ):
 
     # import pdb; pdb.set_trace()
@@ -1135,32 +1136,66 @@ def get_closest_docs(   query_id,
         filtering_time = calc_dur(start4, end4)
         print("filtering_time:", filtering_time)
 
-    priority_col_HTML, secondary_col_HTML = format_similarity_result_columns(
-        query_id,
-        priority_ranked_results_complete,
-        # secondary_topic_candidates
-        {}
-    )
-    if priority_col_HTML == "": priority_col_HTML = "<p>(none)</p>"
-    # if secondary_col_HTML == "": secondary_col_HTML = "<p>(none)</p>"
-    secondary_col_HTML = "<p>(none)</p>" # just neutralize for now until i can make faster
-    results_HTML = HTML_templates['docExploreInner'].substitute(
-                        query_id = query_id,
-                        query_section = section_labels[query_id],
-                        prev_doc_id = doc_links[query_id]['prev'],
-                        next_doc_id = doc_links[query_id]['next'],
-                        query_original_fulltext = doc_original_fulltext[query_id],
-                        query_segmented_fulltext = doc_fulltext[query_id],
-                        top_topics_summary=format_top_topic_summary(
-                            query_id,
-                            get_top_topic_indices(query_id, max_N=5, threshold=0.03),
-                            topic_labels=topic_labels
-                            ),
-                        priority_col_content = priority_col_HTML,
-                        secondary_col_content = secondary_col_HTML,
-                        priority_texts=str(priority_texts),
-                        non_priority_texts=str(non_priority_texts)
-                        )
+    if batch_mode:
+        # pick out absolute best results
+        best_results = {}
+        for doc_id_2, result in priority_ranked_results_complete.items():
+            if float(result[2]) >= sw_w_min_threshold:
+                best_results[doc_id_2] = result
+            else:
+                break
+
+        # return query's best results as simple HTML rows
+        results_HTML = ""
+        for doc_id_2, result in best_results.items():
+            results_HTML += """
+            <tr align="center">
+              <td>{}</td>
+              <td>{}</td>
+              <td>{}</td>
+              <td>{}</td>
+              <td>{}</td>
+            </tr>
+            """.format(
+                    query_id,
+                    doc_id_2,
+                    result[0],
+                    result[1],
+                    result[2],
+                    # subseq_in_text_1,
+                    # link,
+                    # <td align="left">{}</td>
+                    # <td>{}</td>
+            )
+
+    else:
+
+        priority_col_HTML, secondary_col_HTML = format_similarity_result_columns(
+            query_id,
+            priority_ranked_results_complete,
+            # secondary_topic_candidates
+            {}
+        )
+        if priority_col_HTML == "": priority_col_HTML = "<p>(none)</p>"
+        # if secondary_col_HTML == "": secondary_col_HTML = "<p>(none)</p>"
+        secondary_col_HTML = "<p>(none)</p>" # just neutralize for now until i can make faster
+        results_HTML = HTML_templates['docExploreInner'].substitute(
+                            query_id = query_id,
+                            query_section = section_labels[query_id],
+                            prev_doc_id = doc_links[query_id]['prev'],
+                            next_doc_id = doc_links[query_id]['next'],
+                            query_original_fulltext = doc_original_fulltext[query_id],
+                            query_segmented_fulltext = doc_fulltext[query_id],
+                            top_topics_summary=format_top_topic_summary(
+                                query_id,
+                                get_top_topic_indices(query_id, max_N=5, threshold=0.03),
+                                topic_labels=topic_labels
+                                ),
+                            priority_col_content = priority_col_HTML,
+                            secondary_col_content = secondary_col_HTML,
+                            priority_texts=str(priority_texts),
+                            non_priority_texts=str(non_priority_texts)
+                            )
 
     # import pdb; pdb.set_trace()
 
