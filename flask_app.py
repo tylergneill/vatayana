@@ -179,19 +179,46 @@ def doc_explore():
                            )
 
                 # loop through all queries
+                # (possibly want to limit number of docs to e.g. 100 or 500)
                 for i in range(IR_tools.doc_ids.index(doc_id), IR_tools.doc_ids.index(doc_id_2)+1):
                     # carry out query, get output in form of next batch of HTML rows
-                    docExploreInner_HTML += IR_tools.get_closest_docs(
-                        query_id=IR_tools.doc_ids[i],
-                        topic_weights=session['topic_weights'],
-                        topic_labels=session['topic_labels'],
+
+                    # what is actually necessary?
+                    # grab record (will always be available)
+                    #   - no, grab all at once
+                    #   - and maybe get scores at same time?
+                    #   - do NOT want 0.33 sec for EACH of grab, score, score
+                    # look through top few sw_w results until threshold exceeded
+                    #   - also filter at same time
+                    # construct result dict based on those doc_ids
+                    #   - topic not saved so calculate
+                    #   - also do text previews?
+                    # format result dict as HTML rows and return
+                    docExploreInner_HTML += IR_tools.get_closest_docs_with_db_only_batch_only(
+                        similarity_data,
+                        query_id=doc_id,
+                        sw_score_threshold=50,
                         priority_texts=session["priority_texts"],
-                        # topic_toggle_value=session["topic_toggle_value"]
-                        N_tf_idf=session["N_tf_idf_" + session["search_depth_default"]],
-                        N_sw_w=session["N_sw_w_" + session["search_depth_default"]],
-                        similarity_data=similarity_data,
-                        batch_mode=True,
                     )
+
+                # close off table
+                docExploreInner_HTML += """
+                  </tbody>
+                </table>
+                """
+
+
+                    # docExploreInner_HTML += IR_tools.get_closest_docs(
+                    #     query_id=IR_tools.doc_ids[i],
+                    #     topic_weights=session['topic_weights'],
+                    #     topic_labels=session['topic_labels'],
+                    #     priority_texts=session["priority_texts"],
+                    #     # topic_toggle_value=session["topic_toggle_value"]
+                    #     N_tf_idf=session["N_tf_idf_" + session["search_depth_default"]],
+                    #     N_sw_w=session["N_sw_w_" + session["search_depth_default"]],
+                    #     similarity_data=similarity_data,
+                    #     batch_mode=True,
+                    # )
 
             else:
                 # single-query mode

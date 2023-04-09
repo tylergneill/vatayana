@@ -1201,6 +1201,66 @@ def get_closest_docs(   query_id,
 
     return results_HTML
 
+def calculate_topic_similarity_score(doc_id_1, doc_id_2):
+    doc_1_topic_vector = np.array(thetas[doc_id_1])
+    doc_2_topic_vector = np.array(thetas[doc_id_2])
+    return 1-fastdist.cosine(doc_1_topic_vector, doc_2_topic_vector)
+
+
+def format_batch_result_rows(query_id, results: Dict[str, Dict[str, str]]):
+    HTML_rows = ""
+    for doc_id_2, result in results.items():
+        HTML_rows += """
+            <tr align="center">
+              <td>{}</td>
+              <td>{}</td>
+              <td>{}</td>
+              <td>{}</td>
+              <td>{}</td>
+            </tr>
+        """.format(
+            query_id,
+            doc_id_2,
+            result['topic'],
+            result['tf_idf'],
+            result['sw_w'],
+        )
+    return HTML_rows
+
+
+def get_closest_docs_with_db_only_batch_only(
+    similarity_data,
+    query_id,
+    sw_score_threshold,
+    priority_texts,
+):
+    start = datetime.now().time()
+    record = similarity_data.find_one({"query_id": query_id})
+    print('find one:', calc_dur(start, datetime.now().time()))
+    tf_idf_similar_docs = record["similar_docs"]["tf_idf"]
+    print('tf-idf:', calc_dur(start, datetime.now().time()))
+    sw_w_similar_docs = record["similar_docs"]["sw_w"]
+    print('sw:', calc_dur(start, datetime.now().time()))
+
+    best_results = {}
+    for doc_id_2, sw_score in sw_w_similar_docs.items():
+        if (
+                float(sw_score) >= sw_score_threshold
+        ) and (
+                parse_complex_doc_id(doc_id_2)[0] in priority_texts
+        ):
+            best_results[doc_id_2] = {
+                'sw_w': sw_score,
+                'tf_idf': tf_idf_similar_docs[doc_id_2],
+                'topic': calculate_topic_similarity_score(query_id, doc_id_2),
+            }
+        else:
+            break
+
+    print('get best:', calc_dur(start, datetime.now().time()))
+
+    return format_batch_result_rows(query_id, best_results)
+
 
 def score_to_color(score):
     alpha = score # both [0,1]
