@@ -150,75 +150,50 @@ def doc_explore():
             if doc_id_2 != "":
                 # batch mode
 
-                # begin with head of table
-                docExploreInner_HTML = """
-                <h1 align="center">Search Result for {}</h1>""".format(
-                    '{} – {}'.format(doc_id, doc_id_2)
-                )
-                docExploreInner_HTML += """
-                <table border="1px solid #dddddd;" width="100%">
-                  <thead>
-                    <tr align="center">
-                      <th width="10%">{}</th>
-                      <th width="10%">{}</th>
-                      <th width="5%">{}</th>
-                      <th width="5%">{}</th>
-                      <th width="5%">{}</th>
-                      <th width="25%">{}</th>
-                      <th width="5%">{}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                """.format('doc_id_1',
-                           'doc_id_2',
-                           'topic',
-                           'tf-idf',
-                           'sw',
-                           'text of best match (doc 1)',
-                           'dcCp url'
-                           )
+                # first attempt: just piggy-back off of get_closest_docs()
+                # downside: one doc at a time
+
+                # docExploreInner_HTML += IR_tools.get_closest_docs(
+                #     query_id=IR_tools.doc_ids[i],
+                #     topic_weights=session['topic_weights'],
+                #     topic_labels=session['topic_labels'],
+                #     priority_texts=session["priority_texts"],
+                #     # topic_toggle_value=session["topic_toggle_value"]
+                #     N_tf_idf=session["N_tf_idf_" + session["search_depth_default"]],
+                #     N_sw_w=session["N_sw_w_" + session["search_depth_default"]],
+                #     similarity_data=similarity_data,
+                #     batch_mode=True,
+                # )
+
+                # second attempt: make special function to focus on batch mode
+                # but still one-at-a-time
 
                 # loop through all queries
                 # (possibly want to limit number of docs to e.g. 100 or 500)
-                for i in range(IR_tools.doc_ids.index(doc_id), IR_tools.doc_ids.index(doc_id_2)+1):
-                    # carry out query, get output in form of next batch of HTML rows
+                # for i in range(IR_tools.doc_ids.index(doc_id), IR_tools.doc_ids.index(doc_id_2)+1):
+                #     # carry out query, get output in form of next batch of HTML rows
+                #     docExploreInner_HTML += IR_tools.get_closest_docs_with_db_only_batch_only(
+                #         similarity_data,
+                #         query_id=doc_id,
+                #         sw_score_threshold=50,
+                #         priority_texts=session["priority_texts"],
+                #     )
 
-                    # what is actually necessary?
-                    # grab record (will always be available)
-                    #   - no, grab all at once
-                    #   - and maybe get scores at same time?
-                    #   - do NOT want 0.33 sec for EACH of grab, score, score
-                    # look through top few sw_w results until threshold exceeded
-                    #   - also filter at same time
-                    # construct result dict based on those doc_ids
-                    #   - topic not saved so calculate
-                    #   - also do text previews?
-                    # format result dict as HTML rows and return
-                    docExploreInner_HTML += IR_tools.get_closest_docs_with_db_only_batch_only(
-                        similarity_data,
-                        query_id=doc_id,
-                        sw_score_threshold=50,
-                        priority_texts=session["priority_texts"],
-                    )
+                # what is actually necessary?
+                # grab record (will always be available)
+                #   - do NOT want 0.33 sec for EACH of grab, score, score
+                #   - so instead grab ALL at once
+                #     - for now project to focus on more important scores
+                #     - will eventually change db schema to exclude topic data
+                # look through top few sw_w results until threshold exceeded
+                #   - also filter texts at same time
+                # construct result dict based on those doc_ids
+                #   - topic not saved so calculate
+                #   - also do text previews here? maybe those above certain threshold are saved?
+                # format result dict as HTML rows and return
 
-                # close off table
-                docExploreInner_HTML += """
-                  </tbody>
-                </table>
-                """
-
-
-                    # docExploreInner_HTML += IR_tools.get_closest_docs(
-                    #     query_id=IR_tools.doc_ids[i],
-                    #     topic_weights=session['topic_weights'],
-                    #     topic_labels=session['topic_labels'],
-                    #     priority_texts=session["priority_texts"],
-                    #     # topic_toggle_value=session["topic_toggle_value"]
-                    #     N_tf_idf=session["N_tf_idf_" + session["search_depth_default"]],
-                    #     N_sw_w=session["N_sw_w_" + session["search_depth_default"]],
-                    #     similarity_data=similarity_data,
-                    #     batch_mode=True,
-                    # )
+                best_results = IR_tools.batch_mode(similarity_data, doc_id, doc_id_2)
+                docExploreInner_HTML = IR_tools.format_batch_results(best_results, doc_id, doc_id_2)
 
             else:
                 # single-query mode

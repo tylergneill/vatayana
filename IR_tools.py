@@ -3,7 +3,7 @@ import json
 import pickle
 import re
 import math
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 
 import numpy as np
 
@@ -1201,15 +1201,104 @@ def get_closest_docs(   query_id,
 
     return results_HTML
 
+
+def batch_mode(similarity_data, query_doc_id_start, query_doc_id_end) -> List[Dict[str, Union[str, float]]]:
+    query_doc_id_range = range(doc_ids.index(query_doc_id_start), doc_ids.index(query_doc_id_end) + 1)
+    query_doc_ids = [doc_ids[i] for i in query_doc_id_range]
+
+    start0 = datetime.now().time()
+    query = {"query_id": {"$in": query_doc_ids}}
+    projection = {"_id": 0, "query_id": 1, "similar_docs.tf_idf": 1, "similar_docs.sw_w": 1}
+    all_records = similarity_data.find(query, projection)
+    print("fetch records:", calc_dur(start0, datetime.now().time()))
+
+    start1 = datetime.now().time()
+    records_dict = {
+        record['query_id']: {
+            'tf_idf': record['similar_docs']['tf_idf'],
+            'sw_w': record['similar_docs']['sw_w'],
+        } for record in list(all_records)
+    }
+    print("dict records:", calc_dur(start1, datetime.now().time()))
+
+    start2 = datetime.now().time()
+    ks = sorted(list(records_dict.keys()))
+    sorted_records_dict = {k: records_dict[k] for k in ks}
+    print("sort records:", calc_dur(start2, datetime.now().time()))
+
+    sw_w_min_threshold = 30
+    start3 = datetime.now().time()
+    best_results: List[Dict[str, Union[str, float]]] = []
+    for doc_id, similar_docs in sorted_records_dict.items():
+        for doc_id_2, sw_score in similar_docs['sw_w'].items():
+            if sw_score >= sw_w_min_threshold:
+                best_results.append({
+                    'query_id': doc_id,
+                    'doc_id_2': doc_id_2,
+                    'sw_w': sw_score,
+                    'tf_idf': similar_docs['tf_idf'][doc_id_2],
+                    'topic': calculate_topic_similarity_score(doc_id, doc_id_2),
+                })
+            else:
+                break
+    print("organize best:", calc_dur(start3, datetime.now().time()))
+
+    print("overall:", calc_dur(start0, datetime.now().time()))
+
+    return best_results
+
+
+def format_batch_results(results, doc_id_1, doc_id_2):
+    # begin with head of table
+    docExploreInner_HTML = """
+                    <h1 align="center">Similar Documents for {}</h1>""".format(
+        '{} – {}'.format(doc_id_1, doc_id_2)
+    )
+    docExploreInner_HTML += """
+        <table border="1px solid #dddddd;" width="100%">
+          <thead>
+            <tr align="center">
+              <th width="10%">{}</th>
+              <th width="10%">{}</th>
+              <th width="5%">{}</th>
+              <th width="5%">{}</th>
+              <th width="5%">{}</th>
+              <th width="25%">{}</th>
+              <th width="5%">{}</th>
+            </tr>
+          </thead>
+          <tbody>
+    """.format('doc_id_1',
+               'doc_id_2',
+               'topic',
+               'tf-idf',
+               'sw',
+               'text of best match (doc 1)',
+               'dcCp url'
+               )
+
+    # format rows
+    HTML_rows = format_batch_result_rows(results)
+    docExploreInner_HTML += HTML_rows
+
+    # close off table
+    docExploreInner_HTML += """
+          </tbody>
+        </table>
+    """
+
+    return docExploreInner_HTML
+
+
 def calculate_topic_similarity_score(doc_id_1, doc_id_2):
     doc_1_topic_vector = np.array(thetas[doc_id_1])
     doc_2_topic_vector = np.array(thetas[doc_id_2])
     return 1-fastdist.cosine(doc_1_topic_vector, doc_2_topic_vector)
 
 
-def format_batch_result_rows(query_id, results: Dict[str, Dict[str, str]]):
+def format_batch_result_rows(results: List[Dict[str, Union[str, float]]]):
     HTML_rows = ""
-    for doc_id_2, result in results.items():
+    for result in results:
         HTML_rows += """
             <tr align="center">
               <td>{}</td>
@@ -1219,8 +1308,8 @@ def format_batch_result_rows(query_id, results: Dict[str, Dict[str, str]]):
               <td>{}</td>
             </tr>
         """.format(
-            query_id,
-            doc_id_2,
+            result['query_id'],
+            result['doc_id_2'],
             result['topic'],
             result['tf_idf'],
             result['sw_w'],
