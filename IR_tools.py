@@ -682,9 +682,9 @@ def format_textView_link(doc_id):
     work_abbrv, local_doc_id = parse_complex_doc_id(doc_id)
     return "<a href='textView?text_abbrv=%s#%s' target='textView%s'>txtVw</a>" % (work_abbrv, local_doc_id, work_abbrv)
 
-def format_docCompare_link(doc_id_1, doc_id_2):
-    # each one looks like fixed string "dcCp"
-    return "<a href='docCompare?doc_id_1=%s&doc_id_2=%s' target='docCompare'>dcCp</a>" % (doc_id_1, doc_id_2)
+def format_docCompare_link(doc_id_1, doc_id_2, display_string="dcCp"):
+    # each one looks like fixed string "dcCp" unless otherwise specified
+    return "<a href='docCompare?doc_id_1=%s&doc_id_2=%s' target='docCompare'>%s</a>" % (doc_id_1, doc_id_2, display_string)
 
 def format_similarity_result_columns(query_id, priority_results_list_content, secondary_results_list_content):
 
@@ -1252,9 +1252,10 @@ def batch_mode(similarity_data, query_doc_id_start, query_doc_id_end) -> List[Di
 def format_batch_results(results, doc_id_1, doc_id_2):
     # begin with head of table
     table_header_HTML = """
-                    <h1 align="center">Similar Documents for {}</h1>""".format(
+                    <h1 align="center">Similarity Search Results for {}</h1>""".format(
         '{} – {}'.format(doc_id_1, doc_id_2)
     )
+    table_header_HTML += "<br>"
     table_header_HTML += """
         <table id="batch_result_table" class="display">
           <thead>
@@ -1266,18 +1267,16 @@ def format_batch_results(results, doc_id_1, doc_id_2):
               <th>{}</th>
               <th>{}</th>
               <th>{}</th>
-              <th>{}</th>
             </tr>
           </thead>
           <tbody>
     """.format('rank',
-               'doc_id_1',
-               'doc_id_2',
+               'query doc id',
+               'comparison doc id',
                'topic',
-               'tf-idf',
-               'sw',
-               'text of best match (doc 1)',
-               'dcCp url'
+               'vocab',
+               'phrase',
+               'phrase match (as in query doc)',
                )
 
     # format rows
@@ -1315,8 +1314,7 @@ def format_batch_result_rows(results: List[Dict[str, Union[str, float]]]):
               <td>{:.1%}</td>
               <td>{:.1%}</td>
               <td>{}</td>
-              <td></td>
-              <td></td>
+              <td>{}</td>
             </tr>
         """.format(
             i+1,
@@ -1325,6 +1323,7 @@ def format_batch_result_rows(results: List[Dict[str, Union[str, float]]]):
             result['topic'],
             result['tf_idf'],
             result['sw_w'],
+            format_docCompare_link(result['query_id'], result['doc_id_2'], "test"),
         )
     return HTML_rows
 
