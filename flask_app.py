@@ -109,8 +109,13 @@ def doc_explore():
 
     ensure_keys()
 
-    if request.method == "POST" or 'text_abbrv' in request.args or 'doc_id' in request.args:
+    if request.method == "POST" or 'doc_id' in request.args:
+        # NB: not yet supported is sending 'text_abbrv' and 'local_doc_id' via GET
 
+        text_abbreviation_input = ""
+        local_doc_id_input = ""
+        local_doc_id_input_2 = ""
+        doc_id_2 = ""
 
         if 'doc_id' in request.args:
             doc_id = request.args.get("doc_id")
@@ -119,13 +124,13 @@ def doc_explore():
             local_doc_id_input = request.form.get("local_doc_id_input")
             doc_id = text_abbreviation_input + '_' + local_doc_id_input
 
-        doc_id_2 = ""
         if 'doc_id_2' in request.args:
             doc_id_2 = request.args.get("doc_id_2")
         else:
-            text_abbreviation_input = request.form.get("text_abbreviation_input")
             local_doc_id_input_2 = request.form.get("local_doc_id_input_2")
-            if local_doc_id_input_2 != "":
+            if local_doc_id_input_2 is None:
+                local_doc_id_input_2 = ""
+            else:
                 doc_id_2 = text_abbreviation_input + '_' + local_doc_id_input_2
 
         valid_doc_ids = IR_tools.doc_ids
@@ -221,7 +226,7 @@ def doc_explore():
                                 section_labels=IR_tools.section_labels,
                                 )
 
-    else: # request.method == "GET" or URL query malformed
+    else: # request.method == "GET" and no arguments or URL query malformed
 
         return render_template(    "docExplore.html",
                                 page_subtitle="docExplore",
@@ -237,9 +242,8 @@ def doc_compare():
 
     ensure_keys()
 
-    if request.method == "POST" or 'text_abbrv' in request.args or 'doc_id_1' in request.args:
+    if request.method == "POST" or 'doc_id_1' in request.args:
 
-        doc_id_1 = doc_id_2 = ""
         if 'doc_id_1' in request.args:
             doc_id_1 = request.args.get("doc_id_1")
             doc_id_2 = request.args.get("doc_id_2")
