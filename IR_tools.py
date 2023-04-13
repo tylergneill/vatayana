@@ -47,6 +47,7 @@ def load_dict_from_json(relative_path_fn):
 HTML_templates = {}
 template_names = [
     'docExploreInner',
+    'docExploreBatchInner',
     'docCompareInner',
     'topicAdjustInner',
     'textPrioritizeInner',
@@ -1250,25 +1251,27 @@ def batch_mode(similarity_data, query_doc_id_start, query_doc_id_end) -> List[Di
 
 def format_batch_results(results, doc_id_1, doc_id_2):
     # begin with head of table
-    docExploreInner_HTML = """
+    table_header_HTML = """
                     <h1 align="center">Similar Documents for {}</h1>""".format(
         '{} – {}'.format(doc_id_1, doc_id_2)
     )
-    docExploreInner_HTML += """
-        <table border="1px solid #dddddd;" width="100%">
+    table_header_HTML += """
+        <table id="batch_result_table" class="display">
           <thead>
-            <tr align="center">
-              <th width="10%">{}</th>
-              <th width="10%">{}</th>
-              <th width="5%">{}</th>
-              <th width="5%">{}</th>
-              <th width="5%">{}</th>
-              <th width="25%">{}</th>
-              <th width="5%">{}</th>
+            <tr>
+              <th>{}</th>
+              <th>{}</th>
+              <th>{}</th>
+              <th>{}</th>
+              <th>{}</th>
+              <th>{}</th>
+              <th>{}</th>
+              <th>{}</th>
             </tr>
           </thead>
           <tbody>
-    """.format('doc_id_1',
+    """.format('rank',
+               'doc_id_1',
                'doc_id_2',
                'topic',
                'tf-idf',
@@ -1278,14 +1281,19 @@ def format_batch_results(results, doc_id_1, doc_id_2):
                )
 
     # format rows
-    HTML_rows = format_batch_result_rows(results)
-    docExploreInner_HTML += HTML_rows
+    table_rows_HTML = format_batch_result_rows(results)
 
     # close off table
-    docExploreInner_HTML += """
+    table_footer_HTML = """
           </tbody>
         </table>
     """
+
+    docExploreInner_HTML = HTML_templates['docExploreBatchInner'].substitute(
+        table_header_HTML=table_header_HTML,
+        table_rows_HTML=table_rows_HTML,
+        table_footer_HTML=table_footer_HTML,
+    )
 
     return docExploreInner_HTML
 
@@ -1293,23 +1301,27 @@ def format_batch_results(results, doc_id_1, doc_id_2):
 def calculate_topic_similarity_score(doc_id_1, doc_id_2):
     doc_1_topic_vector = np.array(thetas[doc_id_1])
     doc_2_topic_vector = np.array(thetas[doc_id_2])
-    return 1-fastdist.cosine(doc_1_topic_vector, doc_2_topic_vector)
+    return round(1-fastdist.cosine(doc_1_topic_vector, doc_2_topic_vector), 3)
 
 
 def format_batch_result_rows(results: List[Dict[str, Union[str, float]]]):
     HTML_rows = ""
-    for result in results:
+    for i, result in enumerate(results):
         HTML_rows += """
-            <tr align="center">
+            <tr>
               <td>{}</td>
               <td>{}</td>
               <td>{}</td>
+              <td>{:.1%}</td>
+              <td>{:.1%}</td>
               <td>{}</td>
-              <td>{}</td>
+              <td></td>
+              <td></td>
             </tr>
         """.format(
-            result['query_id'],
-            result['doc_id_2'],
+            i+1,
+            format_docView_link(result['query_id']),
+            format_docView_link(result['doc_id_2']),
             result['topic'],
             result['tf_idf'],
             result['sw_w'],
