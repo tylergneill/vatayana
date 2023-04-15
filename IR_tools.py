@@ -1203,7 +1203,12 @@ def get_closest_docs(   query_id,
     return results_HTML
 
 
-def batch_mode(similarity_data, query_doc_id_start, query_doc_id_end) -> List[Dict[str, Union[str, float]]]:
+def batch_mode(
+        similarity_data,
+        query_doc_id_start,
+        query_doc_id_end,
+        sw_score_threshold,
+) -> List[Dict[str, Union[str, float]]]:
     query_doc_id_range = range(doc_ids.index(query_doc_id_start), doc_ids.index(query_doc_id_end) + 1)
     query_doc_ids = [doc_ids[i] for i in query_doc_id_range]
 
@@ -1227,12 +1232,11 @@ def batch_mode(similarity_data, query_doc_id_start, query_doc_id_end) -> List[Di
     sorted_records_dict = {k: records_dict[k] for k in ks}
     print("sort records:", calc_dur(start2, datetime.now().time()))
 
-    sw_w_min_threshold = 30
     start3 = datetime.now().time()
     best_results: List[Dict[str, Union[str, float]]] = []
     for doc_id, similar_docs in sorted_records_dict.items():
         for doc_id_2, sw_score in similar_docs['sw_w'].items():
-            if sw_score >= sw_w_min_threshold:
+            if sw_score >= int(sw_score_threshold):
                 best_results.append({
                     'query_id': doc_id,
                     'doc_id_2': doc_id_2,

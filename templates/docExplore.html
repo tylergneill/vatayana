@@ -94,24 +94,36 @@
 			        </div>
 					<div class="col-md-3">
 						<select name="local_doc_id_input" id="local_doc_id_input" class="form-control">
-							<option value="" size="15" selected="selected">Select doc id</option>
+							<option value="" size="15" selected="selected">Select query doc id</option>
 						</select>
 			        </div>
 			        <div class="col-md-1">
 			            <input id="doc_explore_submit_button" type="submit" class="btn btn-block btn-primary" value="Submit"/>
 			        </div>
 			    </div>
+				<br>
 				<div class="row">
 			    	<div class="col-md-2">
 			        </div>
 					<div class="col-md-3">
 						<select name="local_doc_id_input_2" id="local_doc_id_input_2" class="form-control">
-							<option value="" size="15" selected="selected">Select doc id</option>
+							<option value="" size="15" selected="selected">Second doc id for batch mode</option>
 						</select>
 			        </div>
 					<div class="col-md-1">
 			        </div>
 			    </div>
+				<br>
+				<div class="row" id="sw_threshold_slider_row" style='display: none;'>
+					<div class="col-md-2">
+			        </div>
+					<div class="col-md-3" class="range">
+						<input type="range" class="form-range" name="sw_threshold" id="sw_threshold" min="30" max="300" step="10" value="30"/>
+			        </div>
+					<div class="col-md-1">
+						<p id="sw_threshold_slider_label">sw score > 30</p>
+			        </div>
+				</div>
 
 
 			</form>
@@ -154,6 +166,16 @@
 			  docIdSel_2.options[docIdSel_2.options.length] = new Option(y + ' ' + section_labels[this.value + '_' + y], y);
 			}
 		}
+
+		docIdSel_2.onchange = function() {
+			var sw_threshold_slider_row = document.getElementById("sw_threshold_slider_row");
+	  		sw_threshold_slider_row.style.display = "block";
+	  	}
+
+	  	sw_threshold.onchange = function() {
+	  		var sw_threshold_slider_label = document.getElementById("sw_threshold_slider_label");
+	  		sw_threshold_slider_label.innerHTML = `sw score > ` + sw_threshold.value;
+	  	}
 
     </script>
 

@@ -116,6 +116,7 @@ def doc_explore():
         local_doc_id_input = ""
         local_doc_id_input_2 = ""
         doc_id_2 = ""
+        threshold = 30
 
         if 'doc_id' in request.args:
             doc_id = request.args.get("doc_id")
@@ -130,6 +131,11 @@ def doc_explore():
             local_doc_id_input_2 = request.form.get("local_doc_id_input_2")
             if local_doc_id_input_2 not in ['', None]:
                 doc_id_2 = text_abbreviation_input + '_' + local_doc_id_input_2
+
+        if 'threshold' in request.args:
+            sw_threshold = request.args.get("sw_threshold")
+        else:
+            sw_threshold = request.form.get("sw_threshold")
 
         valid_doc_ids = IR_tools.doc_ids
         if (
@@ -195,7 +201,7 @@ def doc_explore():
                 #   - also do text previews here? maybe those above certain threshold are saved?
                 # format result dict as HTML rows and return
 
-                best_results = IR_tools.batch_mode(similarity_data, doc_id, doc_id_2)
+                best_results = IR_tools.batch_mode(similarity_data, doc_id, doc_id_2, sw_threshold)
                 docExploreInner_HTML = IR_tools.format_batch_results(best_results, doc_id, doc_id_2)
 
             else:
@@ -211,7 +217,8 @@ def doc_explore():
                     similarity_data=similarity_data,
                     )
         else:
-            docExploreInner_HTML = "<br><p>Please enter valid doc ids like " + str(IR_tools.ex_doc_ids)[1:-1] + " etc.</p><p>See <a href='assets/doc_id_list.txt' target='_blank'>doc id list</a> and <a href='assets/corpus_texts.txt' target='_blank'>corpus text list</a> for hints to get started.</p>"
+            docExploreInner_HTML = "<br><p>Please verify sequence of two inputs.</p>"
+                                   # "Please enter valid doc ids like " + str(IR_tools.ex_doc_ids)[1:-1] + " etc.</p><p>See <a href='assets/doc_id_list.txt' target='_blank'>doc id list</a> and <a href='assets/corpus_texts.txt' target='_blank'>corpus text list</a> for hints to get started."
 
         return render_template(    "docExplore.html",
                                 page_subtitle="docExplore",
