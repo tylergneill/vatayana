@@ -783,8 +783,8 @@ def truncate_dict(dictionary: Dict, n: int) -> Dict:
         for (k, v) in list(dictionary.items())[:n]
     }
 
-N_TDIDF_SAVE_LIMIT=4000
-N_SW_SAVE_LIMIT=200
+N_TDIDF_SAVE_LIMIT = 4000
+N_SW_SAVE_LIMIT = 200
 def get_closest_docs_with_db(
         similarity_data: PymongoCollection,
         query_id,
@@ -795,13 +795,15 @@ def get_closest_docs_with_db(
     # start = datetime.now().time()
     if not (
             record := similarity_data.find_one({"query_id": query_id})
-    ) or not (
-            len(topic_similar_docs := record["similar_docs"]["topic"]) != len(doc_ids)
+    # ) or not (
+    #         len(topic_similar_docs := record["similar_docs"]["topic"]) != len(doc_ids)
     ):
         # simply do from scratch
         similar_docs = calculate_similar_docs(query_id, N_tfidf, N_sw)
 
     else:
+        topic_similar_docs = rank_all_candidates_by_topic_similarity(query_id)
+
         # all topic comparisons done
 
         tf_idf_similar_docs = record["similar_docs"]["tf_idf"]
@@ -857,7 +859,7 @@ def get_closest_docs_with_db(
 
     # truncate what gets saved to prevent writing too much to db
     similar_docs_to_save = {
-        'topic': similar_docs['topic'],  # TODO: possibly drop? since biggest by far
+        # 'topic': similar_docs['topic'],  # dropped because too big
         'tf_idf': truncate_dict(similar_docs['tf_idf'], N_TDIDF_SAVE_LIMIT),
         'sw_w': truncate_dict(similar_docs['sw_w'], N_SW_SAVE_LIMIT),
     }
