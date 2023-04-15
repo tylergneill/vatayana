@@ -128,9 +128,7 @@ def doc_explore():
             doc_id_2 = request.args.get("doc_id_2")
         else:
             local_doc_id_input_2 = request.form.get("local_doc_id_input_2")
-            if local_doc_id_input_2 is None:
-                local_doc_id_input_2 = ""
-            else:
+            if local_doc_id_input_2 not in ['', None]:
                 doc_id_2 = text_abbreviation_input + '_' + local_doc_id_input_2
 
         valid_doc_ids = IR_tools.doc_ids
