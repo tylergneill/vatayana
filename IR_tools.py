@@ -1532,21 +1532,48 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
 
     text_1, text_2 = doc_fulltext[doc_id_1], doc_fulltext[doc_id_2]
 
-    # align and highlight doc_fulltexts
+    query = {"query_id": doc_id_1}
+    record = similarity_data.find_one(query)
+    similar_docs = record['similar_docs']
+
+    # do one-off topic comparison
     start1 = datetime.now().time()
 
-    # first obtain sw_w alignment score which docExplore ranking based on, for later
-    subseq1_pos, subseq2_pos, subseq1_len, subseq2_len, score = sw_align(text_1, text_2, words=True)
-    if (subseq1_pos, subseq2_pos, subseq1_len, subseq2_len, score) == (0, 0, 0, 0, 0):
-        sw_w_align_score = 0
-    else:
-        subseq1 = ' '.join( text_1.split(' ')[subseq1_pos:subseq1_pos+subseq1_len] )
-        subseq2 = ' '.join( text_2.split(' ')[subseq2_pos:subseq2_pos+subseq2_len] )
-        _, _, _, _, score = sw_align(subseq1, subseq2, words=False)
-        sw_w_align_score = str(score / 10)
+    doc_1_topic_vector = np.array(thetas[doc_id_1]) * topic_weights
+    doc_2_topic_vector = np.array(thetas[doc_id_2]) * topic_weights
+    topic_similiarity_score = 1-fastdist.cosine(doc_1_topic_vector, doc_2_topic_vector)
 
-    print("align and highlight doc_fulltexts:", calc_dur(start1, datetime.now().time()))
+    print("do one-off topic comparison:", calc_dur(start1, datetime.now().time()))
     print("overall:", calc_dur(start0, datetime.now().time()))
+
+    if doc_id_2 in similar_docs['tf_idf']:
+        TF_IDF_comparison_score = similar_docs['tf_idf'][doc_id_2]
+    else:
+        # do one-off tf-idf comparison
+        start1 = datetime.now().time()
+
+        doc_1_TF_IDF_vector, doc_2_TF_IDF_vector = get_tiny_TF_IDF_vectors(doc_id_1, doc_id_2)
+        TF_IDF_comparison_score = 1 - fastdist.cosine(doc_1_TF_IDF_vector, doc_2_TF_IDF_vector)
+
+        print("do one-off tf-idf comparison:", calc_dur(start1, datetime.now().time()))
+        print("overall:", calc_dur(start0, datetime.now().time()))
+
+    if doc_id_2 in similar_docs['sw_w']:
+        sw_w_align_score = similar_docs['sw_w'][doc_id_2]
+    else:
+        # do one-off sw_w comparison
+        start1 = datetime.now().time()
+
+        subseq1_pos, subseq2_pos, subseq1_len, subseq2_len, score = sw_align(text_1, text_2, words=True)
+        if (subseq1_pos, subseq2_pos, subseq1_len, subseq2_len, score) == (0, 0, 0, 0, 0):
+            sw_w_align_score = 0
+        else:
+            subseq1 = ' '.join(text_1.split(' ')[subseq1_pos:subseq1_pos + subseq1_len])
+            subseq2 = ' '.join(text_2.split(' ')[subseq2_pos:subseq2_pos + subseq2_len])
+            _, _, _, _, score = sw_align(subseq1, subseq2, words=False)
+            sw_w_align_score = str(score / 10)
+        print("# do one-off sw_w comparison:", calc_dur(start1, datetime.now().time()))
+        print("overall:", calc_dur(start0, datetime.now().time()))
 
     # do actual overall alignment
     start1 = datetime.now().time()
@@ -1556,7 +1583,6 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
 
     print("do actual overall alignment:", calc_dur(start1, datetime.now().time()))
     print("overall:", calc_dur(start0, datetime.now().time()))
-
 
     # also prepare similar_doc_links
     start1 = datetime.now().time()
@@ -1573,7 +1599,7 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
     similar_doc_links_for_1 = get_closest_docs(doc_id_1, **common_kwargs)
     similar_doc_links_for_2 = get_closest_docs(doc_id_2, **common_kwargs)
 
-    print("also prepare similar_doc_links:", calc_dur(start1, datetime.now().time()))
+    print("prepare similar_doc_links:", calc_dur(start1, datetime.now().time()))
     print("overall:", calc_dur(start0, datetime.now().time()))
 
     # make similar doc buttons show up and populate
@@ -1607,20 +1633,7 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
     print("make similar doc buttons show up and populate:", calc_dur(start1, datetime.now().time()))
     print("overall:", calc_dur(start0, datetime.now().time()))
 
-    # finally, also do one-off topic and tf-idf comparisons
-    start1 = datetime.now().time()
-
-    doc_1_topic_vector = np.array(thetas[doc_id_1]) * topic_weights
-    doc_2_topic_vector = np.array(thetas[doc_id_2]) * topic_weights
-    topic_similiarity_score = 1-fastdist.cosine(doc_1_topic_vector, doc_2_topic_vector)
-
-    doc_1_TF_IDF_vector, doc_2_TF_IDF_vector = get_tiny_TF_IDF_vectors(doc_id_1, doc_id_2)
-    TF_IDF_comparison_score = 1-fastdist.cosine(doc_1_TF_IDF_vector, doc_2_TF_IDF_vector)
-
-    print("do one-off topic and tf-idf comparisons:", calc_dur(start1, datetime.now().time()))
-    print("overall:", calc_dur(start0, datetime.now().time()))
-
-
+    # format HTML results
     start1 = datetime.now().time()
 
     results_HTML = HTML_templates['docCompareInner'].substitute(
