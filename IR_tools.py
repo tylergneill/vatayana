@@ -1104,10 +1104,6 @@ def get_closest_docs(   query_id,
 
     priority_ranked_results_ids = list(sw_w_alignment_candidates.keys())
 
-    if results_as_links_only:
-        similarity_result_doc_links = list2linkingDict(priority_ranked_results_ids)
-        return similarity_result_doc_links
-
     priority_ranked_results_complete = {
         k: (priority_topic_candidates[k], tf_idf_candidates[k], sw_w_alignment_candidates[k])
         for k in priority_ranked_results_ids
@@ -1138,6 +1134,10 @@ def get_closest_docs(   query_id,
         end4 = datetime.now().time()
         filtering_time = calc_dur(start4, end4)
         print("filtering_time:", filtering_time)
+
+    if results_as_links_only:
+        similarity_result_doc_links = list2linkingDict(list(priority_ranked_results_complete.keys()))
+        return similarity_result_doc_links
 
     if batch_mode:
         # pick out absolute best results
