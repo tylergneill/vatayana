@@ -1528,9 +1528,12 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
                         similarity_data: Optional[PymongoCollection]=None,
                         ):
 
+    start0 = datetime.now().time()
+
     text_1, text_2 = doc_fulltext[doc_id_1], doc_fulltext[doc_id_2]
 
     # align and highlight doc_fulltexts
+    start1 = datetime.now().time()
 
     # first obtain sw_w alignment score which docExplore ranking based on, for later
     subseq1_pos, subseq2_pos, subseq1_len, subseq2_len, score = sw_align(text_1, text_2, words=True)
@@ -1542,11 +1545,22 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
         _, _, _, _, score = sw_align(subseq1, subseq2, words=False)
         sw_w_align_score = str(score / 10)
 
+    print("align and highlight doc_fulltexts:", calc_dur(start1, datetime.now().time()))
+    print("overall:", calc_dur(start0, datetime.now().time()))
+
     # do actual overall alignment
+    start1 = datetime.now().time()
+
     highlighted_HTML_1, highlighted_HTML_2, score = sw_nw_align(text_1, text_2)
     sw_nw_score = "{:.1f}".format(score)
 
+    print("do actual overall alignment:", calc_dur(start1, datetime.now().time()))
+    print("overall:", calc_dur(start0, datetime.now().time()))
+
+
     # also prepare similar_doc_links
+    start1 = datetime.now().time()
+
     common_kwargs = {
         "topic_weights": topic_weights,
         "topic_labels": topic_labels,
@@ -1559,8 +1573,12 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
     similar_doc_links_for_1 = get_closest_docs(doc_id_1, **common_kwargs)
     similar_doc_links_for_2 = get_closest_docs(doc_id_2, **common_kwargs)
 
+    print("also prepare similar_doc_links:", calc_dur(start1, datetime.now().time()))
+    print("overall:", calc_dur(start0, datetime.now().time()))
+
     # make similar doc buttons show up and populate
     # also anticipate needing numerical position in (ordered) dict (see index() below)
+    start1 = datetime.now().time()
 
     if doc_id_2 in similar_doc_links_for_1: # then want buttons to show up on right
         activate_similar_link_buttons_right = 1
@@ -1586,7 +1604,11 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
         activate_similar_link_buttons_left = ""
         prev_sim_doc_id_for_2 = next_sim_doc_id_for_2 = sim_rank_of_prev_for_2 = sim_rank_of_1_for_2 = sim_rank_of_next_for_2 = ""
 
+    print("make similar doc buttons show up and populate:", calc_dur(start1, datetime.now().time()))
+    print("overall:", calc_dur(start0, datetime.now().time()))
+
     # finally, also do one-off topic and tf-idf comparisons
+    start1 = datetime.now().time()
 
     doc_1_topic_vector = np.array(thetas[doc_id_1]) * topic_weights
     doc_2_topic_vector = np.array(thetas[doc_id_2]) * topic_weights
@@ -1594,6 +1616,12 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
 
     doc_1_TF_IDF_vector, doc_2_TF_IDF_vector = get_tiny_TF_IDF_vectors(doc_id_1, doc_id_2)
     TF_IDF_comparison_score = 1-fastdist.cosine(doc_1_TF_IDF_vector, doc_2_TF_IDF_vector)
+
+    print("do one-off topic and tf-idf comparisons:", calc_dur(start1, datetime.now().time()))
+    print("overall:", calc_dur(start0, datetime.now().time()))
+
+
+    start1 = datetime.now().time()
 
     results_HTML = HTML_templates['docCompareInner'].substitute(
                     doc_id_1=doc_id_1, doc_id_2=doc_id_2,
@@ -1638,6 +1666,9 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
                     sw_w_align_score=sw_w_align_score,
                     sw_nw_score=sw_nw_score
                     )
+
+    print("format HTML results:", calc_dur(start1, datetime.now().time()))
+    print("overall:", calc_dur(start0, datetime.now().time()))
 
     return results_HTML, activate_similar_link_buttons_left, activate_similar_link_buttons_right
 
