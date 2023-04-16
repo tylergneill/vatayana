@@ -815,7 +815,7 @@ def get_closest_docs_with_db(
                 query_id,
                 list(topic_similar_docs.keys())[len(tf_idf_similar_docs):N_tfidf]
             )
-            print("len(additional_tfidf):", len(additional_tfidf))
+            # print("len(additional_tfidf):", len(additional_tfidf))
             tf_idf_similar_docs = dict(tf_idf_similar_docs, **additional_tfidf)  # can't use .update()
             tf_idf_similar_docs = sort_score_dict(tf_idf_similar_docs)
 
@@ -831,7 +831,7 @@ def get_closest_docs_with_db(
                 query_id,
                 doc_ids_for_sw_comparison,
             )
-            print("len(additional_sw) due to additional_tfidf:", len(additional_sw))
+            # print("len(additional_sw) due to additional_tfidf:", len(additional_sw))
             sw_w_similar_docs = dict(sw_w_similar_docs, **additional_sw)  # can't use .update()
             sw_w_similar_docs = sort_score_dict(sw_w_similar_docs)
             sw_w_similar_docs = truncate_dict(sw_w_similar_docs, existing_sw_cache_size)
@@ -845,7 +845,7 @@ def get_closest_docs_with_db(
                 query_id,
                 list(tf_idf_similar_docs.keys())[len(sw_w_similar_docs):N_sw]
             )
-            print("len(additional_sw):", len(additional_sw))
+            # print("len(additional_sw):", len(additional_sw))
             sw_w_similar_docs = dict(sw_w_similar_docs, **additional_sw)  # can't use .update()
             sw_w_similar_docs = sort_score_dict(sw_w_similar_docs)
 
@@ -1133,7 +1133,7 @@ def get_closest_docs(   query_id,
 
         end4 = datetime.now().time()
         filtering_time = calc_dur(start4, end4)
-        print("filtering_time:", filtering_time)
+        # print("filtering_time:", filtering_time)
 
     if results_as_links_only:
         similarity_result_doc_links = list2linkingDict(list(priority_ranked_results_complete.keys()))
@@ -1218,7 +1218,7 @@ def batch_mode(
     query = {"query_id": {"$in": query_doc_ids}}
     projection = {"_id": 0, "query_id": 1, "similar_docs.tf_idf": 1, "similar_docs.sw_w": 1}
     all_records = similarity_data.find(query, projection)
-    print("fetch records:", calc_dur(start0, datetime.now().time()))
+    # print("fetch records:", calc_dur(start0, datetime.now().time()))
 
     start1 = datetime.now().time()
     records_dict = {
@@ -1227,12 +1227,12 @@ def batch_mode(
             'sw_w': record['similar_docs']['sw_w'],
         } for record in list(all_records)
     }
-    print("dict records:", calc_dur(start1, datetime.now().time()))
+    # print("dict records:", calc_dur(start1, datetime.now().time()))
 
     start2 = datetime.now().time()
     ks = sorted(list(records_dict.keys()))
     sorted_records_dict = {k: records_dict[k] for k in ks}
-    print("sort records:", calc_dur(start2, datetime.now().time()))
+    # print("sort records:", calc_dur(start2, datetime.now().time()))
 
     start3 = datetime.now().time()
     best_results: List[Dict[str, Union[str, float]]] = []
@@ -1248,9 +1248,9 @@ def batch_mode(
                 })
             else:
                 break
-    print("organize best:", calc_dur(start3, datetime.now().time()))
+    # print("organize best:", calc_dur(start3, datetime.now().time()))
 
-    print("overall:", calc_dur(start0, datetime.now().time()))
+    # print("overall:", calc_dur(start0, datetime.now().time()))
 
     return best_results
 
@@ -1528,7 +1528,7 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
                         similarity_data: Optional[PymongoCollection]=None,
                         ):
 
-    start0 = datetime.now().time()
+    # start0 = datetime.now().time()
 
     text_1, text_2 = doc_fulltext[doc_id_1], doc_fulltext[doc_id_2]
 
@@ -1537,32 +1537,32 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
     similar_docs = record['similar_docs']
 
     # do one-off topic comparison
-    start1 = datetime.now().time()
+    # start1 = datetime.now().time()
 
     doc_1_topic_vector = np.array(thetas[doc_id_1]) * topic_weights
     doc_2_topic_vector = np.array(thetas[doc_id_2]) * topic_weights
     topic_similiarity_score = 1-fastdist.cosine(doc_1_topic_vector, doc_2_topic_vector)
 
-    print("do one-off topic comparison:", calc_dur(start1, datetime.now().time()))
-    print("overall:", calc_dur(start0, datetime.now().time()))
+    # print("do one-off topic comparison:", calc_dur(start1, datetime.now().time()))
+    # print("overall:", calc_dur(start0, datetime.now().time()))
 
     if doc_id_2 in similar_docs['tf_idf']:
         TF_IDF_comparison_score = similar_docs['tf_idf'][doc_id_2]
     else:
         # do one-off tf-idf comparison
-        start1 = datetime.now().time()
+        # start1 = datetime.now().time()
 
         doc_1_TF_IDF_vector, doc_2_TF_IDF_vector = get_tiny_TF_IDF_vectors(doc_id_1, doc_id_2)
         TF_IDF_comparison_score = 1 - fastdist.cosine(doc_1_TF_IDF_vector, doc_2_TF_IDF_vector)
 
-        print("do one-off tf-idf comparison:", calc_dur(start1, datetime.now().time()))
-        print("overall:", calc_dur(start0, datetime.now().time()))
+        # print("do one-off tf-idf comparison:", calc_dur(start1, datetime.now().time()))
+        # print("overall:", calc_dur(start0, datetime.now().time()))
 
     if doc_id_2 in similar_docs['sw_w']:
         sw_w_align_score = similar_docs['sw_w'][doc_id_2]
     else:
         # do one-off sw_w comparison
-        start1 = datetime.now().time()
+        # start1 = datetime.now().time()
 
         subseq1_pos, subseq2_pos, subseq1_len, subseq2_len, score = sw_align(text_1, text_2, words=True)
         if (subseq1_pos, subseq2_pos, subseq1_len, subseq2_len, score) == (0, 0, 0, 0, 0):
@@ -1572,20 +1572,20 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
             subseq2 = ' '.join(text_2.split(' ')[subseq2_pos:subseq2_pos + subseq2_len])
             _, _, _, _, score = sw_align(subseq1, subseq2, words=False)
             sw_w_align_score = str(score / 10)
-        print("# do one-off sw_w comparison:", calc_dur(start1, datetime.now().time()))
-        print("overall:", calc_dur(start0, datetime.now().time()))
+        # print("# do one-off sw_w comparison:", calc_dur(start1, datetime.now().time()))
+        # print("overall:", calc_dur(start0, datetime.now().time()))
 
     # do actual overall alignment
-    start1 = datetime.now().time()
+    # start1 = datetime.now().time()
 
     highlighted_HTML_1, highlighted_HTML_2, score = sw_nw_align(text_1, text_2)
     sw_nw_score = "{:.1f}".format(score)
 
-    print("do actual overall alignment:", calc_dur(start1, datetime.now().time()))
-    print("overall:", calc_dur(start0, datetime.now().time()))
+    # print("do actual overall alignment:", calc_dur(start1, datetime.now().time()))
+    # print("overall:", calc_dur(start0, datetime.now().time()))
 
     # also prepare similar_doc_links
-    start1 = datetime.now().time()
+    # start1 = datetime.now().time()
 
     common_kwargs = {
         "topic_weights": topic_weights,
@@ -1599,12 +1599,12 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
     similar_doc_links_for_1 = get_closest_docs(doc_id_1, **common_kwargs)
     similar_doc_links_for_2 = get_closest_docs(doc_id_2, **common_kwargs)
 
-    print("prepare similar_doc_links:", calc_dur(start1, datetime.now().time()))
-    print("overall:", calc_dur(start0, datetime.now().time()))
+    # print("prepare similar_doc_links:", calc_dur(start1, datetime.now().time()))
+    # print("overall:", calc_dur(start0, datetime.now().time()))
 
     # make similar doc buttons show up and populate
     # also anticipate needing numerical position in (ordered) dict (see index() below)
-    start1 = datetime.now().time()
+    # start1 = datetime.now().time()
 
     if doc_id_2 in similar_doc_links_for_1: # then want buttons to show up on right
         activate_similar_link_buttons_right = 1
@@ -1630,11 +1630,11 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
         activate_similar_link_buttons_left = ""
         prev_sim_doc_id_for_2 = next_sim_doc_id_for_2 = sim_rank_of_prev_for_2 = sim_rank_of_1_for_2 = sim_rank_of_next_for_2 = ""
 
-    print("make similar doc buttons show up and populate:", calc_dur(start1, datetime.now().time()))
-    print("overall:", calc_dur(start0, datetime.now().time()))
+    # print("make similar doc buttons show up and populate:", calc_dur(start1, datetime.now().time()))
+    # print("overall:", calc_dur(start0, datetime.now().time()))
 
     # format HTML results
-    start1 = datetime.now().time()
+    # start1 = datetime.now().time()
 
     results_HTML = HTML_templates['docCompareInner'].substitute(
                     doc_id_1=doc_id_1, doc_id_2=doc_id_2,
@@ -1680,8 +1680,8 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
                     sw_nw_score=sw_nw_score
                     )
 
-    print("format HTML results:", calc_dur(start1, datetime.now().time()))
-    print("overall:", calc_dur(start0, datetime.now().time()))
+    # print("format HTML results:", calc_dur(start1, datetime.now().time()))
+    # print("overall:", calc_dur(start0, datetime.now().time()))
 
     return results_HTML, activate_similar_link_buttons_left, activate_similar_link_buttons_right
 
