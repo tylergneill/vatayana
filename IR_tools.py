@@ -1340,40 +1340,6 @@ def format_batch_result_rows(results: List[Dict[str, Union[str, float]]], priori
     return HTML_rows
 
 
-def get_closest_docs_with_db_only_batch_only(
-    similarity_data,
-    query_id,
-    sw_score_threshold,
-    priority_texts,
-):
-    start = datetime.now().time()
-    record = similarity_data.find_one({"query_id": query_id})
-    print('find one:', calc_dur(start, datetime.now().time()))
-    tf_idf_similar_docs = record["similar_docs"]["tf_idf"]
-    print('tf-idf:', calc_dur(start, datetime.now().time()))
-    sw_w_similar_docs = record["similar_docs"]["sw_w"]
-    print('sw:', calc_dur(start, datetime.now().time()))
-
-    best_results = {}
-    for doc_id_2, sw_score in sw_w_similar_docs.items():
-        if (
-                float(sw_score) >= sw_score_threshold
-        ) and (
-                parse_complex_doc_id(doc_id_2)[0] in priority_texts
-        ):
-            best_results[doc_id_2] = {
-                'sw_w': sw_score,
-                'tf_idf': tf_idf_similar_docs[doc_id_2],
-                'topic': calculate_topic_similarity_score(query_id, doc_id_2),
-            }
-        else:
-            break
-
-    print('get best:', calc_dur(start, datetime.now().time()))
-
-    return format_batch_result_rows(query_id, best_results)
-
-
 def score_to_color(score):
     alpha = score # both [0,1]
     color = (165, 204, 107, alpha) # this is a nice green
