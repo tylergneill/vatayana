@@ -1525,6 +1525,7 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
                         # topic_toggle_value=True
                         N_tf_idf=search_N_defaults["N_tf_idf_shallow"],
                         N_sw_w=search_N_defaults["N_sw_w_shallow"],
+                        similarity_data: Optional[PymongoCollection]=None,
                         ):
 
     text_1, text_2 = doc_fulltext[doc_id_1], doc_fulltext[doc_id_2]
@@ -1546,8 +1547,17 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
     sw_nw_score = "{:.1f}".format(score)
 
     # also prepare similar_doc_links
-    similar_doc_links_for_1 = get_closest_docs(doc_id_1, topic_weights, topic_labels, priority_texts, N_tf_idf, N_sw_w, results_as_links_only=True)
-    similar_doc_links_for_2 = get_closest_docs(doc_id_2, topic_weights, topic_labels, priority_texts, N_tf_idf, N_sw_w, results_as_links_only=True)
+    common_kwargs = {
+        "topic_weights": topic_weights,
+        "topic_labels": topic_labels,
+        "priority_texts": priority_texts,
+        "N_tf_idf": N_tf_idf,
+        "N_sw_w": N_sw_w,
+        "results_as_links_only": True,
+        "similarity_data": similarity_data,
+    }
+    similar_doc_links_for_1 = get_closest_docs(doc_id_1, **common_kwargs)
+    similar_doc_links_for_2 = get_closest_docs(doc_id_2, **common_kwargs)
 
     # make similar doc buttons show up and populate
     # also anticipate needing numerical position in (ordered) dict (see index() below)
