@@ -3,7 +3,7 @@ import html
 import re
 
 from datetime import datetime, date
-from flask import Flask, session, redirect, render_template, request, url_for, send_from_directory #, send_file
+from flask import Flask, session, redirect, render_template, request, url_for, send_from_directory
 from flask_pymongo import PyMongo
 
 import IR_tools
@@ -116,7 +116,6 @@ def doc_explore():
         local_doc_id_input = ""
         local_doc_id_input_2 = ""
         doc_id_2 = ""
-        threshold = 30
 
         if 'doc_id' in request.args:
             doc_id = request.args.get("doc_id")
@@ -202,7 +201,7 @@ def doc_explore():
                 # format result dict as HTML rows and return
 
                 best_results = IR_tools.batch_mode(similarity_data, doc_id, doc_id_2, sw_threshold)
-                docExploreInner_HTML = IR_tools.format_batch_results(best_results, doc_id, doc_id_2)
+                docExploreInner_HTML = IR_tools.format_batch_results(best_results, doc_id, doc_id_2, session["priority_texts"])
 
             else:
                 # single-query mode

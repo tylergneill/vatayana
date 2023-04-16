@@ -1255,11 +1255,14 @@ def batch_mode(
     return best_results
 
 
-def format_batch_results(results, doc_id_1, doc_id_2):
+def format_batch_results(results, doc_id_1, doc_id_2, priority_texts):
+    # calculate number of docs
+    batch_size = doc_ids.index(doc_id_2) - doc_ids.index(doc_id_1)
+
     # begin with head of table
     table_header_HTML = """
-                    <h1 align="center">Similarity Search Results for {}</h1>""".format(
-        '{} – {}'.format(doc_id_1, doc_id_2)
+                    <h1 align="center">Similarity Results: {} – {} ({} docs)</h1>""".format(
+        doc_id_1, doc_id_2, batch_size
     )
     table_header_HTML += "<br>"
     table_header_HTML += """
@@ -1276,7 +1279,7 @@ def format_batch_results(results, doc_id_1, doc_id_2):
             </tr>
           </thead>
           <tbody>
-    """.format('rank',
+    """.format('#',
                'query doc id',
                'comparison doc id',
                'topic',
@@ -1286,7 +1289,7 @@ def format_batch_results(results, doc_id_1, doc_id_2):
                )
 
     # format rows
-    table_rows_HTML = format_batch_result_rows(results)
+    table_rows_HTML = format_batch_result_rows(results, priority_texts)
 
     # close off table
     table_footer_HTML = """
@@ -1309,28 +1312,31 @@ def calculate_topic_similarity_score(doc_id_1, doc_id_2):
     return round(1-fastdist.cosine(doc_1_topic_vector, doc_2_topic_vector), 3)
 
 
-def format_batch_result_rows(results: List[Dict[str, Union[str, float]]]):
+def format_batch_result_rows(results: List[Dict[str, Union[str, float]]], priority_texts):
     HTML_rows = ""
-    for i, result in enumerate(results):
-        HTML_rows += """
-            <tr>
-              <td>{}</td>
-              <td>{}</td>
-              <td>{}</td>
-              <td>{:.1%}</td>
-              <td>{:.1%}</td>
-              <td>{}</td>
-              <td>{}</td>
-            </tr>
-        """.format(
-            i+1,
-            format_docView_link(result['query_id']),
-            format_docView_link(result['doc_id_2']),
-            result['topic'],
-            result['tf_idf'],
-            result['sw_w'],
-            format_docCompare_link(result['query_id'], result['doc_id_2'], "test"),
-        )
+    i = 0
+    for result in results:
+        if parse_complex_doc_id(result['doc_id_2'])[0] in priority_texts:
+            i += 1
+            HTML_rows += """
+                <tr>
+                  <td>{}</td>
+                  <td>{}</td>
+                  <td>{}</td>
+                  <td>{:.1%}</td>
+                  <td>{:.1%}</td>
+                  <td>{}</td>
+                  <td>{}</td>
+                </tr>
+            """.format(
+                i,
+                format_docView_link(result['query_id']),
+                format_docView_link(result['doc_id_2']),
+                result['topic'],
+                result['tf_idf'],
+                result['sw_w'],
+                format_docCompare_link(result['query_id'], result['doc_id_2'], "test"),
+            )
     return HTML_rows
 
 
