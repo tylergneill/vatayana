@@ -1315,8 +1315,11 @@ def calculate_topic_similarity_score(doc_id_1, doc_id_2):
 def format_batch_result_rows(results: List[Dict[str, Union[str, float]]], priority_texts):
     HTML_rows = ""
     i = 0
+    LOREM_IPSUM = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    import random
     for result in results:
         if parse_complex_doc_id(result['doc_id_2'])[0] in priority_texts:
+            how_long = random.randint(0, len(LOREM_IPSUM))
             i += 1
             HTML_rows += """
                 <tr>
@@ -1335,7 +1338,7 @@ def format_batch_result_rows(results: List[Dict[str, Union[str, float]]], priori
                 result['topic'],
                 result['tf_idf'],
                 result['sw_w'],
-                format_docCompare_link(result['query_id'], result['doc_id_2'], "test"),
+                format_docCompare_link(result['query_id'], result['doc_id_2'], LOREM_IPSUM[:how_long]),
             )
     return HTML_rows
 
