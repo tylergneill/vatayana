@@ -3,7 +3,7 @@ import json
 import pickle
 import re
 import math
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, Tuple
 
 import numpy as np
 
@@ -371,9 +371,10 @@ def get_top_topic_indices(doc_id, max_N=5, threshold=0.03):
     return qualifying_indices
 
 
-def sort_score_dict(dictionary: Dict) -> Dict:
+def sort_score_dict(dictionary: Dict[str, Union[float, Tuple[float, str]]]) -> Dict:
     """
     Takes a dict of the form {'key_1': value_1, 'key_n': value_n} and returns sorted according to values.
+    Also works if dict values are a tuple of the form (float, str) rather than just a float.
     """
     return dict( sorted(dictionary.items(), key=lambda item: item[1], reverse=True) )
 
@@ -682,9 +683,9 @@ def format_textView_link(doc_id):
     work_abbrv, local_doc_id = parse_complex_doc_id(doc_id)
     return "<a href='textView?text_abbrv=%s#%s' target='textView%s'>txtVw</a>" % (work_abbrv, local_doc_id, work_abbrv)
 
-def format_docCompare_link(doc_id_1, doc_id_2, display_string="dcCp"):
+def format_docCompare_link(doc_id_1, doc_id_2, display_string="dcCp", title=""):
     # each one looks like fixed string "dcCp" unless otherwise specified
-    return "<a href='docCompare?doc_id_1=%s&doc_id_2=%s' target='docCompare'>%s</a>" % (doc_id_1, doc_id_2, display_string)
+    return "<a href='docCompare?doc_id_1=%s&doc_id_2=%s' target='docCompare' title='%s'>%s</a>" % (doc_id_1, doc_id_2, title, display_string)
 
 def format_similarity_result_columns(query_id, priority_results_list_content, secondary_results_list_content):
 
@@ -692,11 +693,11 @@ def format_similarity_result_columns(query_id, priority_results_list_content, se
     table_header_row =     """<thead>
                                 <tr>
                                     <th>rank</th>
-                                    <th>doc_id</th>
-                                    <th>topic</th>
-                                    <th>tf-idf</th>
-                                    <th>align</th>
-                                    <th>links</th>
+                                    <th>similar doc</th>
+                                    <th>topic score</th>
+                                    <th>word score</th>
+                                    <th>phrase score</th>
+                                    <th>phrase preview</th>
                                 </tr>
                             </thead>"""
     table_row_template =     """<tr>
@@ -705,8 +706,10 @@ def format_similarity_result_columns(query_id, priority_results_list_content, se
                                     <td>%.2f</td>
                                     <td>%s</td>
                                     <td>%s</td>
-                                    <td>%s&nbsp;&nbsp;%s</td>
+                                    <td>%s</td>
                                 </tr>"""
+    #                                     <th>links</th>
+    #                                     <td>%s&nbsp;&nbsp;%s</td>
 
     priority_col_HTML = "<table id='priority_col_table' class='display'>"
     priority_col_HTML += table_header_row + "<tbody>"
@@ -717,9 +720,10 @@ def format_similarity_result_columns(query_id, priority_results_list_content, se
             format_docView_link(doc_id),
             results[0], # topic score
             results[1], # tf-idf score
-            results[2], # alignment score
-            format_textView_link(doc_id),
-            format_docCompare_link(query_id, doc_id)
+            results[2][0], # alignment score
+            format_docCompare_link(query_id, doc_id, display_string=results[2][1][:25], title=results[2][1]),  # alignment phrase, max 25 chars
+            # format_textView_link(doc_id),
+            # format_docCompare_link(query_id, doc_id)
             )
         for i, (doc_id, results) in enumerate(priority_results_list_content.items())
         ] )
@@ -747,7 +751,7 @@ def format_similarity_result_columns(query_id, priority_results_list_content, se
     return priority_col_HTML, secondary_col_HTML
 
 
-def rank_candidates_by_sw_w_alignment_score(query_id, candidate_ids):
+def rank_candidates_by_sw_w_alignment_score(query_id, candidate_ids, sw_w_score_threshold=30):
 
     if doc_fulltext[query_id] == '' or candidate_ids == []: return {}
 
@@ -761,11 +765,14 @@ def rank_candidates_by_sw_w_alignment_score(query_id, candidate_ids):
         else:
             subseq1 = ' '.join( text_1.split(' ')[subseq1_pos:subseq1_pos+subseq1_len] )
             subseq2 = ' '.join( text_2.split(' ')[subseq2_pos:subseq2_pos+subseq2_len] )
-            _, _, _, _, score = sw_align(subseq1, subseq2, words=False)
-            sw_alignment_scores[doc_id] = score / 10
+            subseq1_pos, subseq2_pos, subseq1_len, subseq2_len, raw_score = sw_align(subseq1, subseq2, words=False)
+            sw_w_score = raw_score / 10
+            if sw_w_score >= sw_w_score_threshold:
+                sw_alignment_scores[doc_id] = (sw_w_score, subseq1)
+            else:
+                sw_alignment_scores[doc_id] = (sw_w_score, "")
 
     sorted_results = sort_score_dict(sw_alignment_scores)
-
     return sorted_results
 
 def calc_dur(start, end):
@@ -854,7 +861,7 @@ def get_closest_docs_with_db(
         similar_docs = {
             'topic': topic_similar_docs,
             'tf_idf': tf_idf_similar_docs,
-            'sw_w': sw_w_similar_docs
+            'sw_w': sw_w_similar_docs,
         }
 
     # truncate what gets saved to prevent writing too much to db
@@ -1090,15 +1097,15 @@ def get_closest_docs(   query_id,
         if v == 0.0: tf_idf_candidates[k] = ""
         else: tf_idf_candidates[k] = "{:.2f}".format(tf_idf_candidates[k])
 
-    # post-ranking, convert to strings (empty replaces 0.0, no need for rounding)
-    for k,v in sw_w_alignment_candidates.items():
-        if v == 0.0: sw_w_alignment_candidates[k] = ""
-        else: sw_w_alignment_candidates[k] = str(sw_w_alignment_candidates[k])
+    # post-ranking, convert numbers to strings (empty replaces 0.0, no need for rounding)
+    for k,score_phrase_tuple in sw_w_alignment_candidates.items():
+        if score_phrase_tuple[0] == 0.0: sw_w_alignment_candidates[k] = ("", "")
+        else: sw_w_alignment_candidates[k] = (str(sw_w_alignment_candidates[k][0]), sw_w_alignment_candidates[k][1])
 
     # again add blank entries to bottom of list for all docs for which sw_w comparison not performed
     for k in tf_idf_candidates.keys(): # contains priority_topic_candidates.keys() too
         if k not in sw_w_alignment_candidates:
-            sw_w_alignment_candidates[k] = ""
+            sw_w_alignment_candidates[k] = ("", "")
 
     # thus final results list has sw_w candidates on top, tf_idf candidates after that, and priority_topic_candidates after that
 
@@ -1237,12 +1244,13 @@ def batch_mode(
     start3 = datetime.now().time()
     best_results: List[Dict[str, Union[str, float]]] = []
     for doc_id, similar_docs in sorted_records_dict.items():
-        for doc_id_2, sw_score in similar_docs['sw_w'].items():
-            if sw_score >= int(sw_score_threshold):
+        for doc_id_2, sw_score_phrase_tuple in similar_docs['sw_w'].items():
+            if sw_score_phrase_tuple[0] >= int(sw_score_threshold):
                 best_results.append({
                     'query_id': doc_id,
                     'doc_id_2': doc_id_2,
-                    'sw_w': sw_score,
+                    'sw_w': sw_score_phrase_tuple[0],
+                    'sw_w_phrase': sw_score_phrase_tuple[1],
                     'tf_idf': similar_docs['tf_idf'][doc_id_2],
                     'topic': calculate_topic_similarity_score(doc_id, doc_id_2),
                 })
@@ -1280,12 +1288,12 @@ def format_batch_results(results, doc_id_1, doc_id_2, priority_texts):
           </thead>
           <tbody>
     """.format('#',
-               'query doc id',
-               'comparison doc id',
-               'topic',
-               'vocab',
-               'phrase',
-               'phrase match (as in query doc)',
+               'query doc',
+               'similar doc',
+               'topic score',
+               'vocab score',
+               'phrase score',
+               'full phrase overlap',
                )
 
     # format rows
@@ -1315,6 +1323,7 @@ def calculate_topic_similarity_score(doc_id_1, doc_id_2):
 def format_batch_result_rows(results: List[Dict[str, Union[str, float]]], priority_texts):
     HTML_rows = ""
     i = 0
+    import random
     for result in results:
         if parse_complex_doc_id(result['doc_id_2'])[0] in priority_texts:
             i += 1
@@ -1335,7 +1344,7 @@ def format_batch_result_rows(results: List[Dict[str, Union[str, float]]], priori
                 result['topic'],
                 result['tf_idf'],
                 result['sw_w'],
-                format_docCompare_link(result['query_id'], result['doc_id_2'], "test"),
+                format_docCompare_link(result['query_id'], result['doc_id_2'], result['sw_w_phrase'], title=""),
             )
     return HTML_rows
 
@@ -1525,7 +1534,7 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
         # print("overall:", calc_dur(start0, datetime.now().time()))
 
     if doc_id_2 in similar_docs['sw_w']:
-        sw_w_align_score = similar_docs['sw_w'][doc_id_2]
+        sw_w_align_score = similar_docs['sw_w'][doc_id_2][0]
     else:
         # do one-off sw_w comparison
         # start1 = datetime.now().time()
