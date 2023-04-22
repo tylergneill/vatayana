@@ -761,7 +761,7 @@ def rank_candidates_by_sw_w_alignment_score(query_id, candidate_ids, sw_w_score_
         text_1, text_2 = doc_fulltext[query_id], doc_fulltext[doc_id]
         subseq1_pos, subseq2_pos, subseq1_len, subseq2_len, score = sw_align(text_1, text_2, words=True)
         if (subseq1_pos, subseq2_pos, subseq1_len, subseq2_len, score) == (0, 0, 0, 0, 0):
-            sw_alignment_scores[doc_id] = 0.0
+            sw_alignment_scores[doc_id] = (0.0, "")
         else:
             subseq1 = ' '.join( text_1.split(' ')[subseq1_pos:subseq1_pos+subseq1_len] )
             subseq2 = ' '.join( text_2.split(' ')[subseq2_pos:subseq2_pos+subseq2_len] )
