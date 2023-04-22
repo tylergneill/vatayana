@@ -12,14 +12,14 @@ app = Flask(__name__)
 app.config["DEBUG"] = True
 app.config["SECRET_KEY"] = "safaksdfakjdshfkajshfka" # for session, no actual need for secrecy
 MONGO_CRED = open('mongo_cred.txt').read().strip()
-app.config["MONGO_URI"] = "mongodb://localhost:27017/my_db"
-# app.config["MONGO_URI"] = f"mongodb+srv://tyler:{MONGO_CRED}@sanskrit.doxamlm.mongodb.net/vatayana?retryWrites=true&w=majority"
+# app.config["MONGO_URI"] = "mongodb://localhost:27017/my_db"
+app.config["MONGO_URI"] = f"mongodb+srv://tyler:{MONGO_CRED}@sanskrit.doxamlm.mongodb.net/vatayana?retryWrites=true&w=majority"
 
 
 # setup Mongo DB
 mongo_db_client = PyMongo(app)
-similarity_data = mongo_db_client.db.my_collection2  # local
-# similarity_data = mongo_db_client.db.similarity  # remote
+# similarity_data = mongo_db_client.db.my_collection  # local
+similarity_data = mongo_db_client.db.similarity  # remote
 print("num of records in collection:", similarity_data.count_documents({}))
 
 # result = IR_tools.get_closest_docs_with_db(similarity_data, IR_tools.doc_ids[629], priority_texts=['VS'])
