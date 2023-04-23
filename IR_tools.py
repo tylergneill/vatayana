@@ -3,7 +3,7 @@ import json
 import pickle
 import re
 import math
-from typing import List, Dict, Optional, Union, Tuple
+from typing import List, Dict, Optional, Union
 
 import numpy as np
 
@@ -371,10 +371,10 @@ def get_top_topic_indices(doc_id, max_N=5, threshold=0.03):
     return qualifying_indices
 
 
-def sort_score_dict(dictionary: Dict[str, Union[float, Tuple[float, str]]]) -> Dict:
+def sort_score_dict(dictionary: Dict[str, Union[float, List[Union[float, str]]]]) -> Dict:
     """
     Takes a dict of the form {'key_1': value_1, 'key_n': value_n} and returns sorted according to values.
-    Also works if dict values are a tuple of the form (float, str) rather than just a float.
+    Also works if dict values are a list of the form [float, str] rather than just a float (as for sw scores).
     """
     return dict( sorted(dictionary.items(), key=lambda item: item[1], reverse=True) )
 
@@ -761,16 +761,16 @@ def rank_candidates_by_sw_w_alignment_score(query_id, candidate_ids, sw_w_score_
         text_1, text_2 = doc_fulltext[query_id], doc_fulltext[doc_id]
         subseq1_pos, subseq2_pos, subseq1_len, subseq2_len, score = sw_align(text_1, text_2, words=True)
         if (subseq1_pos, subseq2_pos, subseq1_len, subseq2_len, score) == (0, 0, 0, 0, 0):
-            sw_alignment_scores[doc_id] = (0.0, "")
+            sw_alignment_scores[doc_id] = [0.0, ""]
         else:
             subseq1 = ' '.join( text_1.split(' ')[subseq1_pos:subseq1_pos+subseq1_len] )
             subseq2 = ' '.join( text_2.split(' ')[subseq2_pos:subseq2_pos+subseq2_len] )
             subseq1_pos, subseq2_pos, subseq1_len, subseq2_len, raw_score = sw_align(subseq1, subseq2, words=False)
             sw_w_score = raw_score / 10
             if sw_w_score >= sw_w_score_threshold:
-                sw_alignment_scores[doc_id] = (sw_w_score, subseq1)
+                sw_alignment_scores[doc_id] = [sw_w_score, subseq1]
             else:
-                sw_alignment_scores[doc_id] = (sw_w_score, "")
+                sw_alignment_scores[doc_id] = [sw_w_score, ""]
 
     sorted_results = sort_score_dict(sw_alignment_scores)
     return sorted_results
@@ -1098,8 +1098,8 @@ def get_closest_docs(   query_id,
         else: tf_idf_candidates[k] = "{:.2f}".format(tf_idf_candidates[k])
 
     # post-ranking, convert numbers to strings (empty replaces 0.0, no need for rounding)
-    for k,score_phrase_tuple in sw_w_alignment_candidates.items():
-        if score_phrase_tuple[0] == 0.0: sw_w_alignment_candidates[k] = ("", "")
+    for k,score_phrase_pair in sw_w_alignment_candidates.items():
+        if score_phrase_pair[0] == 0.0: sw_w_alignment_candidates[k] = ("", "")
         else: sw_w_alignment_candidates[k] = (str(sw_w_alignment_candidates[k][0]), sw_w_alignment_candidates[k][1])
 
     # again add blank entries to bottom of list for all docs for which sw_w comparison not performed
@@ -1244,13 +1244,13 @@ def batch_mode(
     start3 = datetime.now().time()
     best_results: List[Dict[str, Union[str, float]]] = []
     for doc_id, similar_docs in sorted_records_dict.items():
-        for doc_id_2, sw_score_phrase_tuple in similar_docs['sw_w'].items():
-            if sw_score_phrase_tuple[0] >= int(sw_score_threshold):
+        for doc_id_2, sw_score_phrase_pair in similar_docs['sw_w'].items():
+            if sw_score_phrase_pair[0] >= int(sw_score_threshold):
                 best_results.append({
                     'query_id': doc_id,
                     'doc_id_2': doc_id_2,
-                    'sw_w': sw_score_phrase_tuple[0],
-                    'sw_w_phrase': sw_score_phrase_tuple[1],
+                    'sw_w': sw_score_phrase_pair[0],
+                    'sw_w_phrase': sw_score_phrase_pair[1],
                     'tf_idf': similar_docs['tf_idf'][doc_id_2],
                     'topic': calculate_topic_similarity_score(doc_id, doc_id_2),
                 })
