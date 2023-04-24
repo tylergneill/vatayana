@@ -12,14 +12,14 @@ app = Flask(__name__)
 app.config["DEBUG"] = True
 app.config["SECRET_KEY"] = "safaksdfakjdshfkajshfka" # for session, no actual need for secrecy
 MONGO_CRED = open('mongo_cred.txt').read().strip()
-app.config["MONGO_URI"] = "mongodb://localhost:27017/my_db"
-# app.config["MONGO_URI"] = f"mongodb+srv://tyler:{MONGO_CRED}@sanskrit.doxamlm.mongodb.net/vatayana?retryWrites=true&w=majority"
+# app.config["MONGO_URI"] = "mongodb://localhost:27017/my_db"
+app.config["MONGO_URI"] = f"mongodb+srv://tyler:{MONGO_CRED}@sanskrit.doxamlm.mongodb.net/vatayana?retryWrites=true&w=majority"
 
 
 # setup Mongo DB
 mongo_db_client = PyMongo(app)
-similarity_data = mongo_db_client.db.my_collection2  # local
-# similarity_data = mongo_db_client.db.similarity  # remote
+# similarity_data = mongo_db_client.db.my_collection  # local
+similarity_data = mongo_db_client.db.similarity  # remote
 print("num of records in collection:", similarity_data.count_documents({}))
 
 # result = IR_tools.get_closest_docs_with_db(similarity_data, IR_tools.doc_ids[629], priority_texts=['VS'])
@@ -127,7 +127,7 @@ def doc_explore():
             if local_doc_id_input_2 not in ['', None]:
                 doc_id_2 = text_abbreviation_input + '_' + local_doc_id_input_2
 
-        if 'threshold' in request.args:
+        if 'sw_threshold' in request.args:
             sw_threshold = request.args.get("sw_threshold")
         else:
             sw_threshold = request.form.get("sw_threshold")
@@ -435,8 +435,8 @@ def text_prioritize():
                             )
 
 
-@app.route('/searchSettings', methods=["GET", "POST"])
-def search_settings():
+@app.route('/searchDepth', methods=["GET", "POST"])
+def search_depth():
 
     ensure_keys()
 
@@ -451,7 +451,7 @@ def search_settings():
                 session["N_sw_w_shallow"] = int(val)
             elif key == "N_sw_w_deep_slider":
                 session["N_sw_w_deep"] = int(val)
-            elif key == "search_settings_use_defaults":
+            elif key == "search_depth_use_defaults":
                 session["N_tf_idf_shallow"] = IR_tools.search_N_defaults["N_tf_idf_shallow"]
                 session["N_tf_idf_deep"] = IR_tools.search_N_defaults["N_tf_idf_deep"]
                 session["N_sw_w_shallow"] = IR_tools.search_N_defaults["N_sw_w_shallow"]
@@ -462,7 +462,7 @@ def search_settings():
 
         session.modified = True
 
-    searchSettingsInner_HTML = IR_tools.format_search_settings_output(
+    searchDepthInner_HTML = IR_tools.format_search_depth_output(
         N_tf_idf_shallow=session["N_tf_idf_shallow"],
         N_sw_w_shallow=session["N_sw_w_shallow"],
         N_tf_idf_deep=session["N_tf_idf_deep"],
@@ -471,7 +471,7 @@ def search_settings():
         search_depth_default=session["search_depth_default"]
         )
 
-    return render_template(    "searchSettings.html",
-                            page_subtitle="searchSettings",
-                            searchSettingsInner_HTML=searchSettingsInner_HTML
+    return render_template(    "searchDepth.html",
+                            page_subtitle="searchDepth",
+                            searchDepthInner_HTML=searchDepthInner_HTML
                             )

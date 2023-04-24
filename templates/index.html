@@ -71,88 +71,71 @@
     	<h1>vātāyana</h1>
     	<br>
 
-    	<p><i>a window onto the Sanskrit pramāṇa-NLP corpus</i></p>
-    	<p>(note: a "doc", i.e., document is roughly a paragraph)</p>
-
-    	<br><br>
-
       <div class="row">
         <div class="col-md-3">
       		<form method="get" action="textView">
       			<input type="submit" class="btn btn-block btn-primary" value="View Texts" />
       		</form>
-          <p style="text-align:center;"><a href="textView?text_abbrv=NBhū#104,6">example</a></p>
+			<p style="text-align:center;"><i>Scroll freely through a whole text <br> and click to explore individual passages</i></p>
+			<p style="text-align:center;"><a href="textView?text_abbrv=NBhū#104,6">example</a></p>
       	</div>
       	<div class="col-md-3">
       		<form method="get" action="docExplore">
       			<input type="submit" class="btn btn-block btn-primary" value="Explore Docs" />
       		</form>
-          <p style="text-align:center;"><a href="docExplore?doc_id=NBh%C5%AB_104%2C6%5E1">example</a></p>
+			<p style="text-align:center;"><i>Analyze a single passage <br> and see similarity search results</i></p>
+			<p style="text-align:center;"><a href="docExplore?doc_id=NBh%C5%AB_104%2C6%5E1">example (single)</a></p>
+			<p style="text-align:center;"><i>Or choose a range of passages <br> to see highlighted search results</i> </p>
+			<p style="text-align:center;"><a href="docExplore?doc_id=NBh%C5%AB_104%2C6%5E1&doc_id_2=NBh%C5%AB_154%2C22%5E2&sw_threshold=50">example (batch)</a></p>
+
+
         </div>
       	<div class="col-md-3">
       		<form method="get" action="docCompare">
       			<input type="submit" class="btn btn-block btn-primary" value="Compare Docs" />
       		</form>
+			<p style="text-align:center;"><i>Compare any two passages <br> side-by-side</i></p>
           <p style="text-align:center;"><a href="docCompare?doc_id_1=NBh%C5%AB_104%2C6%5E1&doc_id_2=PVin_I%2C034%2Ci">example</a></p>
         </div>
       </div>
 
 	    <br><br>
 
-      <h2>Go Deeper</h2>
+      <h2>Search Settings</h2>
       <br>
 
-    	<p>
-    		Vātāyana illuminates intertextual connections
-    		by performing three kinds of pairwise comparisons
-    		on corpus documents (current total ≈ 28k docs).
+		<div class="row">
+			<div class="col-md-3">
+				<form method="get" action="textPrioritize">
+					<input type="submit" class="btn btn-block btn-primary" value="Prioritize Texts" />
+				</form>
+				<p style="text-align:center;"><i>Limit similarity search <br> to certain texts of interest</i></p>
+			</div>
+			<div class="col-md-3">
+				<form method="get" action="searchDepth">
+					<input type="submit" class="btn btn-block btn-primary" value="Configure Search Depth" />
+				</form>
+				<p style="text-align:center;"><i>Adjust settings for search depth <br> and corresponding wait time</i></p>
+			</div>
+		</div>
 
-    		Comparison by modeled LDA topics is fast and captures abstract semantics,
-    		whereas TF-IDF and Smith-Waterman emphasize word-level correspondences
-    		at relatively greater computational cost.
-    	</p>
-    	<p>
-    		The advanced settings below aim to accomodate various use cases
-    		by allowing users to control:
-    		<ol>
-    		<li>the number of expensive TF-IDF and Smith-Waterman comparisons to perform,
-    		in two distinct search depth modes ("shallow" and "deep");</li>
-    		<li>the subset of texts to restrict these more expensive comparisons to; and</li>
-    		<li>the qualitative interpretation of individual LDA topics,
-    		as well as their optional relative weighting during preliminary document comparison by topics.</li>
-    		</ol>
-        After getting some familiarity with the basic search algorithm,
-    		users are encouraged to experiment with these parameters
-    		to find out what works best for them.
-      </p>
-      <p>
-    		The visualization tool LDAvis is also available for learning more about topics.
-    	</p>
+		<br><br>
 
-    	<br><br>
+		<h2>Topic Tools</h2>
+		<br>
 
-    	<div class="row">
-    		<div class="col-md-3">
-    			<form method="get" action="searchSettings">
-    				<input type="submit" class="btn btn-block btn-primary" value="Adjust Search Settings" />
-    			</form>
-    		</div>
-    		<div class="col-md-3">
-    			<form method="get" action="textPrioritize">
-    				<input type="submit" class="btn btn-block btn-primary" value="Prioritize Texts" />
-    			</form>
-    		</div>
-    	</div>
-    	<div class="row">
+		<div class="row">
     		<div class="col-md-3">
     			<form method="get" action="topicAdjust">
-    				<input type="submit" class="btn btn-block btn-primary" value="Adjust Topic Settings" />
+    				<input type="submit" class="btn btn-block btn-primary" value="Relabel Topics" />
     			</form>
+				<p style="text-align:center;"><i>Adjust LDA topic labels <br> according to your own understanding</i></p>
     		</div>
     		<div class="col-md-3">
     			<form method="get" action="topicVisualizeLDAvis">
     				<input type="submit" class="btn btn-block btn-primary" value="Visualize Topics (LDAvis)" />
     			</form>
+				<p style="text-align:center;"><i>Learn more about individual topics <br> with this interactive tool (<a href="https://www.youtube.com/watch?v=eQSbteKN-FA&t=642s">30-sec intro</a>)</i></p>
     		</div>
     	</div>
 
