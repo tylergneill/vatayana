@@ -42,10 +42,8 @@ CURRENT_FOLDER = os.path.dirname(os.path.abspath(__file__))
 flask_session_variable_names = [
     "doc_id", "doc_id_1", "doc_id_2",
     "text_abbreviation_input", "local_doc_id",
-    "topic_weights",
     "topic_labels",
     "priority_texts",
-    "topic_toggle_value",
     "N_tf_idf_shallow", "N_sw_w_shallow",
     "N_tf_idf_deep", "N_sw_w_deep",
     "search_depth_default"
@@ -61,10 +59,8 @@ def ensure_keys():
 def reset_variables():
     session["doc_id"] = ""; session["doc_id_1"] = ""; session["doc_id_2"] = "",
     session["text_abbreviation_input"] = ""; session["local_doc_id"] = ""
-    session["topic_weights"] = IR_tools.topic_weights_default.tolist()
     session["topic_labels"] = IR_tools.topic_interpretations
     session["priority_texts"] = list(IR_tools.text_abbrev2fn.keys())
-    session["topic_toggle_value"] = True
     session["N_tf_idf_shallow"] = IR_tools.search_N_defaults["N_tf_idf_shallow"]
     session["N_tf_idf_deep"] = IR_tools.search_N_defaults["N_tf_idf_deep"]
     session["N_sw_w_shallow"] = IR_tools.search_N_defaults["N_sw_w_shallow"]
@@ -131,7 +127,7 @@ def doc_explore():
             if local_doc_id_input_2 not in ['', None]:
                 doc_id_2 = text_abbreviation_input + '_' + local_doc_id_input_2
 
-        if 'threshold' in request.args:
+        if 'sw_threshold' in request.args:
             sw_threshold = request.args.get("sw_threshold")
         else:
             sw_threshold = request.form.get("sw_threshold")
@@ -149,12 +145,6 @@ def doc_explore():
                 )
         ):
 
-            # auto_reweight_topics_option = False
-            # if auto_reweight_topics_option:
-            #     topic_weights = IR_tools.auto_reweight_topics(doc_id)
-            #     session['topic_weights'] = topic_weights
-            #     session.modified = True
-
             if doc_id_2 != "":
                 # batch mode
 
@@ -163,10 +153,8 @@ def doc_explore():
 
                 # docExploreInner_HTML += IR_tools.get_closest_docs(
                 #     query_id=IR_tools.doc_ids[i],
-                #     topic_weights=session['topic_weights'],
                 #     topic_labels=session['topic_labels'],
                 #     priority_texts=session["priority_texts"],
-                #     # topic_toggle_value=session["topic_toggle_value"]
                 #     N_tf_idf=session["N_tf_idf_" + session["search_depth_default"]],
                 #     N_sw_w=session["N_sw_w_" + session["search_depth_default"]],
                 #     similarity_data=similarity_data,
@@ -207,10 +195,8 @@ def doc_explore():
                 # single-query mode
                 docExploreInner_HTML = IR_tools.get_closest_docs(
                     query_id=doc_id,
-                    topic_weights=session['topic_weights'],
                     topic_labels=session['topic_labels'],
                     priority_texts=session["priority_texts"],
-                    # topic_toggle_value=session["topic_toggle_value"]
                     N_tf_idf=session["N_tf_idf_"+session["search_depth_default"]],
                     N_sw_w=session["N_sw_w_"+session["search_depth_default"]],
                     similarity_data=similarity_data,
@@ -265,19 +251,11 @@ def doc_compare():
             docCompareInner_HTML = "<br><p>Those are the same, please enter two different doc ids to compare.</p>"
         elif doc_id_1 in valid_doc_ids and doc_id_2 in valid_doc_ids:
 
-            auto_reweight_topics_option = False
-            if auto_reweight_topics_option:
-                topic_weights = IR_tools.auto_reweight_topics(doc_id_1)
-                session['topic_weights'] = topic_weights
-                session.modified = True
-
             docCompareInner_HTML, sim_btn_left, sim_btn_right = IR_tools.compare_doc_pair(
                 doc_id_1,
                 doc_id_2,
-                topic_weights=session['topic_weights'],
                 topic_labels=session['topic_labels'],
                 priority_texts=session["priority_texts"],
-                # topic_toggle_value=session["topic_toggle_value"]
                 N_tf_idf=session["N_tf_idf_"+session["search_depth_default"]],
                 N_sw_w=session["N_sw_w_"+session["search_depth_default"]],
                 similarity_data=similarity_data,
@@ -390,27 +368,14 @@ def topic_adjust():
 
     if request.method == "POST":
 
-        topic_weight_input = []
         topic_label_input = []
         for key, val in request.form.items():
-            if key == "topic_wt_slider_all":
-                topic_weight_input = list(IR_tools.new_full_vector( IR_tools.K, float(val) ))
-                topic_label_input = session["topic_labels"]
-            elif key.startswith("topic_wt_slider_"):
-                topic_weight_input.append(float(val)) # not sure why 1s come back as int
-            elif key.startswith("topic_label_"):
-                topic_label_input.append(val)
+            topic_label_input.append(val)
 
-        if topic_weight_input != []:
-            session["topic_weights"] = topic_weight_input
-            session["topic_labels"] = topic_label_input
-            session.modified = True
-
-    else:
-        pass
+        session["topic_labels"] = topic_label_input
+        session.modified = True
 
     topicAdjustInner_HTML = IR_tools.format_topic_adjust_output(
-        topic_weight_input=session["topic_weights"],
         topic_label_input=session["topic_labels"]
         )
 
@@ -469,32 +434,9 @@ def text_prioritize():
                             textPrioritizeInner_HTML=textPrioritizeInner_HTML
                             )
 
-@app.route('/topicToggle', methods=["GET", "POST"])
-def topic_toggle():
 
-    ensure_keys()
-
-    if request.method == "POST":
-
-        if "topic_toggle_checkbox" in request.form:
-            topic_toggle_value = True
-        else:
-            topic_toggle_value = False
-
-        session["topic_toggle_value"] = topic_toggle_value
-        session.modified = True
-
-    topicToggleInner_HTML = IR_tools.format_topic_toggle_output(
-        session["topic_toggle_value"]
-        )
-
-    return render_template(    "topicToggle.html",
-                            page_subtitle="topicToggle",
-                            topicToggleInner_HTML=topicToggleInner_HTML
-                            )
-
-@app.route('/searchSettings', methods=["GET", "POST"])
-def search_settings():
+@app.route('/searchDepth', methods=["GET", "POST"])
+def search_depth():
 
     ensure_keys()
 
@@ -509,7 +451,7 @@ def search_settings():
                 session["N_sw_w_shallow"] = int(val)
             elif key == "N_sw_w_deep_slider":
                 session["N_sw_w_deep"] = int(val)
-            elif key == "search_settings_use_defaults":
+            elif key == "search_depth_use_defaults":
                 session["N_tf_idf_shallow"] = IR_tools.search_N_defaults["N_tf_idf_shallow"]
                 session["N_tf_idf_deep"] = IR_tools.search_N_defaults["N_tf_idf_deep"]
                 session["N_sw_w_shallow"] = IR_tools.search_N_defaults["N_sw_w_shallow"]
@@ -520,7 +462,7 @@ def search_settings():
 
         session.modified = True
 
-    searchSettingsInner_HTML = IR_tools.format_search_settings_output(
+    searchDepthInner_HTML = IR_tools.format_search_depth_output(
         N_tf_idf_shallow=session["N_tf_idf_shallow"],
         N_sw_w_shallow=session["N_sw_w_shallow"],
         N_tf_idf_deep=session["N_tf_idf_deep"],
@@ -529,7 +471,7 @@ def search_settings():
         search_depth_default=session["search_depth_default"]
         )
 
-    return render_template(    "searchSettings.html",
-                            page_subtitle="searchSettings",
-                            searchSettingsInner_HTML=searchSettingsInner_HTML
+    return render_template(    "searchDepth.html",
+                            page_subtitle="searchDepth",
+                            searchDepthInner_HTML=searchDepthInner_HTML
                             )

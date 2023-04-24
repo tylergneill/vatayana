@@ -7,7 +7,7 @@
 
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
 
-        <title>vātāyana: topicToggle</title>
+        <title>vātāyana: {{ page_subtitle }}</title>
 
     </head>
 
@@ -75,18 +75,60 @@
 
         <div class="container">
 
-           <h1>Toggle Use of Topics</h1>
-           <br>
+           <h1>Search Depth</h1>
 
-           <p>Preliminary comparison by LDA topics is an elegant way both to cut down on many unnecessary comparisons in the search for verbatim parallels and also to enable exploration of non-verbatim intertextuality connections. However, it can happen that document pairs with legitimate (and often small) verbatim intertextuality connections can be inappropriately excluded by this filtering step.
+           </br>
 
-           For this reason, you may wish to (temporarily) suspend the filtering function of topic comparison. Caveat: If text prioritization is not done carefully, results may take a much longer time to load, i.e., instead of %15 of documents, up to %100 of documents will be compared. That is, you can think of suspending topic filtering as activating a kind of "beast mode" for the more detailed similarity comparison (i.e., TF-IDF and Smith-Waterman). Please use with care.</p>
+			<p>
+				Here you can modify the depth of the document similarity search.
+				There are two depth levels for you to configure and switch between as you find useful
+				("shallow" and "deep").
+		   </p>
 
-           <p>(<i>Changes you make will remain valid for your personal browsr session, i.e., until cookies and other site data are cleared.</i>)</p>
+		   </br>
 
-           {{ topicToggleInner_HTML | safe }}
+           {{ searchDepthInner_HTML | safe }}
+
+			<h2>More info</h2>
+
+		   <p>
+			   The idea here is that TF-IDF and Smith-Waterman comparisons are relatively slow,
+			   and doing more and more of either gets diminishing returns.
+
+			   Therefore, we set a limit on how many topic candidates are compared with TF-IDF,
+			   as well as how many TF-IDF candidates are compared with Smith-Waterman.
+
+			   Due to their different natures and what they compare,
+			   this strategy works to keep computation time relatively low
+			   but still get good results.
+		   </p>
+		   <p>
+			   Top TF-IDF and Smith-Waterman similarity scores are stored in a database,
+			   which allows for much faster loading.
+
+			   Currently, the 500 best TF-IDF scores and the 25 best Smith-Waterman results are stored.
+
+			   As users continue using the system, more results are stored, up to limits of 4000 and 200, respectively.
+
+			   So if you chose numbers up to 4000 and 200, your results will be saved for later,
+			   and you'll wait less time the next time. But if you chose above those limits,
+			   you'll receive your correct results back after waiting the necessary time,
+			   but nothing over those limits will be saved.
+
+			   Note that these limits apply <i>before</i> filtering for one's chosen priority texts.
+           </p>
+			<p>
+				Total max loading time is estimated here for a docExplore query.
+				For docCompare, which involves two docExplore queries, multiply the estimate by 2.
+				At the moment, these estimates are not very accurate;
+				per-comparison time estimates are too low,
+				and on the other hand, the database has reduced overhead significantly.
+				Nevertheless, it gives a rough idea of computational cost.
+           </p>
 
         </div><!-- container -->
+
+		<br><br>
 
     </body>
 

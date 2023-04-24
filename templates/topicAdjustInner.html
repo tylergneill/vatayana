@@ -1,88 +1,23 @@
 <!-- h2 row -->
 <div class="row">
 	<div class="col-md-5">
-		<h2>Individual Topic Weights</h2>
-	</div>
-	<div class="col-md-5">
 		<h2>Interpretive Labels</h2>
 	</div>
 </div>
 
 <form method="post" action="topicAdjust">
 			
-	$slider_and_label_HTML
+	$label_HTML
 
 	</br>
 
 	<!-- save changes button -->
 	<div class="row">
-
-		<div class="col-md-2"></div>
-
 		<div class="col-md-5">
-
-			<input id="topic_wts_and_labels_submit_button" type="submit" class="btn btn-block btn-primary" value="Save Changes"/>
-
+			<input id="topic_labels_submit_button" type="submit" class="btn btn-block btn-primary" value="Save Changes"/>
 		</div>
-
 	</div>
 
 </form>
 
 </br></br>
-
-<h2>Reset All Topic Weights</h2>
-
-<p>Default weight value = 1.00</p>
-
-<div class="row">
-
-	<div class="col-md-3">
-
-		<form method="post" id="topic_weights_all" action="topicAdjust">
-		
-		<div class="range">
-			<input type="range" class="form-range" name="topic_wt_slider_all" id="topic_wt_slider_all" min="0" max="1" step="0.05" value="1.0"/>
-		</div>
-
-	</div>
-
-	<div class="col-md-1">
-		<p id="topic_wt_curr_val_all"></p>
-	</div>
-
-</div>
-
-<div class="row">
-
-	<div class="col-md-3">
-
-		<input id="topic_weights_all_submit_button" type="submit" class="btn btn-block btn-primary" value="Reset All Weights"/>
-
-		</form>
-
-	</div>
-
-	</br></br></br>
-
-</div>
-
-<script>
-	
-	var slider_all = document.getElementById("topic_wt_slider_all");
-	var curr_val_all = document.getElementById("topic_wt_curr_val_all");
-	curr_val_all.innerHTML = (Math.round(slider_all.value * 100) / 100).toFixed(2);
-	slider_all.oninput = function() {
-	  curr_val_all.innerHTML = (Math.round(this.value * 100) / 100).toFixed(2);
-	}
-
-	// would like to do with loop but can't figure out yet
-	// const topic_wt_sliders = document.querySelectorAll("input[class='topic_wt_slider']");
-	// topic_wt_sliders.forEach(function(wt_slider) {
-	// 	var id = wt_slider.getAttribute('id')
-	// 	val_p_element = document.querySelectorAll("p[id='"+id+"']");
-	// 	wt_slider.oninput = function() {
-	//  		val_p_element.innerHTML = this.value;
-	// }
-
-</script>
