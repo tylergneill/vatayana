@@ -117,11 +117,13 @@
 
 			   Note that these limits apply <i>before</i> filtering for one's chosen priority texts.
            </p>
-           <p>
-			   Total max loading time is estimated here for a docExplore query.
-			   For docCompare, which involves two docExplore queries, multiply the estimate by 2.
-			   Please note that these estimates are very low and need to be recalibrated.
-			   This has also not been updated since the database solution was implemented.
+			<p>
+				Total max loading time is estimated here for a docExplore query.
+				For docCompare, which involves two docExplore queries, multiply the estimate by 2.
+				At the moment, these estimates are not very accurate;
+				per-comparison time estimates are too low,
+				and on the other hand, the database has reduced overhead significantly.
+				Nevertheless, it gives a rough idea of computational cost.
            </p>
 
         </div><!-- container -->
