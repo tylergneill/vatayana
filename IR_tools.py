@@ -22,13 +22,13 @@ global CURRENT_FOLDER, text_abbrev2fn, text_abbrev2title
 global doc_ids, ex_doc_ids, doc_fulltext, doc_original_fulltext, disallowed_fulltexts
 global num_docs, doc_links, section_labels, num_docs_by_text
 global thetas, phis
-global K, topic_weights_default
+global K
 global topic_top_words, topic_interpretations, topic_wordcloud_fns
 global stopwords, error_words, too_common_doc_freq_cutoff, too_rare_doc_freq_cutoff, corpus_vocab_reduced
 global doc_freq, IDF, stored_topic_comparison_scores #, preferred_works
 global current_tf_idf_data_work_name, current_tf_idf_data
 global HTML_templates
-global docExploreInner_results_HTML_template, docCompareInner_results_HTML_template, topicAdjustInner_results_HTML_template, textPrioritizeInner_HTML_template, topicToggleInner_HTML
+global docExploreInner_results_HTML_template, docCompareInner_results_HTML_template, topicAdjustInner_results_HTML_template, textPrioritizeInner_HTML_template
 global topic_secs_per_comparison, tf_idf_secs_per_comparison, sw_w_secs_per_comparison
 
 
@@ -51,7 +51,6 @@ template_names = [
     'docCompareInner',
     'topicAdjustInner',
     'textPrioritizeInner',
-    'topicToggleInner',
     'searchSettingsInner'
     ]
 for template_name in template_names:
@@ -116,8 +115,6 @@ search_N_defaults = {
 
 def new_full_vector(size, val):
     return np.full( size, val )
-
-topic_weights_default = new_full_vector(K, 1.0)
 
 ex_doc_ids = ['NBhū_104,6^1', 'SŚP_2.21', 'MV_1,i_5,i^1']
 
@@ -378,7 +375,7 @@ def sort_score_dict(dictionary: Dict[str, Union[float, Tuple[float, str]]]) -> D
     """
     return dict( sorted(dictionary.items(), key=lambda item: item[1], reverse=True) )
 
-def rank_all_candidates_by_topic_similarity(query_id, topic_weights=topic_weights_default):
+def rank_all_candidates_by_topic_similarity(query_id):
 
     if doc_fulltext[query_id] == '': return {}
 
@@ -392,10 +389,10 @@ def rank_all_candidates_by_topic_similarity(query_id, topic_weights=topic_weight
 
     # else contine to perform new calculation
 
-    query_vector = np.array(thetas[query_id]) * topic_weights
+    query_vector = np.array(thetas[query_id])
     topic_similiarity_score = {} # e.g. topic_similiarity_score[DOC_ID] = FLOAT
     for doc_id in doc_ids:
-        candidate_vector = np.array(thetas[doc_id]) * topic_weights # dimensionality = k, number of topics
+        candidate_vector = np.array(thetas[doc_id])
         # use doc_fulltext to check if empty bc exact empty theta vector depends on alpha type (asymmetric etc.)
         if doc_fulltext[doc_id] == '':
             topic_similiarity_score[doc_id] = 0
@@ -625,7 +622,7 @@ def conditionally_do_batch_tf_idf_comparisons(*doc_ids_to_do, N_tf_idf=500):
                 if doc_id in stored_topic_comparison_scores[N]:
                     candidates_results_dict = stored_topic_comparison_scores[N][doc_id]
                 else:
-                    candidates_results_dict = rank_all_candidates_by_topic_similarity(doc_id, topic_weights=topic_weights_default)
+                    candidates_results_dict = rank_all_candidates_by_topic_similarity(doc_id)
 
                 candidate_results_dict_pruned = get_top_N_of_ranked_dict(candidate_results_dict, N=N_tf_idf)
                 ids_for_closest_N_docs_by_topics = candidate_results_dict_pruned.keys()
@@ -967,10 +964,8 @@ def calculate_similar_docs(query_id, N_tfidf=4300, N_sw=200) -> Dict[str, Dict[s
 
 
 def get_closest_docs(   query_id,
-                        topic_weights=topic_weights_default,
                         topic_labels=topic_interpretations,
                         priority_texts=list(text_abbrev2fn.keys()),
-                        # topic_toggle_value=True,
                         N_tf_idf=search_N_defaults["N_tf_idf_shallow"],
                         N_sw_w=search_N_defaults["N_sw_w_shallow"],
                         results_as_links_only=False,
@@ -1021,16 +1016,11 @@ def get_closest_docs(   query_id,
         # prioritize by text and by topic similarity
 
         # get N preliminary candidates by topic score (dimensionality = K, fast)
-        # if topic_toggle_value == True:
-        #     N = int( len(doc_ids) * 0.15)
-        # else:
-        #     N = len(doc_ids) # i.e., do not discard any of ranked list
 
         start1 = datetime.now().time()
 
         all_topic_candidates = rank_all_candidates_by_topic_similarity(
-            query_id,
-            topic_weights
+            query_id
             )
 
         end1 = datetime.now().time()
@@ -1494,10 +1484,8 @@ def sw_nw_align(seq1, seq2):
 
 
 def compare_doc_pair(   doc_id_1, doc_id_2,
-                        topic_weights=topic_weights_default,
                         topic_labels=topic_interpretations,
                         priority_texts=list(text_abbrev2fn.keys()),
-                        # topic_toggle_value=True
                         N_tf_idf=search_N_defaults["N_tf_idf_shallow"],
                         N_sw_w=search_N_defaults["N_sw_w_shallow"],
                         similarity_data: Optional[PymongoCollection]=None,
@@ -1514,8 +1502,8 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
     # do one-off topic comparison
     # start1 = datetime.now().time()
 
-    doc_1_topic_vector = np.array(thetas[doc_id_1]) * topic_weights
-    doc_2_topic_vector = np.array(thetas[doc_id_2]) * topic_weights
+    doc_1_topic_vector = np.array(thetas[doc_id_1])
+    doc_2_topic_vector = np.array(thetas[doc_id_2])
     topic_similiarity_score = 1-fastdist.cosine(doc_1_topic_vector, doc_2_topic_vector)
 
     # print("do one-off topic comparison:", calc_dur(start1, datetime.now().time()))
@@ -1563,7 +1551,6 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
     # start1 = datetime.now().time()
 
     common_kwargs = {
-        "topic_weights": topic_weights,
         "topic_labels": topic_labels,
         "priority_texts": priority_texts,
         "N_tf_idf": N_tf_idf,
@@ -1649,7 +1636,6 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
                         ),
 
                     topic_similiarity_score=round(topic_similiarity_score,2),
-                    topic_weights=str(topic_weights),
                     TF_IDF_comparison_score=round(TF_IDF_comparison_score,2),
                     sw_w_align_score=sw_w_align_score,
                     sw_nw_score=sw_nw_score
@@ -1662,37 +1648,13 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
 
 
 
-def format_topic_adjust_output(topic_weight_input, topic_label_input):
+def format_topic_adjust_output(topic_label_input):
 
     overall_buffer = ""
-    topic_slider_JS_buffer = """
-<script>"""
-
-    for i, wt in enumerate(topic_weight_input):
+    for i, label in enumerate(topic_label_input):
 
         topic_row_buffer = """
 <div class='row'>"""
-
-        # add topic slider with current value display (updated with JS)
-        topic_row_buffer += """
-    <div class='col-md-3'>
-        <div class='range'>
-            <input type='range' class='form-range' name='topic_wt_slider_{}' id='topic_wt_slider_{}' min='0.0' max='1.0' step='0.05' value='{:.2f}'/>
-        </div>
-    </div>
-    <div class="col-md-1">
-        <p id="topic_wt_curr_val_{}"></p>
-    </div>
-    <div class="col-md-1"></div>""".format(i+1, i+1, wt, i+1)
-
-        # this is awful Javascript coding practice, but it works for now
-        topic_slider_JS_buffer += """
-var slider_{} = document.getElementById("topic_wt_slider_{}");
-var curr_val_{} = document.getElementById("topic_wt_curr_val_{}");
-curr_val_{}.innerHTML = (Math.round(slider_{}.value * 100) / 100).toFixed(2);
-slider_{}.oninput = function() {{
-  curr_val_{}.innerHTML = (Math.round(this.value * 100) / 100).toFixed(2);
-}}""".format(i+1, i+1, i+1, i+1, i+1, i+1, i+1, i+1)
 
         # add topic_explore_links and label edit field
         topic_row_buffer += """
@@ -1703,21 +1665,15 @@ slider_{}.oninput = function() {{
     <div class="col-md-4">
         <input id="topic_label_{}" name="topic_label_{}" type="text" class="form-control" value="{}" size="30"/>
     </div>
-    <div class="col-md-2"></div>""".format(i+1, i+1, topic_label_input[i] )
+    <div class="col-md-2"></div>""".format(i+1, i+1, label)
 
         topic_row_buffer += """
 </div><!-- topic row -->"""
 
         overall_buffer += topic_row_buffer
 
-    topic_slider_JS_buffer += """
-</script>"""
-
-    overall_buffer = overall_buffer + topic_slider_JS_buffer
-    # this isn't the bottom of the HTML body, but oh well for now
-
     topicAdjustInner_HTML = HTML_templates['topicAdjustInner'].substitute(
-                                slider_and_label_HTML=overall_buffer
+                                label_HTML=overall_buffer
                                 )
     return topicAdjustInner_HTML
 
@@ -1794,30 +1750,6 @@ def format_text_prioritize_output(*priority_texts_input):
                                     )
 
     return textPrioritizeInner_HTML
-
-def auto_reweight_topics(doc_id):
-    doc_topic_vector = thetas[doc_id]
-    topic_weights_vector = new_full_vector(K, 1.0).tolist() # no need for np here
-    for i, wt in enumerate(doc_topic_vector):
-        if 0.2 <= wt < 1.0: # major topic
-            pass # keep 100% weight
-        elif 0.03 <= wt < 0.2: # medium-importance topic
-            topic_weights_vector[i] = 0.2 # downweight to 20%
-        elif 0.0 < wt < 0.03: # minor topic
-            topic_weights_vector[i] = 0.05 # downweight to 5%
-    return topic_weights_vector
-
-def format_topic_toggle_output(topic_toggle_value):
-
-    if topic_toggle_value:
-        topic_toggle_checkbox_status = "checked"
-    else:
-        topic_toggle_checkbox_status = ""
-    topicToggleInner_HTML = HTML_templates['topicToggleInner'].substitute(
-                                    topic_toggle_checkbox_status=topic_toggle_checkbox_status
-                                    )
-
-    return topicToggleInner_HTML
 
 
 def format_search_settings_slider_pair(N_tf_idf, N_sw_w, priority_texts, depth):
