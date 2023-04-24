@@ -76,26 +76,57 @@
         <div class="container">
 
            <h1>Search Settings</h1>
-           <br>
-
-           <p>
-           	Here you can modify the depth of the search for related passages.
-           	There are two depth levels to choose from.
-           	You can also change the parameters of each depth level,
-           	in that you can change the number of TF-IDF comparisons and, in turn,
-           	the number of Smith-Waterman comparisons that will be performed.
-           </p>
-           <p>
-           	The deeper the search, the longer the loading time for results.
-           	Loading time is estimated here for a docExplore query.
-           	For docCompare, which involves two docExplore queries, multiply the estimate by 2.
-           </p>
 
            </br>
 
+			<p>
+				Here you can modify the depth of the document similarity search.
+			   There are two depth levels for you to configure and switch between as you find useful
+			   ("shallow" and "deep").
+		   </p>
+
+		   </br>
+
            {{ searchSettingsInner_HTML | safe }}
 
+			<h2>More info</h2>
+
+		   <p>
+			   The idea here is that TF-IDF and Smith-Waterman comparisons are relatively slow,
+			   and doing more and more of either gets diminishing returns.
+
+			   Therefore, we set a limit on how many topic candidates are compared with TF-IDF,
+			   as well as how many TF-IDF candidates are compared with Smith-Waterman.
+
+			   Due to their different natures and what they compare,
+			   this strategy works to keep computation time relatively low
+			   but still get good results.
+		   </p>
+		   <p>
+			   Top TF-IDF and Smith-Waterman similarity scores are stored in a database,
+			   which allows for much faster loading.
+
+			   Currently, the 500 best TF-IDF scores and the 25 best Smith-Waterman results are stored.
+
+			   As users continue using the system, more results are stored, up to limits of 4000 and 200, respectively.
+
+			   So if you chose numbers up to 4000 and 200, your results will be saved for later,
+			   and you'll wait less time the next time. But if you chose above those limits,
+			   you'll receive your correct results back after waiting the necessary time,
+			   but nothing over those limits will be saved.
+
+			   Note that these limits apply <i>before</i> filtering for one's chosen priority texts.
+           </p>
+           <p>
+			   Total max loading time is estimated here for a docExplore query.
+			   For docCompare, which involves two docExplore queries, multiply the estimate by 2.
+			   Please note that these estimates are very low and need to be recalibrated.
+			   This has also not been updated since the database solution was implemented.
+           </p>
+
         </div><!-- container -->
+
+		<br><br>
 
     </body>
 
