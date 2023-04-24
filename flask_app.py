@@ -435,8 +435,8 @@ def text_prioritize():
                             )
 
 
-@app.route('/searchSettings', methods=["GET", "POST"])
-def search_settings():
+@app.route('/searchDepth', methods=["GET", "POST"])
+def search_depth():
 
     ensure_keys()
 
@@ -451,7 +451,7 @@ def search_settings():
                 session["N_sw_w_shallow"] = int(val)
             elif key == "N_sw_w_deep_slider":
                 session["N_sw_w_deep"] = int(val)
-            elif key == "search_settings_use_defaults":
+            elif key == "search_depth_use_defaults":
                 session["N_tf_idf_shallow"] = IR_tools.search_N_defaults["N_tf_idf_shallow"]
                 session["N_tf_idf_deep"] = IR_tools.search_N_defaults["N_tf_idf_deep"]
                 session["N_sw_w_shallow"] = IR_tools.search_N_defaults["N_sw_w_shallow"]
@@ -462,7 +462,7 @@ def search_settings():
 
         session.modified = True
 
-    searchSettingsInner_HTML = IR_tools.format_search_settings_output(
+    searchDepthInner_HTML = IR_tools.format_search_depth_output(
         N_tf_idf_shallow=session["N_tf_idf_shallow"],
         N_sw_w_shallow=session["N_sw_w_shallow"],
         N_tf_idf_deep=session["N_tf_idf_deep"],
@@ -471,7 +471,7 @@ def search_settings():
         search_depth_default=session["search_depth_default"]
         )
 
-    return render_template(    "searchSettings.html",
-                            page_subtitle="searchSettings",
-                            searchSettingsInner_HTML=searchSettingsInner_HTML
+    return render_template(    "searchDepth.html",
+                            page_subtitle="searchDepth",
+                            searchDepthInner_HTML=searchDepthInner_HTML
                             )

@@ -51,7 +51,7 @@ template_names = [
     'docCompareInner',
     'topicAdjustInner',
     'textPrioritizeInner',
-    'searchSettingsInner'
+    'searchDepthInner'
     ]
 for template_name in template_names:
     HTML_template_relative_path = 'templates/{}.html'.format(template_name)
@@ -1752,7 +1752,7 @@ def format_text_prioritize_output(*priority_texts_input):
     return textPrioritizeInner_HTML
 
 
-def format_search_settings_slider_pair(N_tf_idf, N_sw_w, priority_texts, depth):
+def format_search_depth_slider_pair(N_tf_idf, N_sw_w, priority_texts, depth):
 
     # get num of docs in priority_texts to use for comupatation time calculations
     num_priority_docs = sum([ num_docs_by_text[text_name] for text_name in priority_texts ])
@@ -1867,7 +1867,7 @@ total_{}_computation_time_p.innerHTML = `total: ${{ total_{}_computation_time }}
 
     return HTML_buffer, slider_JS_buffer
 
-def format_search_settings_output(N_tf_idf_shallow, N_sw_w_shallow, N_tf_idf_deep, N_sw_w_deep, priority_texts, search_depth_default):
+def format_search_depth_output(N_tf_idf_shallow, N_sw_w_shallow, N_tf_idf_deep, N_sw_w_deep, priority_texts, search_depth_default):
 
     # N_vals = {
     #     'N_tf_idf_shallow' : N_tf_idf_shallow,
@@ -1908,8 +1908,8 @@ var total_deep_computation_time_p;
 </script>
 """.format(topic_secs_per_comparison, tf_idf_secs_per_comparison, sw_w_secs_per_comparison, num_docs*topic_secs_per_comparison)
 
-    shallow_slider_HTML, shallow_slider_JS = format_search_settings_slider_pair(N_tf_idf_shallow, N_sw_w_shallow, priority_texts, depth='shallow')
-    deep_slider_HTML, deep_slider_JS = format_search_settings_slider_pair(N_tf_idf_deep, N_sw_w_deep, priority_texts, depth='deep')
+    shallow_slider_HTML, shallow_slider_JS = format_search_depth_slider_pair(N_tf_idf_shallow, N_sw_w_shallow, priority_texts, depth='shallow')
+    deep_slider_HTML, deep_slider_JS = format_search_depth_slider_pair(N_tf_idf_deep, N_sw_w_deep, priority_texts, depth='deep')
 
     search_depth_radio_shallow_checked_status = ( search_depth_default == "shallow" ) * "checked"
     search_depth_radio_deep_checked_status = ( search_depth_default == "deep" ) * "checked"
@@ -1921,7 +1921,7 @@ var total_deep_computation_time_p;
     #     search_depth_radio_shallow_checked_status = ""
     #     search_depth_radio_deep_checked_status = "checked"
 
-    searchSettingsInner_HTML = HTML_templates['searchSettingsInner'].substitute(
+    searchDepthInner_HTML = HTML_templates['searchDepthInner'].substitute(
         shallow_slider_HTML=shallow_slider_HTML,
         deep_slider_HTML=deep_slider_HTML,
         JS_preamble=JS_preamble,
@@ -1935,4 +1935,4 @@ var total_deep_computation_time_p;
         search_depth_radio_deep_checked_status=search_depth_radio_deep_checked_status
 
         )
-    return searchSettingsInner_HTML
+    return searchDepthInner_HTML
