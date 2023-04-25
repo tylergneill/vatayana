@@ -3,6 +3,8 @@ import json
 import pickle
 import re
 import math
+from typing import List, Dict, Optional, Union
+
 import numpy as np
 
 from collections import OrderedDict, Counter, defaultdict
@@ -13,19 +15,20 @@ from datetime import datetime, date
 from collatex import *
 from lxml import etree
 from difflib import SequenceMatcher
+from flask_pymongo.wrappers import Collection as PymongoCollection
 
 # global variable declarations (needed only for purposes of convenience in PDB and documentation)
 global CURRENT_FOLDER, text_abbrev2fn, text_abbrev2title
 global doc_ids, ex_doc_ids, doc_fulltext, doc_original_fulltext, disallowed_fulltexts
 global num_docs, doc_links, section_labels, num_docs_by_text
 global thetas, phis
-global K, topic_weights_default
+global K
 global topic_top_words, topic_interpretations, topic_wordcloud_fns
 global stopwords, error_words, too_common_doc_freq_cutoff, too_rare_doc_freq_cutoff, corpus_vocab_reduced
 global doc_freq, IDF, stored_topic_comparison_scores #, preferred_works
 global current_tf_idf_data_work_name, current_tf_idf_data
 global HTML_templates
-global docExploreInner_results_HTML_template, docCompareInner_results_HTML_template, topicAdjustInner_results_HTML_template, textPrioritizeInner_HTML_template, topicToggleInner_HTML
+global docExploreInner_results_HTML_template, docCompareInner_results_HTML_template, topicAdjustInner_results_HTML_template, textPrioritizeInner_HTML_template
 global topic_secs_per_comparison, tf_idf_secs_per_comparison, sw_w_secs_per_comparison
 
 
@@ -44,11 +47,11 @@ def load_dict_from_json(relative_path_fn):
 HTML_templates = {}
 template_names = [
     'docExploreInner',
+    'docExploreBatchInner',
     'docCompareInner',
     'topicAdjustInner',
     'textPrioritizeInner',
-    'topicToggleInner',
-    'searchSettingsInner'
+    'searchDepthInner'
     ]
 for template_name in template_names:
     HTML_template_relative_path = 'templates/{}.html'.format(template_name)
@@ -112,8 +115,6 @@ search_N_defaults = {
 
 def new_full_vector(size, val):
     return np.full( size, val )
-
-topic_weights_default = new_full_vector(K, 1.0)
 
 ex_doc_ids = ['NBhū_104,6^1', 'SŚP_2.21', 'MV_1,i_5,i^1']
 
@@ -367,7 +368,14 @@ def get_top_topic_indices(doc_id, max_N=5, threshold=0.03):
     return qualifying_indices
 
 
-def rank_all_candidates_by_topic_similarity(query_id, topic_weights=topic_weights_default):
+def sort_score_dict(dictionary: Dict[str, Union[float, List[Union[float, str]]]]) -> Dict:
+    """
+    Takes a dict of the form {'key_1': value_1, 'key_n': value_n} and returns sorted according to values.
+    Also works if dict values are a list of the form [float, str] rather than just a float (as for sw scores).
+    """
+    return dict( sorted(dictionary.items(), key=lambda item: item[1], reverse=True) )
+
+def rank_all_candidates_by_topic_similarity(query_id):
 
     if doc_fulltext[query_id] == '': return {}
 
@@ -381,20 +389,20 @@ def rank_all_candidates_by_topic_similarity(query_id, topic_weights=topic_weight
 
     # else contine to perform new calculation
 
-    query_vector = np.array(thetas[query_id]) * topic_weights
+    query_vector = np.array(thetas[query_id])
     topic_similiarity_score = {} # e.g. topic_similiarity_score[DOC_ID] = FLOAT
     for doc_id in doc_ids:
-        candidate_vector = np.array(thetas[doc_id]) * topic_weights # dimensionality = k, number of topics
+        candidate_vector = np.array(thetas[doc_id])
         # use doc_fulltext to check if empty bc exact empty theta vector depends on alpha type (asymmetric etc.)
         if doc_fulltext[doc_id] == '':
             topic_similiarity_score[doc_id] = 0
         else:
-            topic_similiarity_score[doc_id] = fastdist.cosine(query_vector, candidate_vector)
+            topic_similiarity_score[doc_id] = round(1-fastdist.cosine(query_vector, candidate_vector), 4)
 
     topic_similiarity_score.pop(query_id) # remove query itself
 
     # return sorted dict in descending order by value
-    sorted_results = dict( sorted(topic_similiarity_score.items(), key=lambda item: item[1], reverse=True) )
+    sorted_results = sort_score_dict(topic_similiarity_score)
     return sorted_results
 
 
@@ -453,7 +461,7 @@ def get_TF_IDF_vector(doc_id):
 # phasing out...
 # import pdb; pdb.set_trace()
 # conditionally_do_batch_tf_idf_comparisons(*doc_ids[:5], N=1000)
-# NBhu_doc_ids = [ di for di in doc_ids if parse_complex_doc_id(di)[0] == 'NBhū' ]
+NBhu_doc_ids = [ di for di in doc_ids if parse_complex_doc_id(di)[0] == 'NBhū' ]
 # print(len(NBhu_doc_ids))
 # conditionally_do_batch_tf_idf_comparisons(*NBhu_doc_ids, N=1000)
 
@@ -518,7 +526,7 @@ def rank_candidates_by_TF_IDF_similarity(query_id, candidate_ids):
                  # basically skip empties to avoid div_by_zero in cosine calculation (could also use doc_fulltext)
                 new_TF_IDF_comparison_scores[doc_id] = 0
             else:
-                new_TF_IDF_comparison_scores[doc_id] = fastdist.cosine(query_vector, candidate_vector)
+                new_TF_IDF_comparison_scores[doc_id] = round(1-fastdist.cosine(query_vector, candidate_vector), 4)
             TF_IDF_comparison_scores[doc_id] = new_TF_IDF_comparison_scores[doc_id]
 
     # merge new dict into old cumulative results dict and save both to memory and to disk
@@ -532,7 +540,7 @@ def rank_candidates_by_TF_IDF_similarity(query_id, candidate_ids):
     # i.e., always save to disk, but only load from disk when switching works, to save some time but still reliably save
 
     # sort and return ranked results
-    sorted_results = sorted(TF_IDF_comparison_scores.items(), key=lambda item: item[1], reverse=True)
+    sorted_results = sort_score_dict(TF_IDF_comparison_scores)
     candidate_ranking_results_dict = { res[0]: res[1] for res in sorted_results }
     return candidate_ranking_results_dict
 
@@ -566,14 +574,14 @@ def get_tiny_TF_IDF_vectors(doc_id_1, doc_id_2):
 
 def rank_candidates_by_tiny_TF_IDF_similarity(query_id, candidate_ids):
 
-    if doc_fulltext[query_id] == '': return {}
+    if doc_fulltext[query_id] == '' or candidate_ids == []: return {}
 
     TF_IDF_comparison_scores = {} # e.g. TF_IDF_comparison_scores[DOC_ID] = FLOAT
     for doc_id in candidate_ids:
         query_vector, candidate_vector = get_tiny_TF_IDF_vectors(query_id, doc_id)
-        TF_IDF_comparison_scores[doc_id] = fastdist.cosine(query_vector, candidate_vector)
+        TF_IDF_comparison_scores[doc_id] = round(1-fastdist.cosine(query_vector, candidate_vector), 4)
 
-    sorted_results = dict(sorted(TF_IDF_comparison_scores.items(), key=lambda item: item[1], reverse=True))
+    sorted_results = sort_score_dict(TF_IDF_comparison_scores)
     return sorted_results
 
 
@@ -614,7 +622,7 @@ def conditionally_do_batch_tf_idf_comparisons(*doc_ids_to_do, N_tf_idf=500):
                 if doc_id in stored_topic_comparison_scores[N]:
                     candidates_results_dict = stored_topic_comparison_scores[N][doc_id]
                 else:
-                    candidates_results_dict = rank_all_candidates_by_topic_similarity(doc_id, topic_weights=topic_weights_default)
+                    candidates_results_dict = rank_all_candidates_by_topic_similarity(doc_id)
 
                 candidate_results_dict_pruned = get_top_N_of_ranked_dict(candidate_results_dict, N=N_tf_idf)
                 ids_for_closest_N_docs_by_topics = candidate_results_dict_pruned.keys()
@@ -672,9 +680,9 @@ def format_textView_link(doc_id):
     work_abbrv, local_doc_id = parse_complex_doc_id(doc_id)
     return "<a href='textView?text_abbrv=%s#%s' target='textView%s'>txtVw</a>" % (work_abbrv, local_doc_id, work_abbrv)
 
-def format_docCompare_link(doc_id_1, doc_id_2):
-    # each one looks like fixed string "dcCp"
-    return "<a href='docCompare?doc_id_1=%s&doc_id_2=%s' target='docCompare'>dcCp</a>" % (doc_id_1, doc_id_2)
+def format_docCompare_link(doc_id_1, doc_id_2, display_string="dcCp", title=""):
+    # each one looks like fixed string "dcCp" unless otherwise specified
+    return "<a href='docCompare?doc_id_1=%s&doc_id_2=%s' target='docCompare' title='%s'>%s</a>" % (doc_id_1, doc_id_2, title, display_string)
 
 def format_similarity_result_columns(query_id, priority_results_list_content, secondary_results_list_content):
 
@@ -682,11 +690,11 @@ def format_similarity_result_columns(query_id, priority_results_list_content, se
     table_header_row =     """<thead>
                                 <tr>
                                     <th>rank</th>
-                                    <th>doc_id</th>
-                                    <th>topic</th>
-                                    <th>tf-idf</th>
-                                    <th>align</th>
-                                    <th>links</th>
+                                    <th>similar doc</th>
+                                    <th>topic score</th>
+                                    <th>word score</th>
+                                    <th>phrase score</th>
+                                    <th>phrase preview</th>
                                 </tr>
                             </thead>"""
     table_row_template =     """<tr>
@@ -695,8 +703,10 @@ def format_similarity_result_columns(query_id, priority_results_list_content, se
                                     <td>%.2f</td>
                                     <td>%s</td>
                                     <td>%s</td>
-                                    <td>%s&nbsp;&nbsp;%s</td>
+                                    <td>%s</td>
                                 </tr>"""
+    #                                     <th>links</th>
+    #                                     <td>%s&nbsp;&nbsp;%s</td>
 
     priority_col_HTML = "<table id='priority_col_table' class='display'>"
     priority_col_HTML += table_header_row + "<tbody>"
@@ -707,9 +717,10 @@ def format_similarity_result_columns(query_id, priority_results_list_content, se
             format_docView_link(doc_id),
             results[0], # topic score
             results[1], # tf-idf score
-            results[2], # alignment score
-            format_textView_link(doc_id),
-            format_docCompare_link(query_id, doc_id)
+            results[2][0], # alignment score
+            format_docCompare_link(query_id, doc_id, display_string=results[2][1][:25], title=results[2][1]),  # alignment phrase, max 25 chars
+            # format_textView_link(doc_id),
+            # format_docCompare_link(query_id, doc_id)
             )
         for i, (doc_id, results) in enumerate(priority_results_list_content.items())
         ] )
@@ -737,22 +748,28 @@ def format_similarity_result_columns(query_id, priority_results_list_content, se
     return priority_col_HTML, secondary_col_HTML
 
 
-def rank_candidates_by_sw_w_alignment_score(query_id, candidate_ids):
+def rank_candidates_by_sw_w_alignment_score(query_id, candidate_ids, sw_w_score_threshold=30):
+
+    if doc_fulltext[query_id] == '' or candidate_ids == []: return {}
+
     sw_alignment_scores = {}
     for i, doc_id in enumerate(candidate_ids):
 
         text_1, text_2 = doc_fulltext[query_id], doc_fulltext[doc_id]
         subseq1_pos, subseq2_pos, subseq1_len, subseq2_len, score = sw_align(text_1, text_2, words=True)
         if (subseq1_pos, subseq2_pos, subseq1_len, subseq2_len, score) == (0, 0, 0, 0, 0):
-            sw_alignment_scores[doc_id] = 0.0
+            sw_alignment_scores[doc_id] = [0.0, ""]
         else:
             subseq1 = ' '.join( text_1.split(' ')[subseq1_pos:subseq1_pos+subseq1_len] )
             subseq2 = ' '.join( text_2.split(' ')[subseq2_pos:subseq2_pos+subseq2_len] )
-            _, _, _, _, score = sw_align(subseq1, subseq2, words=False)
-            sw_alignment_scores[doc_id] = score / 10
+            subseq1_pos, subseq2_pos, subseq1_len, subseq2_len, raw_score = sw_align(subseq1, subseq2, words=False)
+            sw_w_score = raw_score / 10
+            if sw_w_score >= sw_w_score_threshold:
+                sw_alignment_scores[doc_id] = [sw_w_score, subseq1]
+            else:
+                sw_alignment_scores[doc_id] = [sw_w_score, ""]
 
-    sorted_results = dict(sorted(sw_alignment_scores.items(), key=lambda item: item[1], reverse=True))
-
+    sorted_results = sort_score_dict(sw_alignment_scores)
     return sorted_results
 
 def calc_dur(start, end):
@@ -760,17 +777,206 @@ def calc_dur(start, end):
     duration_secs = delta.seconds + delta.microseconds / 1000000
     return duration_secs
 
+
+def truncate_dict(dictionary: Dict, n: int) -> Dict:
+    """
+    Returns the first n items of the dict. For use with sorted dicts.
+    """
+    return {
+        k: v
+        for (k, v) in list(dictionary.items())[:n]
+    }
+
+N_TDIDF_SAVE_LIMIT = 4000
+N_SW_SAVE_LIMIT = 200
+def get_closest_docs_with_db(
+        similarity_data: PymongoCollection,
+        query_id,
+        N_tfidf=N_TDIDF_SAVE_LIMIT,
+        N_sw=N_SW_SAVE_LIMIT,
+        priority_texts: List[str]=list(text_abbrev2fn.keys()),
+    ) -> Dict[str, Dict[str, float]]:
+    # start = datetime.now().time()
+    if not (
+            record := similarity_data.find_one({"query_id": query_id})
+    # ) or not (
+    #         len(topic_similar_docs := record["similar_docs"]["topic"]) != len(doc_ids)
+    ):
+        # simply do from scratch
+        similar_docs = calculate_similar_docs(query_id, N_tfidf, N_sw)
+
+    else:
+        topic_similar_docs = rank_all_candidates_by_topic_similarity(query_id)
+
+        # all topic comparisons done
+
+        tf_idf_similar_docs = record["similar_docs"]["tf_idf"]
+        sw_w_similar_docs = record["similar_docs"]["sw_w"]
+        additional_tfidf = None
+        if not (len(tf_idf_similar_docs) >= N_tfidf):
+            # not enough tf-idf comparisons already done, do more
+            additional_tfidf = rank_candidates_by_tiny_TF_IDF_similarity(
+                query_id,
+                list(topic_similar_docs.keys())[len(tf_idf_similar_docs):N_tfidf]
+            )
+            # print("len(additional_tfidf):", len(additional_tfidf))
+            tf_idf_similar_docs = dict(tf_idf_similar_docs, **additional_tfidf)  # can't use .update()
+            tf_idf_similar_docs = sort_score_dict(tf_idf_similar_docs)
+
+            # cache for sw_w now unreliable since new possibilities just added
+            # existing scores still correct, just not necessarily correct rank
+            # immediately refresh sw_w cache by replacing with new scores as needed, keep at same size
+            existing_sw_cache_size = len(sw_w_similar_docs)
+            doc_ids_for_sw_comparison = []
+            for doc_id in truncate_dict(tf_idf_similar_docs, existing_sw_cache_size):
+                if doc_id not in sw_w_similar_docs:
+                    doc_ids_for_sw_comparison.append(doc_id)
+            additional_sw = rank_candidates_by_sw_w_alignment_score(
+                query_id,
+                doc_ids_for_sw_comparison,
+            )
+            # print("len(additional_sw) due to additional_tfidf:", len(additional_sw))
+            sw_w_similar_docs = dict(sw_w_similar_docs, **additional_sw)  # can't use .update()
+            sw_w_similar_docs = sort_score_dict(sw_w_similar_docs)
+            sw_w_similar_docs = truncate_dict(sw_w_similar_docs, existing_sw_cache_size)
+
+            # enough tf-idf comparisons done now
+
+        if not (len(sw_w_similar_docs) >= N_sw):
+            # not enough sw comparisons already done, do more
+
+            additional_sw = rank_candidates_by_sw_w_alignment_score(
+                query_id,
+                list(tf_idf_similar_docs.keys())[len(sw_w_similar_docs):N_sw]
+            )
+            # print("len(additional_sw):", len(additional_sw))
+            sw_w_similar_docs = dict(sw_w_similar_docs, **additional_sw)  # can't use .update()
+            sw_w_similar_docs = sort_score_dict(sw_w_similar_docs)
+
+        # enough sw comparisons done now
+
+        similar_docs = {
+            'topic': topic_similar_docs,
+            'tf_idf': tf_idf_similar_docs,
+            'sw_w': sw_w_similar_docs,
+        }
+
+    # truncate what gets saved to prevent writing too much to db
+    similar_docs_to_save = {
+        # 'topic': similar_docs['topic'],  # dropped because too big
+        'tf_idf': truncate_dict(similar_docs['tf_idf'], N_TDIDF_SAVE_LIMIT),
+        'sw_w': truncate_dict(similar_docs['sw_w'], N_SW_SAVE_LIMIT),
+    }
+
+    # save results
+    query = {"query_id": query_id}
+    update = {"$set": {"similar_docs": similar_docs_to_save}}
+    insertion_result = similarity_data.update_one(
+        query,
+        update,
+        upsert=True
+    )
+
+    # end = datetime.now().time()
+    # overall_time = calc_dur(start, end)
+    # print("just getting stuff from db:", overall_time)
+    # start = datetime.now().time()
+    #
+    # # perform filtering and result supplementation based on priority doc list
+    # topic_similar_docs_filtered = {
+    #     k: v for k, v in topic_similar_docs.items() if parse_complex_doc_id(k)[0] in priority_texts
+    # }
+    #
+    # end = datetime.now().time()
+    # overall_time = calc_dur(start, end)
+    # print(f"filtering topic results (len(topic_similar_docs)=={len(topic_similar_docs)}):", overall_time)
+    # start = datetime.now().time()
+    #
+    # tf_idf_similar_docs_filtered = {
+    #     k:v for k,v in tf_idf_similar_docs.items() if parse_complex_doc_id(k)[0] in priority_texts
+    # }
+    #
+    # end = datetime.now().time()
+    # overall_time = calc_dur(start, end)
+    # print(f"filtering tf-idf results (len(tf_idf_similar_docs)=={len(tf_idf_similar_docs)}):", overall_time)
+    # start = datetime.now().time()
+    #
+    # sw_w_similar_docs_filtered = {
+    #     k: v for k, v in sw_w_similar_docs.items() if parse_complex_doc_id(k)[0] in priority_texts
+    # }
+    #
+    # end = datetime.now().time()
+    # overall_time = calc_dur(start, end)
+    # print(f"filtering sw_w results (len(sw_w_similar_docs)=={len(sw_w_similar_docs)}):", overall_time)
+    # start = datetime.now().time()
+    #
+    # additional_tfidf = rank_candidates_by_tiny_TF_IDF_similarity(
+    #     doc_id,
+    #     list(topic_similar_docs_filtered.keys())[len(tf_idf_similar_docs_filtered):N_tfidf]
+    # )
+    #
+    # end = datetime.now().time()
+    # overall_time = calc_dur(start, end)
+    # print(f"additional_tfidf ({N_tfidf-len(tf_idf_similar_docs_filtered)}):", overall_time)
+    #
+    # tf_idf_similar_docs_filtered = dict(tf_idf_similar_docs_filtered, **additional_tfidf)
+    #
+    # start = datetime.now().time()
+    #
+    # additional_sw = rank_candidates_by_sw_w_alignment_score(
+    #     doc_id,
+    #     list(tf_idf_similar_docs_filtered.keys())[len(sw_w_similar_docs_filtered):N_sw]
+    # )
+    #
+    # end = datetime.now().time()
+    # overall_time = calc_dur(start, end)
+    # print(f"additional_sw ({N_sw-len(sw_w_similar_docs_filtered)}):", overall_time)
+    #
+    # sw_w_similar_docs_filtered = dict(sw_w_similar_docs_filtered, **additional_sw)
+    #
+    # similar_docs = {
+    #     'topic': topic_similar_docs_filtered,
+    #     'tf_idf': tf_idf_similar_docs_filtered,
+    #     'sw_w': sw_w_similar_docs_filtered
+    # }
+    #
+    # breakpoint()
+
+    return similar_docs
+
+
+def calculate_similar_docs(query_id, N_tfidf=4300, N_sw=200) -> Dict[str, Dict[str, float]]:
+    topic_similar_docs = rank_all_candidates_by_topic_similarity(query_id)
+    tf_idf_similar_docs = rank_candidates_by_tiny_TF_IDF_similarity(
+        query_id,
+        list(topic_similar_docs.keys())[:N_tfidf]
+    )
+    sw_w_similar_docs = rank_candidates_by_sw_w_alignment_score(
+        query_id,
+        list(tf_idf_similar_docs.keys())[:N_sw]
+    )
+    similar_docs = {
+        'topic': topic_similar_docs,
+        'tf_idf': tf_idf_similar_docs,
+        'sw_w': sw_w_similar_docs
+    }
+    return similar_docs
+
+
 def get_closest_docs(   query_id,
-                        topic_weights=topic_weights_default,
                         topic_labels=topic_interpretations,
                         priority_texts=list(text_abbrev2fn.keys()),
-                        # topic_toggle_value=True,
                         N_tf_idf=search_N_defaults["N_tf_idf_shallow"],
                         N_sw_w=search_N_defaults["N_sw_w_shallow"],
-                        results_as_links_only=False
+                        results_as_links_only=False,
+                        similarity_data: Optional[PymongoCollection]=None,
+                        batch_mode: Optional[bool]=False,
+                        sw_w_min_threshold: Optional[int]=50,
                         ):
 
     # import pdb; pdb.set_trace()
+
+    non_priority_texts = [text for text in list(text_abbrev2fn.keys()) if text not in priority_texts]
 
     start0 = datetime.now().time()
     # get num of docs in priority_texts to use for comupatation time calculations
@@ -788,141 +994,356 @@ def get_closest_docs(   query_id,
             )
         return results_HTML
 
-    # prioritize by text and by topic similarity
+    # use get_closest_docs_with_db
+    if similarity_data != None:
 
-    non_priority_texts = [ text for text in list(text_abbrev2fn.keys()) if text not in priority_texts ]
+        similar_docs: Dict[str, Dict[str, float]] = get_closest_docs_with_db(
+            similarity_data,
+            query_id,
+            N_tfidf = N_tf_idf,
+            N_sw = N_sw_w,
+            priority_texts=priority_texts, # not used!
+            )
 
-    # get N preliminary candidates by topic score (dimensionality = K, fast)
-    # if topic_toggle_value == True:
-    #     N = int( len(doc_ids) * 0.15)
-    # else:
-    #     N = len(doc_ids) # i.e., do not discard any of ranked list
+        priority_topic_candidates = similar_docs['topic']
+        tf_idf_candidates = similar_docs['tf_idf']
+        sw_w_alignment_candidates = similar_docs['sw_w']
 
-    start1 = datetime.now().time()
+        # do NOT prioritize by text at all
 
-    all_topic_candidates = rank_all_candidates_by_topic_similarity(
-        query_id,
-        topic_weights
+    else:
+
+        # prioritize by text and by topic similarity
+
+        # get N preliminary candidates by topic score (dimensionality = K, fast)
+
+        start1 = datetime.now().time()
+
+        all_topic_candidates = rank_all_candidates_by_topic_similarity(
+            query_id
+            )
+
+        end1 = datetime.now().time()
+        topic_time = calc_dur(start1, end1)
+
+        # prioritize candidates by text name
+        priority_candidate_ids, secondary_candidate_ids = divide_doc_id_list_by_work_priority(
+            list(all_topic_candidates.keys()),
+            priority_texts
+            )
+        priority_topic_candidates = { doc_id: all_topic_candidates[doc_id]
+            for doc_id in priority_candidate_ids
+            }
+        secondary_topic_candidates = { doc_id: all_topic_candidates[doc_id]
+            for doc_id in secondary_candidate_ids
+            }
+
+        # limit further computation to only top N_tf_idf of sorted candidates (minus query itself)
+        pruned_priority_topic_candidates = truncate_dict(priority_topic_candidates, N_tf_idf)
+
+        start2 = datetime.now().time()
+
+        # further rank candidates by tiny tf-idf
+        tf_idf_candidates = rank_candidates_by_tiny_TF_IDF_similarity(
+            query_id,
+            list(pruned_priority_topic_candidates.keys())
+            )
+
+        end2 = datetime.now().time()
+        tf_idf_time = calc_dur(start2, end2)
+
+        # would like to bottom of priority list other priority-text docs for which only topics compared
+        # but very inefficient on page render
+        # for now, thereofre, shunt these to secondary results (end of list for now)...
+        for k, v in priority_topic_candidates.items():
+            if k not in tf_idf_candidates:
+                secondary_topic_candidates[k] = v
+
+            # limit further computation to only top N_sw_w of sorted candidates
+        pruned_tf_idf_candidates = truncate_dict(tf_idf_candidates, N_sw_w)
+
+        start3 = datetime.now().time()
+
+        # further rank candidates by sw_w
+        sw_w_alignment_candidates = rank_candidates_by_sw_w_alignment_score(
+            query_id,
+            list(pruned_tf_idf_candidates.keys())
         )
 
-    end1 = datetime.now().time()
-    topic_time = calc_dur(start1, end1)
+        end3 = datetime.now().time()
+        sw_time = calc_dur(start3, end3)
 
-    # prioritize candidates by text name
-    priority_candidate_ids, secondary_candidate_ids = divide_doc_id_list_by_work_priority(
-        list(all_topic_candidates.keys()),
-        priority_texts
-        )
-    priority_topic_candidates = { doc_id: all_topic_candidates[doc_id]
-        for doc_id in priority_candidate_ids
-        }
-    secondary_topic_candidates = { doc_id: all_topic_candidates[doc_id]
-        for doc_id in secondary_candidate_ids
-        }
+        end0 = datetime.now().time()
+        overall_time = calc_dur(start0, end0)
+        print(f"topic_time: {topic_time} sec, len(all_topic_candidates): {len(all_topic_candidates)},  {topic_time/len(all_topic_candidates)} s / topic comparison")
+        print(f"tf_idf_time: {tf_idf_time} sec, len(tf_idf_candidates): {len(tf_idf_candidates)}, {tf_idf_time/len(tf_idf_candidates)} s / tf_idf comparison")
+        print(f"sw_time: {sw_time} sec, len(pruned_tf_idf_candidates): {len(pruned_tf_idf_candidates)}, {sw_time/len(pruned_tf_idf_candidates)} s / sw comparison")
+        print(f"overall_time: {overall_time} sec")
 
-    # limit further computation to only top N_tf_idf of sorted candidates (minus query itself)
-    pruned_priority_topic_candidates = { k:v
-        for (k,v) in list(priority_topic_candidates.items())[:N_tf_idf]
-        }
-
-    start2 = datetime.now().time()
-
-    # further rank candidates by tiny tf-idf
-    tf_idf_candidates = rank_candidates_by_tiny_TF_IDF_similarity(
-        query_id,
-        list(pruned_priority_topic_candidates.keys())
-        )
-
-    end2 = datetime.now().time()
-    tf_idf_time = calc_dur(start2, end2)
+    # post-processing
 
     # post-ranking, convert to strings (round to two decimal places, empty replaces 0.0)
     for k,v in tf_idf_candidates.items():
         if v == 0.0: tf_idf_candidates[k] = ""
         else: tf_idf_candidates[k] = "{:.2f}".format(tf_idf_candidates[k])
 
-    # would like to bottom of priority list other priority-text docs for which only topics compared
-    # but very inefficient on page render
-    # for now, thereofre, shunt these to secondary results (end of list for now)...
-    for k,v in priority_topic_candidates.items():
-       if k not in tf_idf_candidates:
-           secondary_topic_candidates[k] = v
-
-    # limit further computation to only top N_sw_w of sorted candidates
-    pruned_tf_idf_candidates = { k:v
-        for (k,v) in list(tf_idf_candidates.items())[:N_sw_w]
-        }
-
-    start3 = datetime.now().time()
-
-    # further rank candidates by sw_w
-    sw_w_alignment_candidates = rank_candidates_by_sw_w_alignment_score(
-        query_id,
-        list(pruned_tf_idf_candidates.keys())
-        )
-
-    end3 = datetime.now().time()
-    sw_time = calc_dur(start3, end3)
-
-
-    # post-ranking, convert to strings (empty replaces 0.0, no need for rounding)
-    for k,v in sw_w_alignment_candidates.items():
-        if v == 0.0: sw_w_alignment_candidates[k] = ""
-        else: sw_w_alignment_candidates[k] = str(sw_w_alignment_candidates[k])
+    # post-ranking, convert numbers to strings (empty replaces 0.0, no need for rounding)
+    for k,score_phrase_pair in sw_w_alignment_candidates.items():
+        if score_phrase_pair[0] == 0.0: sw_w_alignment_candidates[k] = ("", "")
+        else: sw_w_alignment_candidates[k] = (str(sw_w_alignment_candidates[k][0]), sw_w_alignment_candidates[k][1])
 
     # again add blank entries to bottom of list for all docs for which sw_w comparison not performed
     for k in tf_idf_candidates.keys(): # contains priority_topic_candidates.keys() too
         if k not in sw_w_alignment_candidates:
-            sw_w_alignment_candidates[k] = ""
+            sw_w_alignment_candidates[k] = ("", "")
 
     # thus final results list has sw_w candidates on top, tf_idf candidates after that, and priority_topic_candidates after that
 
     priority_ranked_results_ids = list(sw_w_alignment_candidates.keys())
-
-    if results_as_links_only:
-        similarity_result_doc_links = list2linkingDict(priority_ranked_results_ids)
-        return similarity_result_doc_links
 
     priority_ranked_results_complete = {
         k: (priority_topic_candidates[k], tf_idf_candidates[k], sw_w_alignment_candidates[k])
         for k in priority_ranked_results_ids
     }
 
-    priority_col_HTML, secondary_col_HTML = format_similarity_result_columns(
-        query_id,
-        priority_ranked_results_complete,
-        secondary_topic_candidates
-        )
-    if priority_col_HTML == "": priority_col_HTML = "<p>(none)</p>"
-    # if secondary_col_HTML == "": secondary_col_HTML = "<p>(none)</p>"
-    secondary_col_HTML = "<p>(none)</p>" # just neutralize for now until i can make faster
-    results_HTML = HTML_templates['docExploreInner'].substitute(
-                        query_id = query_id,
-                        query_section = section_labels[query_id],
-                        prev_doc_id = doc_links[query_id]['prev'],
-                        next_doc_id = doc_links[query_id]['next'],
-                        query_original_fulltext = doc_original_fulltext[query_id],
-                        query_segmented_fulltext = doc_fulltext[query_id],
-                        top_topics_summary=format_top_topic_summary(
-                            query_id,
-                            get_top_topic_indices(query_id, max_N=5, threshold=0.03),
-                            topic_labels=topic_labels
-                            ),
-                        priority_col_content = priority_col_HTML,
-                        secondary_col_content = secondary_col_HTML,
-                        priority_texts=str(priority_texts),
-                        non_priority_texts=str(non_priority_texts)
-                        )
+    if similarity_data != None:
+        # need to filter for priority texts at this point
+        # this is relatively computationally expensive!
 
-    end0 = datetime.now().time()
-    overall_time = calc_dur(start0, end0)
-    print(f"topic_time: {topic_time} sec, len(all_topic_candidates): {len(all_topic_candidates)},  {topic_time/len(all_topic_candidates)} s / topic comparison")
-    print(f"tf_idf_time: {tf_idf_time} sec, len(tf_idf_candidates): {len(tf_idf_candidates)}, {tf_idf_time/len(tf_idf_candidates)} s / tf_idf comparison")
-    print(f"sw_time: {sw_time} sec, len(pruned_tf_idf_candidates): {len(pruned_tf_idf_candidates)}, {sw_time/len(pruned_tf_idf_candidates)} s / sw comparison")
-    print(f"overall_time: {overall_time} sec")
+        start4 = datetime.now().time()
+
+        FILTRATION_LIMIT = 2000
+        # truncate results at reasonable limit to speed up following steps
+        # filter out non-priority texts
+        priority_ranked_results_complete = {
+            k: v for k, v in list(priority_ranked_results_complete.items())[:FILTRATION_LIMIT]
+            if parse_complex_doc_id(k)[0] in priority_texts
+        }
+
+        LOADING_LIMIT = 500
+        # further truncate what gets loaded on page
+        priority_ranked_results_complete = truncate_dict(priority_ranked_results_complete, LOADING_LIMIT)
+        # TODO: add "Load more" button that loads rest into table (repurpose "secondary" structure)
+        # additional_ranked_results_complete = {
+        #     k: v for k, v in list(priority_ranked_results_complete.items())[LOADING_LIMIT:]
+        # }
+
+        end4 = datetime.now().time()
+        filtering_time = calc_dur(start4, end4)
+        # print("filtering_time:", filtering_time)
+
+    if results_as_links_only:
+        similarity_result_doc_links = list2linkingDict(list(priority_ranked_results_complete.keys()))
+        return similarity_result_doc_links
+
+    if batch_mode:
+        # pick out absolute best results
+        best_results = {}
+        for doc_id_2, result in priority_ranked_results_complete.items():
+            if float(result[2]) >= sw_w_min_threshold:
+                best_results[doc_id_2] = result
+            else:
+                break
+
+        # return query's best results as simple HTML rows
+        results_HTML = ""
+        for doc_id_2, result in best_results.items():
+            results_HTML += """
+            <tr align="center">
+              <td>{}</td>
+              <td>{}</td>
+              <td>{}</td>
+              <td>{}</td>
+              <td>{}</td>
+            </tr>
+            """.format(
+                    query_id,
+                    doc_id_2,
+                    result[0],
+                    result[1],
+                    result[2],
+                    # subseq_in_text_1,
+                    # link,
+                    # <td align="left">{}</td>
+                    # <td>{}</td>
+            )
+
+    else:
+
+        priority_col_HTML, secondary_col_HTML = format_similarity_result_columns(
+            query_id,
+            priority_ranked_results_complete,
+            # secondary_topic_candidates
+            {}
+        )
+        if priority_col_HTML == "": priority_col_HTML = "<p>(none)</p>"
+        # if secondary_col_HTML == "": secondary_col_HTML = "<p>(none)</p>"
+        secondary_col_HTML = "<p>(none)</p>" # just neutralize for now until i can make faster
+        results_HTML = HTML_templates['docExploreInner'].substitute(
+                            query_id = query_id,
+                            query_section = section_labels[query_id],
+                            prev_doc_id = doc_links[query_id]['prev'],
+                            next_doc_id = doc_links[query_id]['next'],
+                            query_original_fulltext = doc_original_fulltext[query_id],
+                            query_segmented_fulltext = doc_fulltext[query_id],
+                            top_topics_summary=format_top_topic_summary(
+                                query_id,
+                                get_top_topic_indices(query_id, max_N=5, threshold=0.03),
+                                topic_labels=topic_labels
+                                ),
+                            priority_col_content = priority_col_HTML,
+                            secondary_col_content = secondary_col_HTML,
+                            priority_texts=str(priority_texts),
+                            non_priority_texts=str(non_priority_texts)
+                            )
+
     # import pdb; pdb.set_trace()
 
     return results_HTML
+
+
+def batch_mode(
+        similarity_data,
+        query_doc_id_start,
+        query_doc_id_end,
+        sw_score_threshold,
+) -> List[Dict[str, Union[str, float]]]:
+    query_doc_id_range = range(doc_ids.index(query_doc_id_start), doc_ids.index(query_doc_id_end) + 1)
+    query_doc_ids = [doc_ids[i] for i in query_doc_id_range]
+
+    start0 = datetime.now().time()
+    query = {"query_id": {"$in": query_doc_ids}}
+    projection = {"_id": 0, "query_id": 1, "similar_docs.tf_idf": 1, "similar_docs.sw_w": 1}
+    all_records = similarity_data.find(query, projection)
+    # print("fetch records:", calc_dur(start0, datetime.now().time()))
+
+    start1 = datetime.now().time()
+    records_dict = {
+        record['query_id']: {
+            'tf_idf': record['similar_docs']['tf_idf'],
+            'sw_w': record['similar_docs']['sw_w'],
+        } for record in list(all_records)
+    }
+    # print("dict records:", calc_dur(start1, datetime.now().time()))
+
+    start2 = datetime.now().time()
+    ks = sorted(list(records_dict.keys()))
+    sorted_records_dict = {k: records_dict[k] for k in ks}
+    # print("sort records:", calc_dur(start2, datetime.now().time()))
+
+    start3 = datetime.now().time()
+    best_results: List[Dict[str, Union[str, float]]] = []
+    for doc_id, similar_docs in sorted_records_dict.items():
+        for doc_id_2, sw_score_phrase_pair in similar_docs['sw_w'].items():
+            if sw_score_phrase_pair[0] >= int(sw_score_threshold):
+                best_results.append({
+                    'query_id': doc_id,
+                    'doc_id_2': doc_id_2,
+                    'sw_w': sw_score_phrase_pair[0],
+                    'sw_w_phrase': sw_score_phrase_pair[1],
+                    'tf_idf': similar_docs['tf_idf'][doc_id_2],
+                    'topic': calculate_topic_similarity_score(doc_id, doc_id_2),
+                })
+            else:
+                break
+    # print("organize best:", calc_dur(start3, datetime.now().time()))
+
+    # print("overall:", calc_dur(start0, datetime.now().time()))
+
+    return best_results
+
+
+def format_batch_results(results, doc_id_1, doc_id_2, priority_texts):
+    # calculate number of docs
+    batch_size = doc_ids.index(doc_id_2) - doc_ids.index(doc_id_1)
+
+    # begin with head of table
+    table_header_HTML = """
+                    <h1 align="center">Similarity Results: {} – {} ({} docs)</h1>""".format(
+        doc_id_1, doc_id_2, batch_size
+    )
+    table_header_HTML += "<br>"
+    table_header_HTML += """
+        <table id="batch_result_table" class="display">
+          <thead>
+            <tr>
+              <th>{}</th>
+              <th>{}</th>
+              <th>{}</th>
+              <th>{}</th>
+              <th>{}</th>
+              <th>{}</th>
+              <th>{}</th>
+            </tr>
+          </thead>
+          <tbody>
+    """.format('#',
+               'query doc',
+               'similar doc',
+               'topic score',
+               'vocab score',
+               'phrase score',
+               'full phrase overlap',
+               )
+
+    # format rows
+    table_rows_HTML = format_batch_result_rows(results, priority_texts)
+
+    # close off table
+    table_footer_HTML = """
+          </tbody>
+        </table>
+    """
+
+    docExploreInner_HTML = HTML_templates['docExploreBatchInner'].substitute(
+        table_header_HTML=table_header_HTML,
+        table_rows_HTML=table_rows_HTML,
+        table_footer_HTML=table_footer_HTML,
+    )
+
+    return docExploreInner_HTML
+
+
+def calculate_topic_similarity_score(doc_id_1, doc_id_2):
+    doc_1_topic_vector = np.array(thetas[doc_id_1])
+    doc_2_topic_vector = np.array(thetas[doc_id_2])
+    return round(1-fastdist.cosine(doc_1_topic_vector, doc_2_topic_vector), 3)
+
+def order_results(results):
+    return sorted(
+        results, key=lambda result: (
+            doc_ids.index(result['query_id']), doc_ids.index(result['doc_id_2'])
+        )
+    )
+
+def format_batch_result_rows(results: List[Dict[str, Union[str, float]]], priority_texts):
+
+    # filter and resort
+    results = [r for r in results if parse_complex_doc_id(r['doc_id_2'])[0] in priority_texts]
+    results = order_results(results)
+
+    HTML_rows = ""
+    for i, result in enumerate(results):
+        HTML_rows += """
+            <tr>
+              <td>{}</td>
+              <td>{}</td>
+              <td>{}</td>
+              <td>{:.1%}</td>
+              <td>{:.1%}</td>
+              <td>{}</td>
+              <td>{}</td>
+            </tr>
+        """.format(
+            i+1,
+            format_docView_link(result['query_id']),
+            format_docView_link(result['doc_id_2']),
+            result['topic'],
+            result['tf_idf'],
+            result['sw_w'],
+            format_docCompare_link(result['query_id'], result['doc_id_2'], result['sw_w_phrase'], title=""),
+        )
+    return HTML_rows
 
 
 def score_to_color(score):
@@ -1070,38 +1491,89 @@ def sw_nw_align(seq1, seq2):
 
 
 def compare_doc_pair(   doc_id_1, doc_id_2,
-                        topic_weights=topic_weights_default,
                         topic_labels=topic_interpretations,
                         priority_texts=list(text_abbrev2fn.keys()),
-                        # topic_toggle_value=True
                         N_tf_idf=search_N_defaults["N_tf_idf_shallow"],
                         N_sw_w=search_N_defaults["N_sw_w_shallow"],
+                        similarity_data: Optional[PymongoCollection]=None,
                         ):
+
+    # start0 = datetime.now().time()
 
     text_1, text_2 = doc_fulltext[doc_id_1], doc_fulltext[doc_id_2]
 
-    # align and highlight doc_fulltexts
+    query = {"query_id": doc_id_1}
+    record = similarity_data.find_one(query)
+    similar_docs = record['similar_docs']
 
-    # first obtain sw_w alignment score which docExplore ranking based on, for later
-    subseq1_pos, subseq2_pos, subseq1_len, subseq2_len, score = sw_align(text_1, text_2, words=True)
-    if (subseq1_pos, subseq2_pos, subseq1_len, subseq2_len, score) == (0, 0, 0, 0, 0):
-        sw_w_align_score = 0
+    # do one-off topic comparison
+    # start1 = datetime.now().time()
+
+    doc_1_topic_vector = np.array(thetas[doc_id_1])
+    doc_2_topic_vector = np.array(thetas[doc_id_2])
+    topic_similiarity_score = 1-fastdist.cosine(doc_1_topic_vector, doc_2_topic_vector)
+
+    # print("do one-off topic comparison:", calc_dur(start1, datetime.now().time()))
+    # print("overall:", calc_dur(start0, datetime.now().time()))
+
+    if doc_id_2 in similar_docs['tf_idf']:
+        TF_IDF_comparison_score = similar_docs['tf_idf'][doc_id_2]
     else:
-        subseq1 = ' '.join( text_1.split(' ')[subseq1_pos:subseq1_pos+subseq1_len] )
-        subseq2 = ' '.join( text_2.split(' ')[subseq2_pos:subseq2_pos+subseq2_len] )
-        _, _, _, _, score = sw_align(subseq1, subseq2, words=False)
-        sw_w_align_score = str(score / 10)
+        # do one-off tf-idf comparison
+        # start1 = datetime.now().time()
+
+        doc_1_TF_IDF_vector, doc_2_TF_IDF_vector = get_tiny_TF_IDF_vectors(doc_id_1, doc_id_2)
+        TF_IDF_comparison_score = 1 - fastdist.cosine(doc_1_TF_IDF_vector, doc_2_TF_IDF_vector)
+
+        # print("do one-off tf-idf comparison:", calc_dur(start1, datetime.now().time()))
+        # print("overall:", calc_dur(start0, datetime.now().time()))
+
+    if doc_id_2 in similar_docs['sw_w']:
+        sw_w_align_score = similar_docs['sw_w'][doc_id_2][0]
+    else:
+        # do one-off sw_w comparison
+        # start1 = datetime.now().time()
+
+        subseq1_pos, subseq2_pos, subseq1_len, subseq2_len, score = sw_align(text_1, text_2, words=True)
+        if (subseq1_pos, subseq2_pos, subseq1_len, subseq2_len, score) == (0, 0, 0, 0, 0):
+            sw_w_align_score = 0
+        else:
+            subseq1 = ' '.join(text_1.split(' ')[subseq1_pos:subseq1_pos + subseq1_len])
+            subseq2 = ' '.join(text_2.split(' ')[subseq2_pos:subseq2_pos + subseq2_len])
+            _, _, _, _, score = sw_align(subseq1, subseq2, words=False)
+            sw_w_align_score = str(score / 10)
+        # print("# do one-off sw_w comparison:", calc_dur(start1, datetime.now().time()))
+        # print("overall:", calc_dur(start0, datetime.now().time()))
 
     # do actual overall alignment
+    # start1 = datetime.now().time()
+
     highlighted_HTML_1, highlighted_HTML_2, score = sw_nw_align(text_1, text_2)
     sw_nw_score = "{:.1f}".format(score)
 
+    # print("do actual overall alignment:", calc_dur(start1, datetime.now().time()))
+    # print("overall:", calc_dur(start0, datetime.now().time()))
+
     # also prepare similar_doc_links
-    similar_doc_links_for_1 = get_closest_docs(doc_id_1, topic_weights, topic_labels, priority_texts, N_tf_idf, N_sw_w, results_as_links_only=True)
-    similar_doc_links_for_2 = get_closest_docs(doc_id_2, topic_weights, topic_labels, priority_texts, N_tf_idf, N_sw_w, results_as_links_only=True)
+    # start1 = datetime.now().time()
+
+    common_kwargs = {
+        "topic_labels": topic_labels,
+        "priority_texts": priority_texts,
+        "N_tf_idf": N_tf_idf,
+        "N_sw_w": N_sw_w,
+        "results_as_links_only": True,
+        "similarity_data": similarity_data,
+    }
+    similar_doc_links_for_1 = get_closest_docs(doc_id_1, **common_kwargs)
+    similar_doc_links_for_2 = get_closest_docs(doc_id_2, **common_kwargs)
+
+    # print("prepare similar_doc_links:", calc_dur(start1, datetime.now().time()))
+    # print("overall:", calc_dur(start0, datetime.now().time()))
 
     # make similar doc buttons show up and populate
     # also anticipate needing numerical position in (ordered) dict (see index() below)
+    # start1 = datetime.now().time()
 
     if doc_id_2 in similar_doc_links_for_1: # then want buttons to show up on right
         activate_similar_link_buttons_right = 1
@@ -1127,14 +1599,11 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
         activate_similar_link_buttons_left = ""
         prev_sim_doc_id_for_2 = next_sim_doc_id_for_2 = sim_rank_of_prev_for_2 = sim_rank_of_1_for_2 = sim_rank_of_next_for_2 = ""
 
-    # finally, also do one-off topic and tf-idf comparisons
+    # print("make similar doc buttons show up and populate:", calc_dur(start1, datetime.now().time()))
+    # print("overall:", calc_dur(start0, datetime.now().time()))
 
-    doc_1_topic_vector = np.array(thetas[doc_id_1]) * topic_weights
-    doc_2_topic_vector = np.array(thetas[doc_id_2]) * topic_weights
-    topic_similiarity_score = fastdist.cosine(doc_1_topic_vector, doc_2_topic_vector)
-
-    doc_1_TF_IDF_vector, doc_2_TF_IDF_vector = get_tiny_TF_IDF_vectors(doc_id_1, doc_id_2)
-    TF_IDF_comparison_score = fastdist.cosine(doc_1_TF_IDF_vector, doc_2_TF_IDF_vector)
+    # format HTML results
+    # start1 = datetime.now().time()
 
     results_HTML = HTML_templates['docCompareInner'].substitute(
                     doc_id_1=doc_id_1, doc_id_2=doc_id_2,
@@ -1174,47 +1643,25 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
                         ),
 
                     topic_similiarity_score=round(topic_similiarity_score,2),
-                    topic_weights=str(topic_weights),
                     TF_IDF_comparison_score=round(TF_IDF_comparison_score,2),
                     sw_w_align_score=sw_w_align_score,
                     sw_nw_score=sw_nw_score
                     )
 
+    # print("format HTML results:", calc_dur(start1, datetime.now().time()))
+    # print("overall:", calc_dur(start0, datetime.now().time()))
+
     return results_HTML, activate_similar_link_buttons_left, activate_similar_link_buttons_right
 
 
 
-def format_topic_adjust_output(topic_weight_input, topic_label_input):
+def format_topic_adjust_output(topic_label_input):
 
     overall_buffer = ""
-    topic_slider_JS_buffer = """
-<script>"""
-
-    for i, wt in enumerate(topic_weight_input):
+    for i, label in enumerate(topic_label_input):
 
         topic_row_buffer = """
 <div class='row'>"""
-
-        # add topic slider with current value display (updated with JS)
-        topic_row_buffer += """
-    <div class='col-md-3'>
-        <div class='range'>
-            <input type='range' class='form-range' name='topic_wt_slider_{}' id='topic_wt_slider_{}' min='0.0' max='1.0' step='0.05' value='{:.2f}'/>
-        </div>
-    </div>
-    <div class="col-md-1">
-        <p id="topic_wt_curr_val_{}"></p>
-    </div>
-    <div class="col-md-1"></div>""".format(i+1, i+1, wt, i+1)
-
-        # this is awful Javascript coding practice, but it works for now
-        topic_slider_JS_buffer += """
-var slider_{} = document.getElementById("topic_wt_slider_{}");
-var curr_val_{} = document.getElementById("topic_wt_curr_val_{}");
-curr_val_{}.innerHTML = (Math.round(slider_{}.value * 100) / 100).toFixed(2);
-slider_{}.oninput = function() {{
-  curr_val_{}.innerHTML = (Math.round(this.value * 100) / 100).toFixed(2);
-}}""".format(i+1, i+1, i+1, i+1, i+1, i+1, i+1, i+1)
 
         # add topic_explore_links and label edit field
         topic_row_buffer += """
@@ -1225,21 +1672,15 @@ slider_{}.oninput = function() {{
     <div class="col-md-4">
         <input id="topic_label_{}" name="topic_label_{}" type="text" class="form-control" value="{}" size="30"/>
     </div>
-    <div class="col-md-2"></div>""".format(i+1, i+1, topic_label_input[i] )
+    <div class="col-md-2"></div>""".format(i+1, i+1, label)
 
         topic_row_buffer += """
 </div><!-- topic row -->"""
 
         overall_buffer += topic_row_buffer
 
-    topic_slider_JS_buffer += """
-</script>"""
-
-    overall_buffer = overall_buffer + topic_slider_JS_buffer
-    # this isn't the bottom of the HTML body, but oh well for now
-
     topicAdjustInner_HTML = HTML_templates['topicAdjustInner'].substitute(
-                                slider_and_label_HTML=overall_buffer
+                                label_HTML=overall_buffer
                                 )
     return topicAdjustInner_HTML
 
@@ -1317,32 +1758,8 @@ def format_text_prioritize_output(*priority_texts_input):
 
     return textPrioritizeInner_HTML
 
-def auto_reweight_topics(doc_id):
-    doc_topic_vector = thetas[doc_id]
-    topic_weights_vector = new_full_vector(K, 1.0).tolist() # no need for np here
-    for i, wt in enumerate(doc_topic_vector):
-        if 0.2 <= wt < 1.0: # major topic
-            pass # keep 100% weight
-        elif 0.03 <= wt < 0.2: # medium-importance topic
-            topic_weights_vector[i] = 0.2 # downweight to 20%
-        elif 0.0 < wt < 0.03: # minor topic
-            topic_weights_vector[i] = 0.05 # downweight to 5%
-    return topic_weights_vector
 
-def format_topic_toggle_output(topic_toggle_value):
-
-    if topic_toggle_value:
-        topic_toggle_checkbox_status = "checked"
-    else:
-        topic_toggle_checkbox_status = ""
-    topicToggleInner_HTML = HTML_templates['topicToggleInner'].substitute(
-                                    topic_toggle_checkbox_status=topic_toggle_checkbox_status
-                                    )
-
-    return topicToggleInner_HTML
-
-
-def format_search_settings_slider_pair(N_tf_idf, N_sw_w, priority_texts, depth):
+def format_search_depth_slider_pair(N_tf_idf, N_sw_w, priority_texts, depth):
 
     # get num of docs in priority_texts to use for comupatation time calculations
     num_priority_docs = sum([ num_docs_by_text[text_name] for text_name in priority_texts ])
@@ -1457,7 +1874,7 @@ total_{}_computation_time_p.innerHTML = `total: ${{ total_{}_computation_time }}
 
     return HTML_buffer, slider_JS_buffer
 
-def format_search_settings_output(N_tf_idf_shallow, N_sw_w_shallow, N_tf_idf_deep, N_sw_w_deep, priority_texts, search_depth_default):
+def format_search_depth_output(N_tf_idf_shallow, N_sw_w_shallow, N_tf_idf_deep, N_sw_w_deep, priority_texts, search_depth_default):
 
     # N_vals = {
     #     'N_tf_idf_shallow' : N_tf_idf_shallow,
@@ -1498,8 +1915,8 @@ var total_deep_computation_time_p;
 </script>
 """.format(topic_secs_per_comparison, tf_idf_secs_per_comparison, sw_w_secs_per_comparison, num_docs*topic_secs_per_comparison)
 
-    shallow_slider_HTML, shallow_slider_JS = format_search_settings_slider_pair(N_tf_idf_shallow, N_sw_w_shallow, priority_texts, depth='shallow')
-    deep_slider_HTML, deep_slider_JS = format_search_settings_slider_pair(N_tf_idf_deep, N_sw_w_deep, priority_texts, depth='deep')
+    shallow_slider_HTML, shallow_slider_JS = format_search_depth_slider_pair(N_tf_idf_shallow, N_sw_w_shallow, priority_texts, depth='shallow')
+    deep_slider_HTML, deep_slider_JS = format_search_depth_slider_pair(N_tf_idf_deep, N_sw_w_deep, priority_texts, depth='deep')
 
     search_depth_radio_shallow_checked_status = ( search_depth_default == "shallow" ) * "checked"
     search_depth_radio_deep_checked_status = ( search_depth_default == "deep" ) * "checked"
@@ -1511,7 +1928,7 @@ var total_deep_computation_time_p;
     #     search_depth_radio_shallow_checked_status = ""
     #     search_depth_radio_deep_checked_status = "checked"
 
-    searchSettingsInner_HTML = HTML_templates['searchSettingsInner'].substitute(
+    searchDepthInner_HTML = HTML_templates['searchDepthInner'].substitute(
         shallow_slider_HTML=shallow_slider_HTML,
         deep_slider_HTML=deep_slider_HTML,
         JS_preamble=JS_preamble,
@@ -1525,4 +1942,4 @@ var total_deep_computation_time_p;
         search_depth_radio_deep_checked_status=search_depth_radio_deep_checked_status
 
         )
-    return searchSettingsInner_HTML
+    return searchDepthInner_HTML

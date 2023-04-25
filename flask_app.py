@@ -3,14 +3,27 @@ import html
 import re
 
 from datetime import datetime, date
-from flask import Flask, session, redirect, render_template, request, url_for, send_from_directory #, send_file
-
+from flask import Flask, session, redirect, render_template, request, url_for, send_from_directory
+from flask_pymongo import PyMongo
 
 import IR_tools
 
 app = Flask(__name__)
 app.config["DEBUG"] = True
 app.config["SECRET_KEY"] = "safaksdfakjdshfkajshfka" # for session, no actual need for secrecy
+MONGO_CRED = open('mongo_cred.txt').read().strip()
+# app.config["MONGO_URI"] = "mongodb://localhost:27017/my_db"
+app.config["MONGO_URI"] = f"mongodb+srv://tyler:{MONGO_CRED}@sanskrit.doxamlm.mongodb.net/vatayana?retryWrites=true&w=majority"
+
+
+# setup Mongo DB
+mongo_db_client = PyMongo(app)
+# similarity_data = mongo_db_client.db.my_collection  # local
+similarity_data = mongo_db_client.db.similarity  # remote
+print("num of records in collection:", similarity_data.count_documents({}))
+
+# result = IR_tools.get_closest_docs_with_db(similarity_data, IR_tools.doc_ids[629], priority_texts=['VS'])
+
 
 # for serving static files from assets folder
 @app.route('/assets/<path:name>')
@@ -29,10 +42,8 @@ CURRENT_FOLDER = os.path.dirname(os.path.abspath(__file__))
 flask_session_variable_names = [
     "doc_id", "doc_id_1", "doc_id_2",
     "text_abbreviation_input", "local_doc_id",
-    "topic_weights",
     "topic_labels",
     "priority_texts",
-    "topic_toggle_value",
     "N_tf_idf_shallow", "N_sw_w_shallow",
     "N_tf_idf_deep", "N_sw_w_deep",
     "search_depth_default"
@@ -48,10 +59,8 @@ def ensure_keys():
 def reset_variables():
     session["doc_id"] = ""; session["doc_id_1"] = ""; session["doc_id_2"] = "",
     session["text_abbreviation_input"] = ""; session["local_doc_id"] = ""
-    session["topic_weights"] = IR_tools.topic_weights_default.tolist()
     session["topic_labels"] = IR_tools.topic_interpretations
     session["priority_texts"] = list(IR_tools.text_abbrev2fn.keys())
-    session["topic_toggle_value"] = True
     session["N_tf_idf_shallow"] = IR_tools.search_N_defaults["N_tf_idf_shallow"]
     session["N_tf_idf_deep"] = IR_tools.search_N_defaults["N_tf_idf_deep"]
     session["N_sw_w_shallow"] = IR_tools.search_N_defaults["N_sw_w_shallow"]
@@ -96,8 +105,13 @@ def doc_explore():
 
     ensure_keys()
 
-    if request.method == "POST" or 'text_abbrv' in request.args or 'doc_id' in request.args:
+    if request.method == "POST" or 'doc_id' in request.args:
+        # NB: not yet supported is sending 'text_abbrv' and 'local_doc_id' via GET
 
+        text_abbreviation_input = ""
+        local_doc_id_input = ""
+        local_doc_id_input_2 = ""
+        doc_id_2 = ""
 
         if 'doc_id' in request.args:
             doc_id = request.args.get("doc_id")
@@ -106,37 +120,103 @@ def doc_explore():
             local_doc_id_input = request.form.get("local_doc_id_input")
             doc_id = text_abbreviation_input + '_' + local_doc_id_input
 
-        valid_doc_ids = IR_tools.doc_ids
-        if doc_id in valid_doc_ids:
-
-            auto_reweight_topics_option = False
-            if auto_reweight_topics_option:
-                topic_weights = IR_tools.auto_reweight_topics(doc_id)
-                session['topic_weights'] = topic_weights
-                session.modified = True
-
-            docExploreInner_HTML = IR_tools.get_closest_docs(
-                doc_id,
-                topic_weights=session['topic_weights'],
-                topic_labels=session['topic_labels'],
-                priority_texts=session["priority_texts"],
-                # topic_toggle_value=session["topic_toggle_value"]
-                N_tf_idf=session["N_tf_idf_"+session["search_depth_default"]],
-                N_sw_w=session["N_sw_w_"+session["search_depth_default"]]
-                )
+        if 'doc_id_2' in request.args:
+            doc_id_2 = request.args.get("doc_id_2")
         else:
-            docExploreInner_HTML = "<br><p>Please enter valid doc ids like " + str(IR_tools.ex_doc_ids)[1:-1] + " etc.</p><p>See <a href='assets/doc_id_list.txt' target='_blank'>doc id list</a> and <a href='assets/corpus_texts.txt' target='_blank'>corpus text list</a> for hints to get started.</p>"
+            local_doc_id_input_2 = request.form.get("local_doc_id_input_2")
+            if local_doc_id_input_2 not in ['', None]:
+                doc_id_2 = text_abbreviation_input + '_' + local_doc_id_input_2
+
+        if 'sw_threshold' in request.args:
+            sw_threshold = request.args.get("sw_threshold")
+        else:
+            sw_threshold = request.form.get("sw_threshold")
+
+        valid_doc_ids = IR_tools.doc_ids
+        if (
+                doc_id in valid_doc_ids
+        ) and (
+                doc_id_2 == ""
+        ) or (
+                (
+                    doc_id_2 in valid_doc_ids
+                ) and (
+                    IR_tools.doc_ids.index(doc_id) < IR_tools.doc_ids.index(doc_id_2)
+                )
+        ):
+
+            if doc_id_2 != "":
+                # batch mode
+
+                # first attempt: just piggy-back off of get_closest_docs()
+                # downside: one doc at a time
+
+                # docExploreInner_HTML += IR_tools.get_closest_docs(
+                #     query_id=IR_tools.doc_ids[i],
+                #     topic_labels=session['topic_labels'],
+                #     priority_texts=session["priority_texts"],
+                #     N_tf_idf=session["N_tf_idf_" + session["search_depth_default"]],
+                #     N_sw_w=session["N_sw_w_" + session["search_depth_default"]],
+                #     similarity_data=similarity_data,
+                #     batch_mode=True,
+                # )
+
+                # second attempt: make special function to focus on batch mode
+                # but still one-at-a-time
+
+                # loop through all queries
+                # (possibly want to limit number of docs to e.g. 100 or 500)
+                # for i in range(IR_tools.doc_ids.index(doc_id), IR_tools.doc_ids.index(doc_id_2)+1):
+                #     # carry out query, get output in form of next batch of HTML rows
+                #     docExploreInner_HTML += IR_tools.get_closest_docs_with_db_only_batch_only(
+                #         similarity_data,
+                #         query_id=doc_id,
+                #         sw_score_threshold=50,
+                #         priority_texts=session["priority_texts"],
+                #     )
+
+                # what is actually necessary?
+                # grab record (will always be available)
+                #   - do NOT want 0.33 sec for EACH of grab, score, score
+                #   - so instead grab ALL at once
+                #     - for now project to focus on more important scores
+                #     - will eventually change db schema to exclude topic data
+                # look through top few sw_w results until threshold exceeded
+                #   - also filter texts at same time
+                # construct result dict based on those doc_ids
+                #   - topic not saved so calculate
+                #   - also do text previews here? maybe those above certain threshold are saved?
+                # format result dict as HTML rows and return
+
+                best_results = IR_tools.batch_mode(similarity_data, doc_id, doc_id_2, sw_threshold)
+                docExploreInner_HTML = IR_tools.format_batch_results(best_results, doc_id, doc_id_2, session["priority_texts"])
+
+            else:
+                # single-query mode
+                docExploreInner_HTML = IR_tools.get_closest_docs(
+                    query_id=doc_id,
+                    topic_labels=session['topic_labels'],
+                    priority_texts=session["priority_texts"],
+                    N_tf_idf=session["N_tf_idf_"+session["search_depth_default"]],
+                    N_sw_w=session["N_sw_w_"+session["search_depth_default"]],
+                    similarity_data=similarity_data,
+                    )
+        else:
+            docExploreInner_HTML = "<br><p>Please verify sequence of two inputs.</p>"
+                                   # "Please enter valid doc ids like " + str(IR_tools.ex_doc_ids)[1:-1] + " etc.</p><p>See <a href='assets/doc_id_list.txt' target='_blank'>doc id list</a> and <a href='assets/corpus_texts.txt' target='_blank'>corpus text list</a> for hints to get started."
 
         return render_template(    "docExplore.html",
                                 page_subtitle="docExplore",
-                                doc_id=doc_id,
+                                text_abbreviation=text_abbreviation_input,
+                                local_doc_id=local_doc_id_input,
+                                local_doc_id_2=local_doc_id_input_2,
                                 docExploreInner_HTML=docExploreInner_HTML,
                                 abbrv2docs=IR_tools.abbrv2docs,
                                 text_abbrev2title=IR_tools.text_abbrev2title,
                                 section_labels=IR_tools.section_labels,
                                 )
 
-    else: # request.method == "GET" or URL query malformed
+    else: # request.method == "GET" and no arguments or URL query malformed
 
         return render_template(    "docExplore.html",
                                 page_subtitle="docExplore",
@@ -152,9 +232,8 @@ def doc_compare():
 
     ensure_keys()
 
-    if request.method == "POST" or 'text_abbrv' in request.args or 'doc_id_1' in request.args:
+    if request.method == "POST" or 'doc_id_1' in request.args:
 
-        doc_id_1 = doc_id_2 = ""
         if 'doc_id_1' in request.args:
             doc_id_1 = request.args.get("doc_id_1")
             doc_id_2 = request.args.get("doc_id_2")
@@ -172,21 +251,14 @@ def doc_compare():
             docCompareInner_HTML = "<br><p>Those are the same, please enter two different doc ids to compare.</p>"
         elif doc_id_1 in valid_doc_ids and doc_id_2 in valid_doc_ids:
 
-            auto_reweight_topics_option = False
-            if auto_reweight_topics_option:
-                topic_weights = IR_tools.auto_reweight_topics(doc_id_1)
-                session['topic_weights'] = topic_weights
-                session.modified = True
-
             docCompareInner_HTML, sim_btn_left, sim_btn_right = IR_tools.compare_doc_pair(
                 doc_id_1,
                 doc_id_2,
-                topic_weights=session['topic_weights'],
                 topic_labels=session['topic_labels'],
                 priority_texts=session["priority_texts"],
-                # topic_toggle_value=session["topic_toggle_value"]
                 N_tf_idf=session["N_tf_idf_"+session["search_depth_default"]],
-                N_sw_w=session["N_sw_w_"+session["search_depth_default"]]
+                N_sw_w=session["N_sw_w_"+session["search_depth_default"]],
+                similarity_data=similarity_data,
                 )
         else:
             docCompareInner_HTML = "<br><p>Please enter two valid doc ids like " + str(IR_tools.ex_doc_ids)[1:-1] + " etc.</p><p>See <a href='assets/doc_id_list.txt' target='_blank'>doc id list</a> and <a href='assets/corpus_texts.txt' target='_blank'>corpus text list</a> for hints to get started.</p>"
@@ -296,27 +368,14 @@ def topic_adjust():
 
     if request.method == "POST":
 
-        topic_weight_input = []
         topic_label_input = []
         for key, val in request.form.items():
-            if key == "topic_wt_slider_all":
-                topic_weight_input = list(IR_tools.new_full_vector( IR_tools.K, float(val) ))
-                topic_label_input = session["topic_labels"]
-            elif key.startswith("topic_wt_slider_"):
-                topic_weight_input.append(float(val)) # not sure why 1s come back as int
-            elif key.startswith("topic_label_"):
-                topic_label_input.append(val)
+            topic_label_input.append(val)
 
-        if topic_weight_input != []:
-            session["topic_weights"] = topic_weight_input
-            session["topic_labels"] = topic_label_input
-            session.modified = True
-
-    else:
-        pass
+        session["topic_labels"] = topic_label_input
+        session.modified = True
 
     topicAdjustInner_HTML = IR_tools.format_topic_adjust_output(
-        topic_weight_input=session["topic_weights"],
         topic_label_input=session["topic_labels"]
         )
 
@@ -375,32 +434,9 @@ def text_prioritize():
                             textPrioritizeInner_HTML=textPrioritizeInner_HTML
                             )
 
-@app.route('/topicToggle', methods=["GET", "POST"])
-def topic_toggle():
 
-    ensure_keys()
-
-    if request.method == "POST":
-
-        if "topic_toggle_checkbox" in request.form:
-            topic_toggle_value = True
-        else:
-            topic_toggle_value = False
-
-        session["topic_toggle_value"] = topic_toggle_value
-        session.modified = True
-
-    topicToggleInner_HTML = IR_tools.format_topic_toggle_output(
-        session["topic_toggle_value"]
-        )
-
-    return render_template(    "topicToggle.html",
-                            page_subtitle="topicToggle",
-                            topicToggleInner_HTML=topicToggleInner_HTML
-                            )
-
-@app.route('/searchSettings', methods=["GET", "POST"])
-def search_settings():
+@app.route('/searchDepth', methods=["GET", "POST"])
+def search_depth():
 
     ensure_keys()
 
@@ -415,7 +451,7 @@ def search_settings():
                 session["N_sw_w_shallow"] = int(val)
             elif key == "N_sw_w_deep_slider":
                 session["N_sw_w_deep"] = int(val)
-            elif key == "search_settings_use_defaults":
+            elif key == "search_depth_use_defaults":
                 session["N_tf_idf_shallow"] = IR_tools.search_N_defaults["N_tf_idf_shallow"]
                 session["N_tf_idf_deep"] = IR_tools.search_N_defaults["N_tf_idf_deep"]
                 session["N_sw_w_shallow"] = IR_tools.search_N_defaults["N_sw_w_shallow"]
@@ -426,7 +462,7 @@ def search_settings():
 
         session.modified = True
 
-    searchSettingsInner_HTML = IR_tools.format_search_settings_output(
+    searchDepthInner_HTML = IR_tools.format_search_depth_output(
         N_tf_idf_shallow=session["N_tf_idf_shallow"],
         N_sw_w_shallow=session["N_sw_w_shallow"],
         N_tf_idf_deep=session["N_tf_idf_deep"],
@@ -435,7 +471,7 @@ def search_settings():
         search_depth_default=session["search_depth_default"]
         )
 
-    return render_template(    "searchSettings.html",
-                            page_subtitle="searchSettings",
-                            searchSettingsInner_HTML=searchSettingsInner_HTML
+    return render_template(    "searchDepth.html",
+                            page_subtitle="searchDepth",
+                            searchDepthInner_HTML=searchDepthInner_HTML
                             )
