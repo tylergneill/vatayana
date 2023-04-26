@@ -827,10 +827,10 @@ def get_closest_docs_with_db(
             # existing scores still correct, just not necessarily correct rank
             # immediately refresh sw_w cache by replacing with new scores as needed, keep at same size
             existing_sw_cache_size = len(sw_w_similar_docs)
-            doc_ids_for_sw_comparison = []
-            for doc_id in truncate_dict(tf_idf_similar_docs, existing_sw_cache_size):
-                if doc_id not in sw_w_similar_docs:
-                    doc_ids_for_sw_comparison.append(doc_id)
+            doc_ids_for_sw_comparison = [
+                doc_id for doc_id in truncate_dict(tf_idf_similar_docs, existing_sw_cache_size)
+                if doc_id not in sw_w_similar_docs
+            ]
             additional_sw = rank_candidates_by_sw_w_alignment_score(
                 query_id,
                 doc_ids_for_sw_comparison,
@@ -1081,6 +1081,13 @@ def get_closest_docs(   query_id,
         print(f"overall_time: {overall_time} sec")
 
     # post-processing
+
+    # for those that have sw score but no tf-idf due to truncation limits, do one-off tf-idf, resort
+    for k in sw_w_alignment_candidates:
+        if k not in tf_idf_candidates:
+            doc_1_TF_IDF_vector, doc_2_TF_IDF_vector = get_tiny_TF_IDF_vectors(query_id, k)
+            tf_idf_candidates[k] = round(1 - fastdist.cosine(doc_1_TF_IDF_vector, doc_2_TF_IDF_vector), 4)
+    tf_idf_candidates = sort_score_dict(tf_idf_candidates)
 
     # post-ranking, convert to strings (round to two decimal places, empty replaces 0.0)
     for k,v in tf_idf_candidates.items():
