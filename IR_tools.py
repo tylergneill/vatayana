@@ -109,8 +109,8 @@ sw_w_secs_per_comparison    = 0.004513 # 4513 microseconds
 search_N_defaults = {
     "N_tf_idf_shallow" : 500,
     "N_tf_idf_deep" : 25,
-    "N_sw_w_shallow" : 2000,
-    "N_sw_w_deep" : 100
+    "N_sw_w_shallow" : 4000,
+    "N_sw_w_deep" : 200
 }
 
 def new_full_vector(size, val):
