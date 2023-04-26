@@ -1518,7 +1518,7 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
 
     doc_1_topic_vector = np.array(thetas[doc_id_1])
     doc_2_topic_vector = np.array(thetas[doc_id_2])
-    topic_similiarity_score = 1-fastdist.cosine(doc_1_topic_vector, doc_2_topic_vector)
+    topic_similiarity_score = round(1-fastdist.cosine(doc_1_topic_vector, doc_2_topic_vector), 4)
 
     # print("do one-off topic comparison:", calc_dur(start1, datetime.now().time()))
     # print("overall:", calc_dur(start0, datetime.now().time()))
@@ -1530,7 +1530,7 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
         # start1 = datetime.now().time()
 
         doc_1_TF_IDF_vector, doc_2_TF_IDF_vector = get_tiny_TF_IDF_vectors(doc_id_1, doc_id_2)
-        TF_IDF_comparison_score = 1 - fastdist.cosine(doc_1_TF_IDF_vector, doc_2_TF_IDF_vector)
+        TF_IDF_comparison_score = round(1 - fastdist.cosine(doc_1_TF_IDF_vector, doc_2_TF_IDF_vector), 4)
 
         # print("do one-off tf-idf comparison:", calc_dur(start1, datetime.now().time()))
         # print("overall:", calc_dur(start0, datetime.now().time()))
