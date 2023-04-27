@@ -461,7 +461,13 @@ def get_TF_IDF_vector(doc_id):
 # phasing out...
 # import pdb; pdb.set_trace()
 # conditionally_do_batch_tf_idf_comparisons(*doc_ids[:5], N=1000)
-NBhu_doc_ids = [ di for di in doc_ids if parse_complex_doc_id(di)[0] == 'NBhū' ]
+text_doc_ids = {}
+text_abbrevs = list(text_abbrev2fn.keys())
+for text_abbrev in text_abbrevs:
+    text_doc_ids[text_abbrev] = [
+        doc_id for doc_id in doc_ids if parse_complex_doc_id(doc_id)[0] == text_abbrev
+    ]
+# NBhu_doc_ids = [ di for di in doc_ids if parse_complex_doc_id(di)[0] == 'NBhū' ]
 # print(len(NBhu_doc_ids))
 # conditionally_do_batch_tf_idf_comparisons(*NBhu_doc_ids, N=1000)
 
