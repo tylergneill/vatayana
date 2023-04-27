@@ -1243,12 +1243,18 @@ def batch_mode(
     for doc_id, similar_docs in sorted_records_dict.items():
         for doc_id_2, sw_score_phrase_pair in similar_docs['sw_w'].items():
             if sw_score_phrase_pair[0] >= int(sw_score_threshold):
+                if doc_id_2 not in similar_docs['tf_idf']:
+                    # do one-off tf-idf
+                    doc_1_TF_IDF_vector, doc_2_TF_IDF_vector = get_tiny_TF_IDF_vectors(doc_id, doc_id_2)
+                    tf_idf_score = round(1 - fastdist.cosine(doc_1_TF_IDF_vector, doc_2_TF_IDF_vector), 4)
+                else:
+                    tf_idf_score = similar_docs['tf_idf'][doc_id_2]
                 best_results.append({
                     'query_id': doc_id,
                     'doc_id_2': doc_id_2,
                     'sw_w': sw_score_phrase_pair[0],
                     'sw_w_phrase': sw_score_phrase_pair[1],
-                    'tf_idf': similar_docs['tf_idf'][doc_id_2],
+                    'tf_idf': tf_idf_score,
                     'topic': calculate_topic_similarity_score(doc_id, doc_id_2),
                 })
             else:
