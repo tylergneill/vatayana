@@ -118,7 +118,8 @@ def doc_explore():
         else:
             text_abbreviation_input = request.form.get("text_abbreviation_input")
             local_doc_id_input = request.form.get("local_doc_id_input")
-            doc_id = text_abbreviation_input + '_' + local_doc_id_input
+            if local_doc_id_input not in ['', None]:
+                doc_id = text_abbreviation_input + '_' + local_doc_id_input
 
         if 'doc_id_2' in request.args:
             doc_id_2 = request.args.get("doc_id_2")
@@ -129,8 +130,15 @@ def doc_explore():
 
         if 'sw_threshold' in request.args:
             sw_threshold = request.args.get("sw_threshold")
-        else:
+        elif 'sw_threshold' in request.form:
             sw_threshold = request.form.get("sw_threshold")
+        else:
+            sw_threshold = 50
+
+        if local_doc_id_input in ['', None] and local_doc_id_input_2 in ['', None]:
+            text_id_list = IR_tools.text_doc_ids[text_abbreviation_input]
+            doc_id = text_id_list[0]
+            doc_id_2 = text_id_list[-1]
 
         valid_doc_ids = IR_tools.doc_ids
         if (
