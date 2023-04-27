@@ -787,8 +787,8 @@ def truncate_dict(dictionary: Dict, n: int) -> Dict:
         for (k, v) in list(dictionary.items())[:n]
     }
 
-N_TDIDF_SAVE_LIMIT = 4000
-N_SW_SAVE_LIMIT = 200
+N_TDIDF_SAVE_LIMIT = 2500
+N_SW_SAVE_LIMIT = 500
 def get_closest_docs_with_db(
         similarity_data: PymongoCollection,
         query_id,
