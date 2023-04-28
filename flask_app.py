@@ -109,9 +109,10 @@ def doc_explore():
         # NB: not yet supported is sending 'text_abbrv' and 'local_doc_id' via GET
 
         text_abbreviation_input = ""
+        doc_id = ""
+        doc_id_2 = ""
         local_doc_id_input = ""
         local_doc_id_input_2 = ""
-        doc_id_2 = ""
 
         if 'doc_id' in request.args:
             doc_id = request.args.get("doc_id")
@@ -135,7 +136,7 @@ def doc_explore():
         else:
             sw_threshold = 50
 
-        if local_doc_id_input in ['', None] and local_doc_id_input_2 in ['', None]:
+        if doc_id in ['', None] and local_doc_id_input in ['', None] and local_doc_id_input_2 in ['', None]:
             text_id_list = IR_tools.text_doc_ids[text_abbreviation_input]
             doc_id = text_id_list[0]
             doc_id_2 = text_id_list[-1]
