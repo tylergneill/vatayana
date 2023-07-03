@@ -3,7 +3,6 @@ from datetime import datetime, date
 import json
 import math
 import os
-import pickle
 import re
 from string import Template
 from typing import List, Dict, Optional, Union
@@ -499,33 +498,6 @@ for text_abbrev in text_abbrevs:
     text_doc_ids[text_abbrev] = [
         doc_id for doc_id in doc_ids if parse_complex_doc_id(doc_id)[0] == text_abbrev
     ]
-
-
-# phasing out...
-def load_stored_tf_idf_results(work_name):
-    work_pickle_relative_fn = "assets/tf-idf_pickles/{}.p".format(work_name)
-    work_pickle_fn = os.path.join(CURRENT_FOLDER, work_pickle_relative_fn)
-    try:
-        with open(work_pickle_fn, "rb") as f_in:
-            stored_results = pickle.load(f_in)
-    except FileNotFoundError:
-        stored_results = {}
-
-    # probably tried to load again too quickly before previous load finished
-    except EOFError:
-        stored_results = {}
-    except _pickle.UnpicklingError:
-        stored_results = {}
-
-    return stored_results
-
-
-def save_updated_tf_idf_results(updated_results, work_name):
-    work_pickle_relative_fn = "assets/tf-idf_pickles/{}.p".format(work_name)
-    work_pickle_fn = os.path.join(CURRENT_FOLDER, work_pickle_relative_fn)
-    with open(work_pickle_fn, "wb") as f_out:
-        p = pickle.Pickler(f_out)
-        p.dump(updated_results)
 
 
 current_tf_idf_data_work_name = ""  # only before first query
