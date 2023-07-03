@@ -114,10 +114,6 @@ search_n_defaults = {
 }
 
 
-def new_full_vector(size, val):
-    return np.full(size, val)
-
-
 ex_doc_ids = ["NBhū_104,6^1", "SŚP_2.21", "MV_1,i_5,i^1"]
 
 disallowed_fulltexts = ["PVin", "HB", "PSṬ", "NV"]
@@ -504,68 +500,6 @@ current_tf_idf_data_work_name = ""  # only before first query
 current_tf_idf_data = {}
 
 
-def rank_candidates_by_tf_idf_similarity(query_id, candidate_ids):
-    work_name = parse_complex_doc_id(query_id)[0]
-
-    # make sure relevant tf-idf data in memory
-    global current_tf_idf_data_work_name, current_tf_idf_data
-    if (
-        work_name != current_tf_idf_data_work_name
-        or current_tf_idf_data_work_name == ""
-    ):
-        # switched works or first query, load relevant data from disk into memory
-        current_tf_idf_data = load_stored_tf_idf_results(work_name)
-        current_tf_idf_data_work_name = work_name
-    cumulative_results_for_this_work = current_tf_idf_data
-    # cumulative_results_for_this_work = load_stored_tf_idf_results(work_name)
-
-    if query_id in cumulative_results_for_this_work.keys():
-        ks = list(cumulative_results_for_this_work[query_id])
-        candidates_already_done = [k for k in ks if k in candidate_ids]
-    else:
-        candidates_already_done = []
-
-    # else continue to perform new calculation
-
-    query_vector = get_tf_idf_vector(query_id)
-    tf_idf_comparison_scores = {}  # e.g. tf_idf_score[DOC_ID] = FLOAT
-    new_tf_idf_comparison_scores = {}  # for saving new results
-
-    for doc_id in candidate_ids:
-        if doc_id in candidates_already_done:
-            tf_idf_comparison_scores[doc_id] = cumulative_results_for_this_work[
-                query_id
-            ][doc_id]
-        else:
-            candidate_vector = get_tf_idf_vector(doc_id)
-            if np.all(candidate_vector == 0):
-                # basically skip empties to avoid div_by_zero in cosine calculation (could also use doc_fulltext)
-                new_tf_idf_comparison_scores[doc_id] = 0
-            else:
-                new_tf_idf_comparison_scores[doc_id] = round(
-                    1 - fastdist.cosine(query_vector, candidate_vector), 4
-                )
-            tf_idf_comparison_scores[doc_id] = new_tf_idf_comparison_scores[doc_id]
-
-    # merge new dict into old cumulative results dict and save both to memory and to disk
-    if query_id in cumulative_results_for_this_work.keys():
-        cumulative_results_for_this_work[query_id].update(new_tf_idf_comparison_scores)
-    else:
-        cumulative_results_for_this_work[query_id] = new_tf_idf_comparison_scores
-    current_tf_idf_data = cumulative_results_for_this_work
-    save_updated_tf_idf_results(cumulative_results_for_this_work, work_name)
-
-    # i.e., always save to disk, but only load from disk when switching works, to save some time but still reliably save
-
-    # sort and return ranked results
-    sorted_results = sort_score_dict(tf_idf_comparison_scores)
-    candidate_ranking_results_dict = {res[0]: res[1] for res in sorted_results}
-    return candidate_ranking_results_dict
-
-
-# new solution! results aren't quite the same, but perhaps actually better...
-
-
 def get_tiny_tf_idf_vectors(doc_id_1, doc_id_2):
     # returns numpy arrays
 
@@ -615,60 +549,6 @@ def group_doc_ids_by_work(*doc_ids_to_do):
             doc_ids_grouped_by_work[work_name] = []
         doc_ids_grouped_by_work[work_name].append(doc_id)
     return doc_ids_grouped_by_work
-
-
-# currently for back-end use only
-def conditionally_do_batch_tf_idf_comparisons(*doc_ids_to_do, n_tf_idf=500):
-    pbar = tqdm(total=len(doc_ids_to_do))
-
-    # argument is an unspecified number of strings, NOT a list
-    # so if desiring to pass in a list, unpack it first, e.g., do_batch(*desired_doc_ids)
-    doc_ids_grouped_by_work = group_doc_ids_by_work(*doc_ids_to_do)  # dict
-
-    for work_name, work_doc_ids in doc_ids_grouped_by_work.items():
-
-        # load x1
-        cumulative_results_for_this_work = load_stored_tf_idf_results(
-            work_name
-        )  # {} if file not found
-
-        for doc_id in work_doc_ids:
-
-            # check if already done, if so skip
-            if doc_id in cumulative_results_for_this_work.keys():
-                pbar.update()
-                continue
-
-            else:  # do needed comparisons
-
-                # topic filtering
-                if doc_id in stored_topic_comparison_scores[N]:
-                    candidates_results_dict = stored_topic_comparison_scores[N][doc_id]
-                else:
-                    candidates_results_dict = rank_all_candidates_by_topic_similarity(
-                        doc_id
-                    )
-
-                candidate_results_dict_pruned = get_top_n_of_ranked_dict(
-                    candidate_results_dict, N=n_tf_idf
-                )
-                ids_for_closest_n_docs_by_topics = candidate_results_dict_pruned.keys()
-
-                # don't do prioritization
-
-                cumulative_results_for_this_work[
-                    doc_id
-                ] = rank_candidates_by_tiny_tf_idf_similarity(
-                    doc_id, ids_for_closest_n_docs_by_topics
-                )
-
-            pbar.update()
-
-        # save x1
-        save_updated_tf_idf_results(cumulative_results_for_this_work, work_name)
-
-    pbar.close()
-    return
 
 
 # HTML formatting functions
