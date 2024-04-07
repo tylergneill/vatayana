@@ -1,35 +1,19 @@
 import os
 import json
-import pickle
 import re
 import math
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, Tuple, Any
 
 import numpy as np
 
-from collections import OrderedDict, Counter, defaultdict
+from collections import OrderedDict, defaultdict
 from fastdist import fastdist
 from string import Template
-from tqdm import tqdm
 from datetime import datetime, date
 from collatex import *
 from lxml import etree
 from difflib import SequenceMatcher
 from flask_pymongo.wrappers import Collection as PymongoCollection
-
-# global variable declarations (needed only for purposes of convenience in PDB and documentation)
-global CURRENT_FOLDER, text_abbrev2fn, text_abbrev2title
-global doc_ids, ex_doc_ids, doc_fulltext, doc_original_fulltext, disallowed_fulltexts
-global num_docs, doc_links, section_labels, num_docs_by_text
-global thetas, phis
-global K
-global topic_top_words, topic_interpretations, topic_wordcloud_fns
-global stopwords, error_words, too_common_doc_freq_cutoff, too_rare_doc_freq_cutoff, corpus_vocab_reduced
-global doc_freq, IDF, stored_topic_comparison_scores #, preferred_works
-global current_tf_idf_data_work_name, current_tf_idf_data
-global HTML_templates
-global docExploreInner_results_HTML_template, docCompareInner_results_HTML_template, topicAdjustInner_results_HTML_template, textPrioritizeInner_HTML_template
-global topic_secs_per_comparison, tf_idf_secs_per_comparison, sw_w_secs_per_comparison
 
 
 ########################################################
@@ -77,28 +61,80 @@ doc_original_fulltext = load_dict_from_json("assets/doc_original_fulltext.json")
 # load corpus and topic modeling data
 ######################################
 
-# get theta data
-theta_fn = 'assets/theta.tsv'
-theta_fn_full_path = os.path.join(CURRENT_FOLDER, theta_fn)
-with open(theta_fn_full_path,'r') as f_in:
-    theta_data = f_in.read()
-theta_rows = theta_data.split('\n')
-theta_rows.pop(-1); # blank final row
-theta_rows.pop(0); # unwanted header row with topic abbreviations (store same from phi data)
-theta_rows.pop(0); # unwanted second header row with "!ctsdata" and alpha values
+def process_theta_data() -> Tuple[Any]:
+    theta_fn = 'assets/theta.tsv'
+    theta_fn_full_path = os.path.join(CURRENT_FOLDER, theta_fn)
+    with open(theta_fn_full_path,'r') as f_in:
+        theta_rows = f_in.read().split('\n')
+    theta_rows.pop(-1); # blank final row
+    theta_rows.pop(0); # unwanted header row with topic abbreviations (store same from phi data)
+    theta_rows.pop(0); # unwanted second header row with "!ctsdata" and alpha values
 
-# store theta data (doc ids, doc full-text, and theta numbers)
-doc_ids = []
-doc_fulltext = OrderedDict() # e.g. doc_fulltext[DOC_ID]
-thetas = {} # e.g. theta[DOC_ID]
-for row in theta_rows:
-    cells = row.split('\t') # must have been converted to TSV first!
-    doc_id, doc_text, theta_values = cells[1], cells[2], cells[3:]
-    # don't need cells[0] which would be doc_num
-    K = len(cells) - 3
-    doc_ids.append(doc_id)
-    doc_fulltext[doc_id] = doc_text.replace('*','') # HACK, should be cleaned in data itself
-    thetas[doc_id] = [ float(th) for th in theta_values ]
+    # store theta data (doc ids, doc full-text, and theta numbers)
+    doc_ids = []
+    doc_fulltext = OrderedDict() # e.g. doc_fulltext[DOC_ID]
+    thetas = {} # e.g. theta[DOC_ID]
+    for row in theta_rows:
+        cells = row.split('\t') # must have been converted to TSV first!
+        doc_id, doc_text, theta_values = cells[1], cells[2], cells[3:]
+        # don't need cells[0] which would be doc_num
+        K = len(cells) - 3
+        doc_ids.append(doc_id)
+        doc_fulltext[doc_id] = doc_text.replace('*','') # HACK, should be cleaned in data itself
+        thetas[doc_id] = [ float(th) for th in theta_values ]
+
+    corpus_vocab = set()
+    for text in doc_fulltext.values():
+        corpus_vocab.update(text.split())
+
+    # count each term's document frequency
+    doc_freq = {}  # e.g. doc_freq[WORD] = INT for each word in vocab
+    for doc_id in doc_ids:
+        doc_text = doc_fulltext[doc_id]
+        doc_tokens = doc_text.split()
+        doc_unique_words = list(set(doc_tokens))
+        for word in doc_unique_words:
+            # increment doc_freq tally
+            if word in doc_freq:
+                doc_freq[word] += 1
+            else:
+                doc_freq[word] = 1
+    num_docs = len(doc_ids)
+
+    # calculate inverse document frequencies
+    IDF = {}  # e.g. IDF[WORD] = FLOAT for each word in vocab
+    for word in corpus_vocab:
+        IDF[word] = math.log(num_docs / doc_freq[word])
+
+    # prepare list of stopwords (and temporarily also other error-words to exclude)
+    stopwords = ['iti', 'na', 'ca', 'api', 'eva', 'tad', 'tvāt', 'tat', 'hi', 'ādi', 'tu',
+                 'vā']  # used in topic modeling
+    # NB: stopwords are those entirely excluded from topic modeling, such that they have no associated phi numbers
+    error_words = [':', '*tat', 'eva*', '*atha', ')']  # should fix in the data!
+
+    # prepare corpus_vocab_reduced to use for high-dimensional document vectors
+
+    too_common_doc_freq_cutoff = 0.27  # smaller cutoff is more exclusive
+
+    too_rare_doc_freq_cutoff = 0.00300  # larger cutoff is more exclusive
+
+    # e.g., for 20k-doc corpus with vocab 79,606, keeping constant too_common_doc_freq_cutoff
+    # 0.01000 (   721,  0.91%) >>  0.5-sec wait
+    # 0.00300 ( 2,175,  2.73%) >>  1.5-sec wait
+    # 0.00150 ( 3,931,  4.94%) >>  2.7-sec wait
+    # 0.00030 (12,967, 16.29%) >> 12.0-sec wait
+
+    corpus_vocab_reduced = [
+        word
+        for word in corpus_vocab
+        if not (word in stopwords + error_words
+                or doc_freq[word] / num_docs < too_rare_doc_freq_cutoff
+                or doc_freq[word] / num_docs > too_common_doc_freq_cutoff)
+    ]
+
+    return (doc_ids, doc_fulltext, thetas, IDF, corpus_vocab_reduced, stopwords)
+
+doc_ids, doc_fulltext, thetas, IDF, corpus_vocab_reduced, stopwords = process_theta_data(CURRENT_FOLDER)
 num_docs = len(doc_ids)
 
 # to be calibrated for PythonAnywhere
@@ -113,8 +149,6 @@ search_N_defaults = {
     "N_sw_w_deep" : 200
 }
 
-def new_full_vector(size, val):
-    return np.full( size, val )
 
 ex_doc_ids = ['NBhū_104,6^1', 'SŚP_2.21', 'MV_1,i_5,i^1']
 
@@ -126,81 +160,6 @@ doc_id_list_full_fn = os.path.join(CURRENT_FOLDER, doc_id_list_relative_path_fn)
 with open(doc_id_list_full_fn,'w') as f_out:
     f_out.write('\n'.join(doc_ids))
 
-# make copies of overall corpus as single long string and as list of all tokens
-corpus_long_string = ' '.join( doc_fulltext.values() )
-corpus_long_string.replace('  ',' ')
-corpus_tokens = corpus_long_string.split()
-
-# create dict of raw word frequencies and sorted vocab list
-freq_w = Counter(corpus_tokens)
-corpus_vocab = list(freq_w.keys())
-corpus_vocab.sort()
-
-# get phi data
-phi_fn = 'assets/phi.csv'
-phi_fn_full_path = os.path.join(CURRENT_FOLDER, phi_fn)
-with open(phi_fn_full_path,'r') as f_in:
-    phi_data = f_in.read()
-phi_data = phi_data.replace('"','') # I think this here but not for theta because of way theta TSV was re-exported
-phi_rows = phi_data.split('\n')
-phi_rows.pop(-1); # blank final row
-
-# store phi data  (naive topic labels and phi numbers)
-naive_topic_labels = phi_rows.pop(0).split(','); naive_topic_labels.pop(0);
-phis = {} # e.g., phis[WORD][TOPIC_NUM-1] = P(w|t) conditional probability
-for row in phi_rows:
-    cells = row.split(',')
-    word, phi_values = cells[0], cells[1:]
-    phis[word] = [ float(ph) for ph in phi_values ]
-
-# count each term's document frequency
-doc_freq = {} # e.g. doc_freq[WORD] = INT for each word in vocab
-for doc_id in doc_ids:
-    doc_text = doc_fulltext[doc_id]
-    doc_tokens = doc_text.split()
-    doc_unique_words = list(set(doc_tokens))
-    for word in doc_unique_words:
-        # increment doc_freq tally
-        if word in doc_freq:
-            doc_freq[word] += 1
-        else:
-            doc_freq[word] = 1
-
-# calculate inverse document frequencies (idf)
-IDF = {} # e.g. IDF[WORD] = FLOAT for each word in vocab
-for word in corpus_vocab:
-    IDF[word] = math.log(num_docs / doc_freq[word])
-
-# prepare list of stopwords (and temporarily also other error-words to exclude)
-stopwords = ['iti', 'na', 'ca', 'api', 'eva', 'tad', 'tvāt', 'tat', 'hi', 'ādi', 'tu', 'vā'] # used in topic modeling
-# NB: stopwords are those entirely excluded from topic modeling, such that they have no associated phi numbers
-error_words = [':', '*tat', 'eva*', '*atha', ')'] # should fix in the data!
-
-# prepare corpus_vocab_reduced to use for high-dimensional document vectors
-
-too_common_doc_freq_cutoff = 0.27 # smaller cutoff is more exclusive
-
-too_rare_doc_freq_cutoff = 0.00300 # larger cutoff is more exclusive
-
-# e.g., for 20k-doc corpus with vocab 79,606, keeping constant too_common_doc_freq_cutoff
-# 0.01000 (   721,  0.91%) >>  0.5-sec wait
-# 0.00300 ( 2,175,  2.73%) >>  1.5-sec wait
-# 0.00150 ( 3,931,  4.94%) >>  2.7-sec wait
-# 0.00030 (12,967, 16.29%) >> 12.0-sec wait
-
-corpus_vocab_reduced = [
-    word
-    for word in corpus_vocab
-        if not (word in stopwords + error_words
-                or doc_freq[word]/num_docs < too_rare_doc_freq_cutoff
-                or doc_freq[word]/num_docs > too_common_doc_freq_cutoff)
-]
-# old version based on overall word freqs and only further excluding rare words
-# corpus_vocab_reduced = [
-#     word
-#     for word in corpus_vocab
-#         if not (word in (stopwords + error_words) or freq_w[word] < 3)
-# ]
 
 # turns list of elements into linking dictionary with 'prev' and 'next' keys
 def list2linkingDict(elem_list):
@@ -379,16 +338,6 @@ def rank_all_candidates_by_topic_similarity(query_id):
 
     if doc_fulltext[query_id] == '': return {}
 
-    # use previously calculated result if available
-    # phasing out...
-    # if     (    N in stored_topic_comparison_scores.keys() and
-    #         query_id in stored_topic_comparison_scores[N].keys()
-    #     ):
-    #     # print("RETURNING OLD TOPIC RESULTS")
-    #     return stored_topic_comparison_scores[N][query_id]
-
-    # else contine to perform new calculation
-
     query_vector = np.array(thetas[query_id])
     topic_similiarity_score = {} # e.g. topic_similiarity_score[DOC_ID] = FLOAT
     for doc_id in doc_ids:
@@ -404,17 +353,6 @@ def rank_all_candidates_by_topic_similarity(query_id):
     # return sorted dict in descending order by value
     sorted_results = sort_score_dict(topic_similiarity_score)
     return sorted_results
-
-
-# load whatever done ahead of time and feasible to keep in memory
-# phasing out...
-# stored_topic_comparison_scores = {1000:{}}
-# topic_scores_1000_pickle_relative_fn = 'assets/topic_scores_1000.p'
-# topic_scores_1000_pickle_fn = os.path.join(CURRENT_FOLDER, topic_scores_1000_pickle_relative_fn)
-# try:
-#     with open(topic_scores_1000_pickle_fn,'rb') as f_in:
-#         stored_topic_comparison_scores[1000] = pickle.load(f_in)
-# except FileNotFoundError: pass
 
 
 def divide_doc_id_list_by_work_priority(list_of_doc_ids_to_prune, priority_works):
@@ -454,104 +392,14 @@ def get_TF_IDF_vector(doc_id):
     return TF_IDF_vector
 
 
-
-
 # for offline use:
-# build more tf-idf pickles
-# phasing out...
-# import pdb; pdb.set_trace()
-# conditionally_do_batch_tf_idf_comparisons(*doc_ids[:5], N=1000)
 text_doc_ids = {}
 text_abbrevs = list(text_abbrev2fn.keys())
 for text_abbrev in text_abbrevs:
     text_doc_ids[text_abbrev] = [
         doc_id for doc_id in doc_ids if parse_complex_doc_id(doc_id)[0] == text_abbrev
     ]
-# NBhu_doc_ids = [ di for di in doc_ids if parse_complex_doc_id(di)[0] == 'NBhū' ]
-# print(len(NBhu_doc_ids))
-# conditionally_do_batch_tf_idf_comparisons(*NBhu_doc_ids, N=1000)
 
-# phasing out...
-def load_stored_TF_IDF_results(work_name):
-    work_pickle_relative_fn = 'assets/tf-idf_pickles/{}.p'.format(work_name)
-    work_pickle_fn = os.path.join(CURRENT_FOLDER, work_pickle_relative_fn)
-    try:
-        with open(work_pickle_fn,'rb') as f_in:
-            stored_results = pickle.load(f_in)
-    except FileNotFoundError:
-        stored_results = {}
-
-    # probably tried to load again too quickly before previous load finished
-    except EOFError:
-        stored_results = {}
-    except _pickle.UnpicklingError:
-        stored_results = {}
-
-    return stored_results
-
-def save_updated_TF_IDF_results(updated_results, work_name):
-    work_pickle_relative_fn = 'assets/tf-idf_pickles/{}.p'.format(work_name)
-    work_pickle_fn = os.path.join(CURRENT_FOLDER, work_pickle_relative_fn)
-    with open(work_pickle_fn,'wb') as f_out:
-        P = pickle.Pickler(f_out)
-        P.dump(updated_results)
-
-current_tf_idf_data_work_name = "" # only before first query
-current_tf_idf_data = {}
-def rank_candidates_by_TF_IDF_similarity(query_id, candidate_ids):
-
-    work_name = parse_complex_doc_id(query_id)[0]
-
-    # make sure relevant tf-idf data in memory
-    global current_tf_idf_data_work_name, current_tf_idf_data
-    if work_name != current_tf_idf_data_work_name or current_tf_idf_data_work_name == "":
-        # switched works or first query, load relevant data from disk into memory
-        current_tf_idf_data = load_stored_TF_IDF_results(work_name)
-        current_tf_idf_data_work_name = work_name
-    cumulative_results_for_this_work = current_tf_idf_data
-    # cumulative_results_for_this_work = load_stored_TF_IDF_results(work_name)
-
-    if query_id in cumulative_results_for_this_work.keys():
-        ks = list(cumulative_results_for_this_work[query_id])
-        candidates_already_done = [ k for k in ks if k in candidate_ids ]
-    else:
-        candidates_already_done = []
-
-    # else contine to perform new calculation
-
-    query_vector = get_TF_IDF_vector(query_id)
-    TF_IDF_comparison_scores = {} # e.g. tf_idf_score[DOC_ID] = FLOAT
-    new_TF_IDF_comparison_scores = {} # for saving new results
-
-    for doc_id in candidate_ids:
-        if doc_id in candidates_already_done:
-            TF_IDF_comparison_scores[doc_id] = cumulative_results_for_this_work[query_id][doc_id]
-        else:
-            candidate_vector = get_TF_IDF_vector(doc_id)
-            if np.all(candidate_vector == 0):
-                 # basically skip empties to avoid div_by_zero in cosine calculation (could also use doc_fulltext)
-                new_TF_IDF_comparison_scores[doc_id] = 0
-            else:
-                new_TF_IDF_comparison_scores[doc_id] = round(1-fastdist.cosine(query_vector, candidate_vector), 4)
-            TF_IDF_comparison_scores[doc_id] = new_TF_IDF_comparison_scores[doc_id]
-
-    # merge new dict into old cumulative results dict and save both to memory and to disk
-    if query_id in cumulative_results_for_this_work.keys():
-        cumulative_results_for_this_work[query_id].update(new_TF_IDF_comparison_scores)
-    else:
-        cumulative_results_for_this_work[query_id] = new_TF_IDF_comparison_scores
-    current_tf_idf_data = cumulative_results_for_this_work
-    save_updated_TF_IDF_results(cumulative_results_for_this_work, work_name)
-
-    # i.e., always save to disk, but only load from disk when switching works, to save some time but still reliably save
-
-    # sort and return ranked results
-    sorted_results = sort_score_dict(TF_IDF_comparison_scores)
-    candidate_ranking_results_dict = { res[0]: res[1] for res in sorted_results }
-    return candidate_ranking_results_dict
-
-
-# new solution! results aren't quite the same, but perhaps actually better...
 
 def get_tiny_TF_IDF_vectors(doc_id_1, doc_id_2):
     # returns numpy arrays
@@ -599,51 +447,6 @@ def group_doc_ids_by_work(*doc_ids_to_do):
             doc_ids_grouped_by_work[work_name] = []
         doc_ids_grouped_by_work[work_name].append(doc_id)
     return doc_ids_grouped_by_work
-
-
-# currently for back-end use only
-def conditionally_do_batch_tf_idf_comparisons(*doc_ids_to_do, N_tf_idf=500):
-
-    pbar = tqdm(total=len(doc_ids_to_do))
-
-    # argument is an unspecified number of strings, NOT a list
-    # so if desiring to pass in a list, unpack it first, e.g., do_batch(*desired_doc_ids)
-    doc_ids_grouped_by_work = group_doc_ids_by_work(*doc_ids_to_do) # dict
-
-    for work_name, work_doc_ids in doc_ids_grouped_by_work.items():
-
-        # load x1
-        cumulative_results_for_this_work = load_stored_TF_IDF_results(work_name) # {} if file not found
-
-        for doc_id in work_doc_ids:
-
-            #check if already done, if so skip
-            if doc_id in cumulative_results_for_this_work.keys():
-                pbar.update()
-                continue
-
-            else: # do needed comparisons
-
-                 # topic filtering
-                if doc_id in stored_topic_comparison_scores[N]:
-                    candidates_results_dict = stored_topic_comparison_scores[N][doc_id]
-                else:
-                    candidates_results_dict = rank_all_candidates_by_topic_similarity(doc_id)
-
-                candidate_results_dict_pruned = get_top_N_of_ranked_dict(candidate_results_dict, N=N_tf_idf)
-                ids_for_closest_N_docs_by_topics = candidate_results_dict_pruned.keys()
-
-                # don't do prioritization
-
-                cumulative_results_for_this_work[doc_id] = rank_candidates_by_tiny_TF_IDF_similarity(doc_id, ids_for_closest_N_docs_by_topics)
-
-            pbar.update()
-
-        # save x1
-        save_updated_TF_IDF_results(cumulative_results_for_this_work, work_name)
-
-    pbar.close()
-    return
 
 
 # HTML formatting functions
@@ -979,8 +782,6 @@ def get_closest_docs(   query_id,
                         batch_mode: Optional[bool]=False,
                         sw_w_min_threshold: Optional[int]=50,
                         ):
-
-    # import pdb; pdb.set_trace()
 
     non_priority_texts = [text for text in list(text_abbrev2fn.keys()) if text not in priority_texts]
 
