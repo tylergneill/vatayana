@@ -134,7 +134,7 @@ def process_theta_data() -> Tuple[Any]:
 
     return (doc_ids, doc_fulltext, thetas, IDF, corpus_vocab_reduced, stopwords)
 
-doc_ids, doc_fulltext, thetas, IDF, corpus_vocab_reduced, stopwords = process_theta_data(CURRENT_FOLDER)
+doc_ids, doc_fulltext, thetas, IDF, corpus_vocab_reduced, stopwords = process_theta_data()
 num_docs = len(doc_ids)
 
 # to be calibrated for PythonAnywhere
