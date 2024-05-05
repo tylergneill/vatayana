@@ -11,6 +11,8 @@ app.config["DEBUG"] = True
 app.config["SECRET_KEY"] = "safaksdfakjdshfkajshfka" # for session, no actual need for secrecy
 DB_SERVER = os.getenv("DB_SERVER", "localhost")
 app.config["MONGO_URI"] = f"mongodb://{DB_SERVER}:27017/vatayana"
+
+# TODO: remove once fully done with MongoDB Atlas
 # MONGO_CRED = open('mongo_cred/mongo_cred.txt').read().strip()
 # app.config["MONGO_URI"] = f"mongodb+srv://tyler:{MONGO_CRED}@sanskrit2.urlv9ek.mongodb.net/vatayana?retryWrites=true&w=majority"
 
