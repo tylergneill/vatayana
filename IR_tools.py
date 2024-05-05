@@ -134,7 +134,7 @@ def process_theta_data() -> Tuple[Any]:
 
     return (doc_ids, doc_fulltext, thetas, IDF, corpus_vocab_reduced, stopwords)
 
-doc_ids, doc_fulltext, thetas, IDF, corpus_vocab_reduced, stopwords = process_theta_data(CURRENT_FOLDER)
+doc_ids, doc_fulltext, thetas, IDF, corpus_vocab_reduced, stopwords = process_theta_data()
 num_docs = len(doc_ids)
 
 # to be calibrated for PythonAnywhere
@@ -1252,8 +1252,12 @@ def nw_align(text_1, text_2):
             elif num_children == 2: # two different readings
 
                 rdg_elements = list(node.getchildren())
-                reading_A = rdg_elements[0].xpath("text()")[0]
-                reading_B = rdg_elements[1].xpath("text()")[0]
+
+                text_content_A = rdg_elements[0].xpath("text()")
+                text_content_B = rdg_elements[1].xpath("text()")
+
+                reading_A = text_content_A[0] if text_content_A else ""
+                reading_B = text_content_B[0] if text_content_B else ""
 
                 tmp_reading_A = remove_stopwords(reading_A)
                 tmp_reading_B = remove_stopwords(reading_B)
