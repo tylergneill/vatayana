@@ -1,16 +1,25 @@
+import logging
 import os
 import html
 
-from flask import Flask, session, redirect, render_template, request, url_for, send_from_directory
+from flask import Flask, session, redirect, render_template, request, url_for, send_from_directory, abort
 from flask_pymongo import PyMongo
 
 import IR_tools
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 app = Flask(__name__)
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 app.config["DEBUG"] = True
 app.config["SECRET_KEY"] = "safaksdfakjdshfkajshfka" # for session, no actual need for secrecy
 DB_SERVER = os.getenv("DB_SERVER", "localhost")
 app.config["MONGO_URI"] = f"mongodb://{DB_SERVER}:27017/vatayana"
+
+# TODO: remove once fully done with MongoDB Atlas
 # MONGO_CRED = open('mongo_cred/mongo_cred.txt').read().strip()
 # app.config["MONGO_URI"] = f"mongodb+srv://tyler:{MONGO_CRED}@sanskrit2.urlv9ek.mongodb.net/vatayana?retryWrites=true&w=majority"
 
@@ -27,6 +36,20 @@ print("number of records in collection:", similarity_data.count_documents({}))
 @app.route('/assets/<path:name>')
 def serve_files(name):
     return send_from_directory('assets', name)
+
+@app.route('/robots.txt')
+def robots_txt():
+    return send_from_directory('assets', 'robots.txt')
+
+@app.before_request
+def block_bots():
+    botlist = ['Amazonbot', 'Bytespider']
+    user_agent = request.headers.get('User-Agent')
+    if any(bot in user_agent for bot in botlist):
+        # logger.debug("Bot blocked", extra={'agent': user_agent, 'path': request.path})
+        abort(403)
+    else:
+        logger.info("Request handled", extra={'path': request.path, 'method': request.method, 'ip': request.remote_addr})
 
 # attempt at serving entire folder at once (not yet successful)
 # @app.route('/assets/')

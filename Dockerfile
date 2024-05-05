@@ -9,5 +9,5 @@ COPY --chown=sanskrit:appgroup templates /app/templates
 COPY --chown=sanskrit:appgroup ./*.py /app/
 USER sanskrit
 ENV PORT=5020
-CMD gunicorn --bind 0.0.0.0:$PORT flask_app:app
+CMD gunicorn --bind 0.0.0.0:$PORT --log-level info --error-logfile - flask_app:app
 EXPOSE 5020
