@@ -252,33 +252,40 @@ def format_text_view(text_abbreviation):
     with open(text_full_fn,'r') as f_in:
         text_string = f_in.read()
 
-    # wrap in <div>
-    text_HTML = "<div>%s</div>" % text_string
+    # adjust for <...>
+    # otherwise, e.g. something that begins <s ...> or <S ...> (e.g. 'Seite') will be interpreted as strikethrough
+    def escape_angle_brackets(text):
+        # Replace < with &lt;
+        escaped_text = text.replace('<', '&lt;')
+        # Replace > with &gt;
+        escaped_text = escaped_text.replace('>', '&gt;')
+        return escaped_text
+    escaped_text_string = escape_angle_brackets(text_string)
 
-    # use re to wrap {...} content in <h1> and [...] in <h2>
-    # for each, also make content into id attribute for tag (>> # link)
-    text_HTML = re.sub("{([^}]*?)}", "<h1 id='\\1'>\\1</h1>", text_HTML)
+    # wrap in single div
+    text_HTML = f"<div class='content'>{escaped_text_string}</div>"
 
+    # wrap {...} content in <h2>
+    text_HTML = re.sub("{([^}]*?)}", "<h2 id='\\1'>\\1</h2>", text_HTML)
+
+    # wrap [...] in <h3> and also use content for id attribute and link
     h2s = re.findall("\[([^\]]*?)\]", text_HTML)
     work_doc_ids = [    doc_id
                         for doc_id in doc_ids
                         if parse_complex_doc_id(doc_id)[0] == text_abbreviation
                         ]
     for h2 in h2s:
-        links_addendum = "<small><small>"
+        links_addendum = "<small>"
         relevant_work_doc_ids = [    doc_id for doc_id in work_doc_ids
                                     if parse_complex_doc_id(doc_id)[1] == h2
                                 ]
         links_addendum += '  '.join( [ "(<a href='docExplore?doc_id={}'>{}</a>)".format(doc_id, doc_id) for doc_id in relevant_work_doc_ids ] )
-        links_addendum += "</small></small>"
+        links_addendum += "</small>"
         try:
-            text_HTML = re.sub("\[({})\]".format(h2), "<h2 id='\\1'>\\1 {}</h2>".format(links_addendum), text_HTML)
+            text_HTML = re.sub("\[({})\]".format(h2), "<h3 id='\\1'>\\1 {}</h3>".format(links_addendum), text_HTML)
         except:
             # this detects encoding errors in the original text which mess up the HTML formatting
             import pdb; pdb.set_trace()
-
-    # (possibly escape characters like tab, <>, etc.)
-    # for example, anything tertiary note that begins <s ...> or <S ...> (e.g. 'Seite') will be interpreted as strikethrough
 
     return text_HTML
 
