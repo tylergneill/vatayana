@@ -287,6 +287,15 @@ def format_text_view(text_abbreviation):
             # this detects encoding errors in the original text which mess up the HTML formatting
             import pdb; pdb.set_trace()
 
+    # wrap content in <p>
+    pattern_replacements = [
+        (r"^([^\n\t<]+)$", r"<p>\1</p>"),
+        (r"^(\t[^\n<]+)$", r"<p class='l'>\1</p>"),
+        (r"(</h3>\t)(.+)$", r"\1<p class='l'>\2</p>"),
+    ]
+    for pattern, replacement in pattern_replacements:
+        text_HTML = re.sub(pattern, replacement, text_HTML, flags=re.MULTILINE)
+
     return text_HTML
 
 def get_text_view(text_abbreviation):
