@@ -108,7 +108,6 @@ def next_page():
 @app.route('/')
 def index():
     return render_template("index.html",
-    app_version=APP_VERSION,
     page_subtitle="🪟"
     )
 
