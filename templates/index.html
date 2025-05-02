@@ -71,38 +71,36 @@
     	<h1>vātāyana</h1>
     	<br>
 
-      <div class="row">
-        <div class="col-md-3">
-      		<form method="get" action="textView">
-      			<input type="submit" class="btn btn-block btn-primary" value="View Texts" />
-      		</form>
-			<p style="text-align:center;"><i>Scroll freely through a whole text <br> and click to explore individual passages</i></p>
-			<p style="text-align:center;"><a href="textView?text_abbrv=NBhū#104,6">example</a></p>
-      	</div>
-      	<div class="col-md-3">
-      		<form method="get" action="docExplore">
-      			<input type="submit" class="btn btn-block btn-primary" value="Explore Docs" />
-      		</form>
-			<p style="text-align:center;"><i>Analyze a single passage <br> and see similarity search results</i></p>
-			<p style="text-align:center;"><a href="docExplore?doc_id=NBh%C5%AB_104%2C6%5E1">example (single)</a></p>
-			<p style="text-align:center;"><i>Or choose a range of passages <br> to see highlighted search results</i> </p>
-			<p style="text-align:center;"><a href="docExplore?doc_id=NBh%C5%AB_104%2C6%5E1&doc_id_2=NBh%C5%AB_154%2C22%5E2&sw_threshold=50">example (batch)</a></p>
+		<div class="row">
+			<div class="col-md-3">
+				<form method="get" action="textView">
+					<input type="submit" class="btn btn-block btn-primary" value="View Texts" />
+				</form>
+				<p style="text-align:center;"><i>Scroll freely through a whole text <br> and click to explore individual passages</i></p>
+				<p style="text-align:center;"><a href="textView?text_abbrv=NBhū#104,6">example</a></p>
+			</div>
+			<div class="col-md-3">
+				<form method="get" action="docExplore">
+					<input type="submit" class="btn btn-block btn-primary" value="Explore Docs" />
+				</form>
+				<p style="text-align:center;"><i>Analyze a single passage <br> and see similarity search results</i></p>
+				<p style="text-align:center;"><a href="docExplore?doc_id=NBh%C5%AB_104%2C6%5E1">example (single)</a></p>
+				<p style="text-align:center;"><i>Or choose a range of passages <br> to see highlighted search results</i> </p>
+				<p style="text-align:center;"><a href="docExplore?doc_id=NBh%C5%AB_104%2C6%5E1&doc_id_2=NBh%C5%AB_154%2C22%5E2&sw_threshold=50">example (batch)</a></p>
+			</div>
+			<div class="col-md-3">
+				<form method="get" action="docCompare">
+					<input type="submit" class="btn btn-block btn-primary" value="Compare Docs" />
+				</form>
+				<p style="text-align:center;"><i>Compare any two passages <br> side-by-side</i></p>
+			  <p style="text-align:center;"><a href="docCompare?doc_id_1=NBh%C5%AB_104%2C6%5E1&doc_id_2=PVin_I%2C034%2Ci">example</a></p>
+			</div>
+		</div>
 
+		<br>
 
-        </div>
-      	<div class="col-md-3">
-      		<form method="get" action="docCompare">
-      			<input type="submit" class="btn btn-block btn-primary" value="Compare Docs" />
-      		</form>
-			<p style="text-align:center;"><i>Compare any two passages <br> side-by-side</i></p>
-          <p style="text-align:center;"><a href="docCompare?doc_id_1=NBh%C5%AB_104%2C6%5E1&doc_id_2=PVin_I%2C034%2Ci">example</a></p>
-        </div>
-      </div>
-
-	    <br><br>
-
-      <h2>Search Settings</h2>
-      <br>
+		<h2>Search Settings</h2>
+		<br>
 
 		<div class="row">
 			<div class="col-md-3">
@@ -119,46 +117,25 @@
 			</div>
 		</div>
 
-		<br><br>
+		<br>
 
 		<h2>Topic Tools</h2>
 		<br>
 
 		<div class="row">
-    		<div class="col-md-3">
-    			<form method="get" action="topicAdjust">
-    				<input type="submit" class="btn btn-block btn-primary" value="Relabel Topics" />
-    			</form>
+			<div class="col-md-3">
+				<form method="get" action="topicAdjust">
+					<input type="submit" class="btn btn-block btn-primary" value="Relabel Topics" />
+				</form>
 				<p style="text-align:center;"><i>Adjust LDA topic labels <br> according to your own understanding</i></p>
-    		</div>
-    		<div class="col-md-3">
-    			<form method="get" action="topicVisualizeLDAvis">
-    				<input type="submit" class="btn btn-block btn-primary" value="Visualize Topics (LDAvis)" />
-    			</form>
+			</div>
+			<div class="col-md-3">
+				<form method="get" action="topicVisualizeLDAvis">
+					<input type="submit" class="btn btn-block btn-primary" value="Visualize Topics (LDAvis)" />
+				</form>
 				<p style="text-align:center;"><i>Learn more about individual topics <br> with this interactive tool (<a href="https://www.youtube.com/watch?v=eQSbteKN-FA&t=642s">30-sec intro</a>)</i></p>
-    		</div>
-    	</div>
-
-    	<!-- <div class="row">
-    		<div class="col-md-3"></div>
-    		<div class="col-md-3">
-    			<form method="get" action="BrucheionAlign">
-    				<input type="submit" class="btn btn-block btn-primary" value="Demo Fancy Alignment" />
-    			</form>
-    		</div>
-    	</div> -->
-
-    	<br><br>
-
-    	<h2>Technical</h2>
-    	<br>
-    	<p>documentation on GitHub
-    		<ul>
-    			<li><a href="https://github.com/tylergneill/vatayana">vātāyana</a> (intertextuality research environment)</li>
-    			<li><a href="https://github.com/tylergneill/pramana-nlp">pramāṇa-nlp</a> (philosophical Sanskrit corpus + preliminary LDA analyis)</li>
-    			<li><a href="https://github.com/tylergneill/skrutable">skrutable</a> (text-processing toolkit used in corpus-building)</li>
-    		</ul>
-    	</p>
+			</div>
+		</div>
 
     </div><!-- container -->
 

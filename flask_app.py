@@ -6,6 +6,9 @@ from flask import Flask, session, redirect, render_template, request, url_for, s
 from flask_pymongo import PyMongo
 
 import IR_tools
+from utils import get_app_version
+
+APP_VERSION = get_app_version()
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -92,7 +95,7 @@ def reset_variables():
 
 @app.route('/about')
 def about_page():
-    return render_template("about.html")
+    return render_template("about.html", app_version=APP_VERSION)
 
 @app.route('/tutorial')
 def tutorial_page():
@@ -505,3 +508,6 @@ def search_depth():
                             page_subtitle="searchDepth",
                             searchDepthInner_HTML=searchDepthInner_HTML
                             )
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5020)
