@@ -1387,7 +1387,7 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
     # start1 = datetime.now().time()
 
     highlighted_HTML_1, highlighted_HTML_2, score = sw_nw_align(text_1, text_2)
-    sw_nw_score = "{:.1f}".format(score)
+    # sw_nw_score = "{:.1f}".format(score)  # former "Composite Alignment Score": "char-level, Needleman-Wunsch primed with Smith-Waterman, number of chars highlighted dark green"
 
     # print("do actual overall alignment:", calc_dur(start1, datetime.now().time()))
     # print("overall:", calc_dur(start0, datetime.now().time()))
@@ -1483,7 +1483,6 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
                     topic_similiarity_score=round(topic_similiarity_score,2),
                     TF_IDF_comparison_score=round(TF_IDF_comparison_score,2),
                     sw_w_align_score=sw_w_align_score,
-                    sw_nw_score=sw_nw_score
                     )
 
     # print("format HTML results:", calc_dur(start1, datetime.now().time()))
