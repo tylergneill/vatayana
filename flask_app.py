@@ -68,9 +68,7 @@ flask_session_variable_names = [
     "text_abbreviation_input", "local_doc_id",
     "topic_labels",
     "priority_texts",
-    "N_tf_idf_shallow", "N_sw_w_shallow",
-    "N_tf_idf_deep", "N_sw_w_deep",
-    "search_depth_default"
+    "N_tf_idf", "N_sw_w",
     ]
 
 def ensure_keys():
@@ -85,11 +83,8 @@ def reset_variables():
     session["text_abbreviation_input"] = ""; session["local_doc_id"] = ""
     session["topic_labels"] = IR_tools.topic_interpretations
     session["priority_texts"] = list(IR_tools.text_abbrev2fn.keys())
-    session["N_tf_idf_shallow"] = IR_tools.search_N_defaults["N_tf_idf_shallow"]
-    session["N_tf_idf_deep"] = IR_tools.search_N_defaults["N_tf_idf_deep"]
-    session["N_sw_w_shallow"] = IR_tools.search_N_defaults["N_sw_w_shallow"]
-    session["N_sw_w_deep"] = IR_tools.search_N_defaults["N_sw_w_deep"]
-    session["search_depth_default"] = "shallow"
+    session["N_tf_idf"] = IR_tools.search_N_defaults["N_tf_idf"]
+    session["N_sw_w"] = IR_tools.search_N_defaults["N_sw_w"]
     session.modified = True
     return redirect(url_for('index'))
 
@@ -179,47 +174,6 @@ def doc_explore():
         ):
 
             if doc_id_2 != "":
-                # batch mode
-
-                # first attempt: just piggy-back off of get_closest_docs()
-                # downside: one doc at a time
-
-                # docExploreInner_HTML += IR_tools.get_closest_docs(
-                #     query_id=IR_tools.doc_ids[i],
-                #     topic_labels=session['topic_labels'],
-                #     priority_texts=session["priority_texts"],
-                #     N_tf_idf=session["N_tf_idf_" + session["search_depth_default"]],
-                #     N_sw_w=session["N_sw_w_" + session["search_depth_default"]],
-                #     similarity_data=similarity_data,
-                #     batch_mode=True,
-                # )
-
-                # second attempt: make special function to focus on batch mode
-                # but still one-at-a-time
-
-                # loop through all queries
-                # (possibly want to limit number of docs to e.g. 100 or 500)
-                # for i in range(IR_tools.doc_ids.index(doc_id), IR_tools.doc_ids.index(doc_id_2)+1):
-                #     # carry out query, get output in form of next batch of HTML rows
-                #     docExploreInner_HTML += IR_tools.get_closest_docs_with_db_only_batch_only(
-                #         similarity_data,
-                #         query_id=doc_id,
-                #         sw_score_threshold=50,
-                #         priority_texts=session["priority_texts"],
-                #     )
-
-                # what is actually necessary?
-                # grab record (will always be available)
-                #   - do NOT want 0.33 sec for EACH of grab, score, score
-                #   - so instead grab ALL at once
-                #     - for now project to focus on more important scores
-                #     - will eventually change db schema to exclude topic data
-                # look through top few sw_w results until threshold exceeded
-                #   - also filter texts at same time
-                # construct result dict based on those doc_ids
-                #   - topic not saved so calculate
-                #   - also do text previews here? maybe those above certain threshold are saved?
-                # format result dict as HTML rows and return
 
                 best_results = IR_tools.batch_mode(similarity_data, doc_id, doc_id_2, sw_threshold)
                 docExploreInner_HTML = IR_tools.format_batch_results(best_results, doc_id, doc_id_2, session["priority_texts"])
@@ -230,8 +184,8 @@ def doc_explore():
                     query_id=doc_id,
                     topic_labels=session['topic_labels'],
                     priority_texts=session["priority_texts"],
-                    N_tf_idf=session["N_tf_idf_"+session["search_depth_default"]],
-                    N_sw_w=session["N_sw_w_"+session["search_depth_default"]],
+                    N_tf_idf=session["N_tf_idf"],
+                    N_sw_w=session["N_sw_w"],
                     similarity_data=similarity_data,
                     )
         else:
@@ -289,8 +243,8 @@ def doc_compare():
                 doc_id_2,
                 topic_labels=session['topic_labels'],
                 priority_texts=session["priority_texts"],
-                N_tf_idf=session["N_tf_idf_"+session["search_depth_default"]],
-                N_sw_w=session["N_sw_w_"+session["search_depth_default"]],
+                N_tf_idf=session["N_tf_idf"],
+                N_sw_w=session["N_sw_w"],
                 similarity_data=similarity_data,
                 )
         else:
@@ -476,32 +430,20 @@ def search_depth():
     if request.method == "POST":
 
         for key, val in request.form.items():
-            if key == "N_tf_idf_shallow_slider":
-                session["N_tf_idf_shallow"] = int(val)
-            elif key == "N_tf_idf_deep_slider":
-                session["N_tf_idf_deep"] = int(val)
-            elif key == "N_sw_w_shallow_slider":
-                session["N_sw_w_shallow"] = int(val)
-            elif key == "N_sw_w_deep_slider":
-                session["N_sw_w_deep"] = int(val)
+            if key == "N_tf_idf_slider":
+                session["N_tf_idf"] = int(val)
+            elif key == "N_sw_w_slider":
+                session["N_sw_w"] = int(val)
             elif key == "search_depth_use_defaults":
-                session["N_tf_idf_shallow"] = IR_tools.search_N_defaults["N_tf_idf_shallow"]
-                session["N_tf_idf_deep"] = IR_tools.search_N_defaults["N_tf_idf_deep"]
-                session["N_sw_w_shallow"] = IR_tools.search_N_defaults["N_sw_w_shallow"]
-                session["N_sw_w_deep"] = IR_tools.search_N_defaults["N_sw_w_deep"]
-            elif key == "search_depth_radio":
-                session["search_depth_default"] = val
-
+                session["N_tf_idf"] = IR_tools.search_N_defaults["N_tf_idf"]
+                session["N_sw_w"] = IR_tools.search_N_defaults["N_sw_w"]
 
         session.modified = True
 
     searchDepthInner_HTML = IR_tools.format_search_depth_output(
-        N_tf_idf_shallow=session["N_tf_idf_shallow"],
-        N_sw_w_shallow=session["N_sw_w_shallow"],
-        N_tf_idf_deep=session["N_tf_idf_deep"],
-        N_sw_w_deep=session["N_sw_w_deep"],
+        N_tf_idf=session["N_tf_idf"],
+        N_sw_w=session["N_sw_w"],
         priority_texts=session["priority_texts"],
-        search_depth_default=session["search_depth_default"]
         )
 
     return render_template(    "searchDepth.html",
