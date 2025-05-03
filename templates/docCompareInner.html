@@ -145,18 +145,26 @@
 
 	<span style="text-align: center;">
 		<h2>Doc Similarity Scores</h2>
-		<table class='display' style="margin-left: auto; margin-right: auto;">
+		<table class='display' style="margin-left: auto; margin-right: auto; text-align: center;">
 			<tr>
-				<td><h2><small>Topic Similarity<span title="K-dim vector cosine similarity">*</span></small></h2></td>
+				<th style="text-align: center;"><h2><small><b>Comparison</b></small></h2></th>
+				<th style="text-align: center;"><h2><small><b>Score</b></small></h2></th>
+				<th style="text-align: center;"><h2><small><b>Explanation</b></small></h2></th>
+			</tr>
+			<tr>
+				<td><h2><small>Topic (LDA)</small></h2></td>
 				<td><h2><small>$topic_similiarity_score</small></h2></td>
+				<td><h2><small>Vector cosine similarity (0.0–1.0)</small></h2></td>
 			</tr>
 			<tr>
-				<td><h2><small>TF.IDF Similarity<span title="reduced-vocab-dim vector cosine similarity">*</span></small></h2></td>
+				<td><h2><small>Word (TF-IDF)</small></h2></td>
 				<td><h2><small>$TF_IDF_comparison_score</small></h2></td>
+				<td><h2><small>Vector cosine similarity (0.0–1.0)</small></h2></td>
 			</tr>
 			<tr>
-				<td><h2><small>Smith-Waterman Alignment Score<span title="based on char-level comparison of best word-level match">*</span></small></h2></td>
+				<td><h2><small>Phrase (Smith-Waterman)</small></h2></td>
 				<td><h2><small>$sw_w_align_score</small></h2></td>
+				<td><h2><small>Character count of best match (roughly)</small></h2></td>
 			</tr>
 		</table>
 	</span>
