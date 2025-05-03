@@ -1728,18 +1728,18 @@ var total_computation_time_p;
 
     search_N_defaults_HTML = """
     <div class='row'>
-        <div class='col-md-2'>
+        <div class='col-md-2 col-xs-2'>
             <p><b>TF-IDF:</b></p>
         </div>
-        <div class='col-md-2'>
+        <div class='col-md-1 col-xs-1'>
             <p>{}</p>
         </div>
     </div>
     <div class='row'>
-        <div class='col-md-2'>
+        <div class='col-md-2 col-xs-2'>
             <p><b>Smith-Waterman:</b></p>
         </div>
-        <div class='col-md-2'>
+        <div class='col-md-1 col-xs-1'>
             <p>{}</p>
         </div>
     </div>

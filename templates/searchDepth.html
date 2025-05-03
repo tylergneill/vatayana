@@ -79,7 +79,10 @@
 
 			</br>
 
-			<p>Modify the depth of the document similarity search.</p>
+			<p>
+				Modify the depth of the document similarity search.
+				Deeper search takes longer but may occasionally produce better results.
+			</p>
 
 			</br>
 
@@ -90,14 +93,14 @@
 			<p>
 				The system compares documents using fast topic modeling,
 				slower TF-IDF, and slowest Smith-Waterman methods.
-				Limits control how many comparisons occur at each step,
+				Limits control how many comparisons occur in the latter two steps,
 				balancing speed and quality.
 			</p>
 			<p>
 				Top similarity scores from TF-IDF and Smith-Waterman are saved to speed up future searches.
 				By default, up to 500 TF-IDF and 25 Smith-Waterman results are stored,
 				increasing over time to limits of 4000 and 200.
-				Choosing values within these limits ensures faster results later;
+				Choosing values within these limits contributes to faster results later;
 				higher values are processed but not saved.
 			</p>
 			<p>
