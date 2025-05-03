@@ -7,6 +7,7 @@ RUN groupadd appgroup && \
 COPY --chown=sanskrit:appgroup assets /app/assets
 COPY --chown=sanskrit:appgroup templates /app/templates
 COPY --chown=sanskrit:appgroup ./*.py /app/
+COPY --chown=sanskrit:appgroup ./VERSION /app/
 USER sanskrit
 ENV PORT=5020
 CMD gunicorn --bind 0.0.0.0:$PORT --log-level info --error-logfile - flask_app:app

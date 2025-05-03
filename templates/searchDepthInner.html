@@ -1,28 +1,6 @@
 <form method="post" action="searchDepth">
 
-	<h2>Depth Level</h2>
-
-	<!-- depth radio buttons -->
-	<div class="row">
-		<div class="col-md-3">
-			<input type="radio" name="search_depth_radio" id="search_depth_radio_shallow" value="shallow" $search_depth_radio_shallow_checked_status />
-  			<label for="search_depth_radio_shallow">Shallow</label>
-			<input type="radio" name="search_depth_radio" id="search_depth_radio_deep" value="deep" $search_depth_radio_deep_checked_status />
-  			<label for="search_depth_radio_deep">Deep</label>
-		</div>
-	</div>	
-
-	</br>
-
-	<h2>Shallow Search Parameters</h2>
-
-		$shallow_slider_HTML
-
-	</br>
-
-	<h2>Deep Search Parameters</h2>
-
-		$deep_slider_HTML
+	$slider_HTML
 
 	</br>
 
@@ -35,16 +13,12 @@
 
 </form>
 
-</br></br>
-
+</br>
 
 <form method="post" id="search_depth_reset" action="searchDepth">
 
-	<h2>Reset to Default Values</h2>
-
-	<p>The following values have been found to strike a good balance for the two levels:</p>
+	<h3>Reset to Default Values</h3>
 	<p>$search_N_defaults</p>
-
 	<div class="row">
 		<div class="col-md-3">
 			<input type="hidden" name="search_depth_use_defaults" id="search_depth_use_defaults"/>
@@ -54,10 +28,8 @@
 
 </form>
 
-</br></br></br>
+</br>
 
 $JS_preamble
 
-$shallow_slider_JS
-
-$deep_slider_JS
+$slider_JS

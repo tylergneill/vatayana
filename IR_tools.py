@@ -143,10 +143,8 @@ tf_idf_secs_per_comparison  = 0.000315 #  315 microseconds
 sw_w_secs_per_comparison    = 0.004513 # 4513 microseconds
 
 search_N_defaults = {
-    "N_tf_idf_shallow" : 500,
-    "N_tf_idf_deep" : 4000,
-    "N_sw_w_shallow" : 25,
-    "N_sw_w_deep" : 200
+    "N_tf_idf" : 500,
+    "N_sw_w" : 25,
 }
 
 
@@ -791,8 +789,8 @@ def calculate_similar_docs(query_id, N_tfidf=4300, N_sw=200) -> Dict[str, Dict[s
 def get_closest_docs(   query_id,
                         topic_labels=topic_interpretations,
                         priority_texts=list(text_abbrev2fn.keys()),
-                        N_tf_idf=search_N_defaults["N_tf_idf_shallow"],
-                        N_sw_w=search_N_defaults["N_sw_w_shallow"],
+                        N_tf_idf=search_N_defaults["N_tf_idf"],
+                        N_sw_w=search_N_defaults["N_sw_w"],
                         results_as_links_only=False,
                         similarity_data: Optional[PymongoCollection]=None,
                         batch_mode: Optional[bool]=False,
@@ -1333,8 +1331,8 @@ def sw_nw_align(seq1, seq2):
 def compare_doc_pair(   doc_id_1, doc_id_2,
                         topic_labels=topic_interpretations,
                         priority_texts=list(text_abbrev2fn.keys()),
-                        N_tf_idf=search_N_defaults["N_tf_idf_shallow"],
-                        N_sw_w=search_N_defaults["N_sw_w_shallow"],
+                        N_tf_idf=search_N_defaults["N_tf_idf"],
+                        N_sw_w=search_N_defaults["N_sw_w"],
                         similarity_data: Optional[PymongoCollection]=None,
                         ):
 
@@ -1556,7 +1554,7 @@ def format_text_prioritize_output(*priority_texts_input):
         </div>
         """.format(abbrev, abbrev, checked_string, abbrev, title, num_docs_by_text[abbrev])
 
-    # get num of docs in priority_texts to use for comupatation time calculations
+    # get num of docs in priority_texts to use for computation time calculations
     num_priority_docs = sum([ num_docs_by_text[text_name] for text_name in priority_texts_input ])
 
     overall_buffer += """
@@ -1574,24 +1572,6 @@ def format_text_prioritize_output(*priority_texts_input):
     </div>
     """.format(num_priority_docs)
 
-# """
-# <input type="checkbox" id="{}" name="scan_detail" value="morae" checked/>
-# """.format(abbrev, title)
-#
-        # material for doing with JavaScript
-        # <script>
-        # function initialize_choices() {
-        #     if ({{ weights }} != 1) { document.getElementById("weights").checked = false; }
-        #     if ({{ morae }} != 1) { document.getElementById("morae").checked = false; }
-        #     if ({{ gaRas }} != 1) { document.getElementById("gaRas").checked = false; }
-        #     if ({{ alignment }} != 1) { document.getElementById("alignment").checked = false; }
-        # }
-        #
-        # window.onload = function() {
-        #     initialize_choices();
-        # }
-        # </script>
-
     textPrioritizeInner_HTML = HTML_templates['textPrioritizeInner'].substitute(
                                     text_priority_HTML=overall_buffer
                                     )
@@ -1599,25 +1579,28 @@ def format_text_prioritize_output(*priority_texts_input):
     return textPrioritizeInner_HTML
 
 
-def format_search_depth_slider_pair(N_tf_idf, N_sw_w, priority_texts, depth):
+def format_search_depth_slider_pair(N_tf_idf, N_sw_w, priority_texts):
 
-    # get num of docs in priority_texts to use for comupatation time calculations
+    # get num of docs in priority_texts to use for computation time calculations
     num_priority_docs = sum([ num_docs_by_text[text_name] for text_name in priority_texts ])
 
     N_vals = {
-        'N_tf_idf_'+depth : N_tf_idf,
-        'N_sw_w_'+depth : N_sw_w,
+        'N_tf_idf': N_tf_idf,
+        'N_sw_w': N_sw_w,
     }
 
     N_max_vals = {
-        'N_tf_idf_'+depth : num_priority_docs,
-        'N_sw_w_'+depth : N_tf_idf,
+        'N_tf_idf': num_priority_docs,
+        'N_sw_w': N_tf_idf,
     }
 
     HTML_buffer = """
 <div class='row'><!-- topic no-slider -->
-    <div class='col-md-8'>
-       <p>(Topic comparison is always performed for all docs.)</p>
+    <div class='col-md-2'>
+       <p><b>Topics</b></p>
+    </div>
+    <div class='col-md-6'>
+       <p>(Always compared for all docs.)</p>
     </div>
     <div class="col-md-4">
        <p>({} or 100% of docs) * ( {:.7f} s / topic comparison) = {:.2f} s</p>
@@ -1625,7 +1608,7 @@ def format_search_depth_slider_pair(N_tf_idf, N_sw_w, priority_texts, depth):
 </div><!-- topic no-slider -->
 <div class='row'><!-- note no-slider -->
     <div class='col-md-8'>
-       <p>(TF-IDF and Smith-Waterman comparisons performed only for max <a href='textPrioritize'>{} priority docs</a>.)</p>
+       <p>(The below two comparisons are performed only for max <a href='textPrioritize'>{} priority docs</a>.)</p>
     </div>
     <div class="col-md-4">
        <p></p>
@@ -1636,15 +1619,19 @@ def format_search_depth_slider_pair(N_tf_idf, N_sw_w, priority_texts, depth):
     slider_JS_buffer = """
 <script>"""
 
-    for name in ['N_tf_idf_'+depth, 'N_sw_w_'+depth]:
+    for (long_name, name) in [
+        ('TF-IDF', 'N_tf_idf'),
+        ('Smith-Waterman', 'N_sw_w'),
+    ]:
 
-        simple_name = name[2:name.find('_'+depth)] # tf_idf or sw_w
-
-        # import pdb; pdb.set_trace()
+        simple_name = name[2:]  # tf_idf or sw_w
 
         row_buffer = """
 <div class='row'><!-- slider with text -->
-    <div class='col-md-8'>
+    <div class='col-md-2'>
+       <p><b>{}</b></p>
+    </div>
+    <div class='col-md-6'>
        <div class='range'>
            <input type='range' class='form-range' name='{}_slider' id='{}_slider' min='0' max='{}' step='{}' value='{}'/>
        </div>
@@ -1652,7 +1639,7 @@ def format_search_depth_slider_pair(N_tf_idf, N_sw_w, priority_texts, depth):
     <div class="col-md-4">
        <p id="{}_slider_curr_val_p"></p>
     </div>
-</div><!-- slider with text -->""".format(   name, name,
+</div><!-- slider with text -->""".format(long_name, name, name,
                                N_max_vals[name], 1, N_vals[name],
                                name
                                )
@@ -1662,74 +1649,62 @@ var {}_slider = document.getElementById("{}_slider");
 var {}_slider_curr_val_p = document.getElementById("{}_slider_curr_val_p");
 {}_computation_time = (Math.round( {}_secs_per_comparison * parseInt({}_slider.value ) * 100) / 100).toFixed(2);
 {}_slider_curr_val_p.innerHTML = `(${{ {}_slider.value }} or ${{ (Math.round( parseInt({}_slider.value) / {} * 10000) / 100).toFixed(1) }}% of docs) * ( ${{ {}_secs_per_comparison }} s / {} comparison) = ${{ {}_computation_time }} s`;
-""".format( *[name]*4, name[2:], simple_name, *[name]*4, num_docs, *[simple_name]*2, name[2:])
+""".format( *[name]*4, *[simple_name]*2, *[name]*4, num_docs, *[simple_name]*3)
 
         HTML_buffer += row_buffer
 
     HTML_buffer += """
-<div class='row'><!-- row for {} total -->
-    <div class='col-md-8'></div>
+<div class='row'><!-- row for total -->
+    <div class='col-md-2'>
+        <p><b>Total Computation Time:</b></p>
+    </div>
+    <div class='col-md-6'></div>
     <div class="col-md-4">
-       <p id="total_{}_computation_time_p"></p>
+       <p id="total_computation_time_p"></p>
     </div>
 </div><!-- row for total -->
-    """.format(*[depth]*2)
+    """
 
     slider_JS_buffer += """
-total_{}_computation_time_p = document.getElementById("total_{}_computation_time_p");
-N_tf_idf_{}_slider.oninput = function() {{
+total_computation_time_p = document.getElementById("total_computation_time_p");
+N_tf_idf_slider.oninput = function() {{
 
-    N_tf_idf_{}_slider_curr_val_p.innerHTML = `(${{ this.value }} or ${{ (Math.round( parseInt(this.value) / {} * 10000) / 100).toFixed(1) }}% of docs) * ( ${{ tf_idf_secs_per_comparison }} s / tf_idf comparison) = ${{ tf_idf_{}_computation_time }} s`;
-    if (parseInt(N_sw_w_{}_slider.value) > parseInt(this.value)) {{
-        sw_w_{}_computation_time = (Math.round( (sw_w_secs_per_comparison * this.value) * 100 ) / 100).toFixed(2);
-        N_sw_w_{}_slider_curr_val_p.innerHTML = `(${{ this.value }} or ${{ (Math.round( parseInt(this.value) / {} * 10000) / 100).toFixed(1) }}% of docs) * ( ${{ sw_w_secs_per_comparison }} s / sw_w comparison) = ${{ sw_w_{}_computation_time }} s`;
+    N_tf_idf_slider_curr_val_p.innerHTML = `(${{ this.value }} or ${{ (Math.round( parseInt(this.value) / {} * 10000) / 100).toFixed(1) }}% of docs) * ( ${{ tf_idf_secs_per_comparison }} s / tf_idf comparison) = ${{ tf_idf_computation_time }} s`;
+    if (parseInt(N_sw_w_slider.value) > parseInt(this.value)) {{
+        sw_w_computation_time = (Math.round( (sw_w_secs_per_comparison * this.value) * 100 ) / 100).toFixed(2);
+        N_sw_w_slider_curr_val_p.innerHTML = `(${{ this.value }} or ${{ (Math.round( parseInt(this.value) / {} * 10000) / 100).toFixed(1) }}% of docs) * ( ${{ sw_w_secs_per_comparison }} s / sw_w comparison) = ${{ sw_w_computation_time }} s`;
     }}
-    N_sw_w_{}_slider.max = this.value;
+    N_sw_w_slider.max = this.value;
 
-    tf_idf_{}_computation_time = (Math.round( (tf_idf_secs_per_comparison * this.value) * 100 ) / 100).toFixed(2);
+    tf_idf_computation_time = (Math.round( (tf_idf_secs_per_comparison * this.value) * 100 ) / 100).toFixed(2);
 
-    total_{}_computation_time = (Math.round( (topic_computation_time + parseFloat(tf_idf_{}_computation_time) + parseFloat(sw_w_{}_computation_time)) * 100 ) / 100).toFixed(2);
-    total_{}_computation_time_p.innerHTML = `total: ${{ total_{}_computation_time }} s per query`;
-
-}}
-
-N_sw_w_{}_slider.oninput = function() {{
-
-    N_sw_w_{}_slider_curr_val_p.innerHTML = `(${{ this.value }} or ${{ (Math.round( parseInt(this.value) / {} * 10000) / 100).toFixed(1) }}% of docs) * ( ${{ sw_w_secs_per_comparison }} s / sw_w comparison) = ${{ sw_w_{}_computation_time }} s`;
-
-    sw_w_{}_computation_time = (Math.round( (sw_w_secs_per_comparison * this.value) * 100 ) / 100).toFixed(2);
-    total_{}_computation_time = (Math.round( (topic_computation_time + parseFloat(tf_idf_{}_computation_time) + parseFloat(sw_w_{}_computation_time)) * 100 ) / 100).toFixed(2);
-    total_{}_computation_time_p.innerHTML = `total: ${{ total_{}_computation_time }} s per query`;
+    total_computation_time = (Math.round( (topic_computation_time + parseFloat(tf_idf_computation_time) + parseFloat(sw_w_computation_time)) * 100 ) / 100).toFixed(2);
+    total_computation_time_p.innerHTML = `<b>${{ total_computation_time }} s per query</b>`;
 
 }}
 
-total_{}_computation_time = (Math.round( (topic_computation_time + parseFloat(tf_idf_{}_computation_time) + parseFloat(sw_w_{}_computation_time)) * 100 ) / 100).toFixed(2);
-total_{}_computation_time_p = document.getElementById("total_{}_computation_time_p");
-total_{}_computation_time_p.innerHTML = `total: ${{ total_{}_computation_time }} s per query`;
+N_sw_w_slider.oninput = function() {{
 
-""".format(*[depth]*4, num_docs, *[depth]*4, num_docs, *[depth]*10, num_docs, *[depth]*14)
+    N_sw_w_slider_curr_val_p.innerHTML = `(${{ this.value }} or ${{ (Math.round( parseInt(this.value) / {} * 10000) / 100).toFixed(1) }}% of docs) * ( ${{ sw_w_secs_per_comparison }} s / sw_w comparison) = ${{ sw_w_computation_time }} s`;
+
+    sw_w_computation_time = (Math.round( (sw_w_secs_per_comparison * this.value) * 100 ) / 100).toFixed(2);
+    total_computation_time = (Math.round( (topic_computation_time + parseFloat(tf_idf_computation_time) + parseFloat(sw_w_computation_time)) * 100 ) / 100).toFixed(2);
+    total_computation_time_p.innerHTML = `<b>${{ total_computation_time }} s per query</b>`;
+
+}}
+
+total_computation_time = (Math.round( (topic_computation_time + parseFloat(tf_idf_computation_time) + parseFloat(sw_w_computation_time)) * 100 ) / 100).toFixed(2);
+total_computation_time_p = document.getElementById("total_computation_time_p");
+total_computation_time_p.innerHTML = `<b>${{ total_computation_time }} s per query</b>`;
+
+""".format(*[num_docs]*3)
 
     slider_JS_buffer += """
 </script>"""
 
     return HTML_buffer, slider_JS_buffer
 
-def format_search_depth_output(N_tf_idf_shallow, N_sw_w_shallow, N_tf_idf_deep, N_sw_w_deep, priority_texts, search_depth_default):
-
-    # N_vals = {
-    #     'N_tf_idf_shallow' : N_tf_idf_shallow,
-    #     'N_sw_w_shallow' : N_sw_w_shallow,
-    #     'N_tf_idf_deep' : N_tf_idf_deep,
-    #     'N_sw_w_deep' : N_sw_w_deep
-    # }
-    #
-    # N_max_vals = {
-    #     'N_tf_idf_shallow' : num_docs,
-    #     'N_sw_w_shallow' : N_tf_idf_shallow,
-    #     'N_tf_idf_deep' : num_docs,
-    #     'N_sw_w_deep' : N_tf_idf_deep
-    # }
-
+def format_search_depth_output(N_tf_idf, N_sw_w, priority_texts):
 
     JS_preamble = """
 <script>
@@ -1740,46 +1715,40 @@ const sw_w_secs_per_comparison = {:.7f};
 
 const topic_computation_time = {:.7f};
 
-var tf_idf_shallow_computation_time;
-var sw_w_shallow_computation_time;
+var tf_idf_computation_time;
+var sw_w_computation_time;
 
-var total_shallow_computation_time;
-var total_shallow_computation_time_p;
-
-var tf_idf_deep_computation_time;
-var sw_w_deep_computation_time;
-
-var total_deep_computation_time;
-var total_deep_computation_time_p;
+var total_computation_time;
+var total_computation_time_p;
 
 </script>
 """.format(topic_secs_per_comparison, tf_idf_secs_per_comparison, sw_w_secs_per_comparison, num_docs*topic_secs_per_comparison)
 
-    shallow_slider_HTML, shallow_slider_JS = format_search_depth_slider_pair(N_tf_idf_shallow, N_sw_w_shallow, priority_texts, depth='shallow')
-    deep_slider_HTML, deep_slider_JS = format_search_depth_slider_pair(N_tf_idf_deep, N_sw_w_deep, priority_texts, depth='deep')
+    slider_HTML, slider_JS = format_search_depth_slider_pair(N_tf_idf, N_sw_w, priority_texts)
 
-    search_depth_radio_shallow_checked_status = ( search_depth_default == "shallow" ) * "checked"
-    search_depth_radio_deep_checked_status = ( search_depth_default == "deep" ) * "checked"
-
-    # if search_depth_default == "shallow":
-    #     search_depth_radio_shallow_checked_status = "checked"
-    #     search_depth_radio_deep_checked_status = ""
-    # elif search_depth_default == "deep":
-    #     search_depth_radio_shallow_checked_status = ""
-    #     search_depth_radio_deep_checked_status = "checked"
+    search_N_defaults_HTML = """
+    <div class='row'>
+        <div class='col-md-2 col-xs-2'>
+            <p><b>TF-IDF:</b></p>
+        </div>
+        <div class='col-md-1 col-xs-1'>
+            <p>{}</p>
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-md-2 col-xs-2'>
+            <p><b>Smith-Waterman:</b></p>
+        </div>
+        <div class='col-md-1 col-xs-1'>
+            <p>{}</p>
+        </div>
+    </div>
+    """.format(search_N_defaults["N_tf_idf"], search_N_defaults["N_sw_w"])
 
     searchDepthInner_HTML = HTML_templates['searchDepthInner'].substitute(
-        shallow_slider_HTML=shallow_slider_HTML,
-        deep_slider_HTML=deep_slider_HTML,
+        slider_HTML=slider_HTML,
         JS_preamble=JS_preamble,
-        shallow_slider_JS=shallow_slider_JS,
-        deep_slider_JS=deep_slider_JS,
-        search_N_defaults="shallow (default depth): {} tf-idf, {} sw_w; deep: {} tf-idf, {} sw_w".format(
-            search_N_defaults["N_tf_idf_shallow"], search_N_defaults["N_sw_w_shallow"],
-            search_N_defaults["N_tf_idf_deep"], search_N_defaults["N_sw_w_deep"]
-            ),
-        search_depth_radio_shallow_checked_status=search_depth_radio_shallow_checked_status,
-        search_depth_radio_deep_checked_status=search_depth_radio_deep_checked_status
-
+        slider_JS=slider_JS,
+        search_N_defaults=search_N_defaults_HTML
         )
     return searchDepthInner_HTML
