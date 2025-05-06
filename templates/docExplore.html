@@ -23,7 +23,9 @@
 
         	<h1>Explore Docs</h1>
         	<br>
-        	
+
+			{% if not docExploreInner_HTML %}
+			<!-- SEARCH ELEMENTS -->
 			<form id="doc_explore_search_bar" action="/docExplore" method="POST">
 
 				<!-- input -->
@@ -68,6 +70,7 @@
 				</div>
 
 			</form>
+			{% endif %}
 
             {{ docExploreInner_HTML | safe }}
 
