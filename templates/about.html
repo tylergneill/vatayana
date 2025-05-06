@@ -13,65 +13,7 @@
 
     <body>
 
-        <nav class="navbar navbar-inverse">
-            <div class="container">
-
-                <!-- entire top navbar -->
-                <div class="row">
-
-                    <!-- skrutable brand/reset button and conditionally visibile action title -->
-                    <div class="col-md-4">
-
-                        <div class="row">
-
-                            <div class="col-md-4 col-xs-4">
-                                <div class="navbar-header">
-                                    <a class="navbar-brand" style="background-color: #000;" href="./">vātāyana</a>
-                                </div>
-                            </div>
-
-                            <div class="col-md-8 col-xs-8">
-                                <div class="navbar-header" id="hiddenSubtitle" style="visibility: hidden">
-                                    <a class="navbar-brand">: {{ page_subtitle }}</a>
-                                </div>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    <!-- about, tutorial, and conditionally visibile example links -->
-                    <div class="col-md-4">
-
-                        <div class="row">
-
-                            <div class="col-md-4 col-xs-4">
-                                <div class="navbar-header">
-                                    <a class="navbar-brand float-right" href="./about">about</a>
-                                </div>
-                            </div>
-
-                            <div class="col-md-4 col-xs-4">
-                                <div class="navbar-header">
-                                    <a class="navbar-brand" href="./tutorial">tutorial</a>
-                                </div>
-                            </div>
-
-                            <div class="col-md-4 col-xs-4">
-                                <div class="navbar-header" id="hiddenExample" style="visibility: hidden">
-                                    <a class="navbar-brand" href="./ex1">(example)</a>
-                                </div>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div><!-- entire top navbar row -->
-
-            </div><!-- container -->
-
-        </nav>
+        {% include "navbar.html" %}
 
         <div class="container">
 

@@ -102,9 +102,7 @@ def next_page():
 
 @app.route('/')
 def index():
-    return render_template("index.html",
-    page_subtitle="🪟"
-    )
+    return render_template("index.html")
 
 @app.route('/topicVisualizeLDAvis')
 def topic_visualize():

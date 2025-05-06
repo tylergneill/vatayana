@@ -16,77 +16,17 @@
 
     <body>
 
-        <nav class="navbar navbar-inverse">
-            <div class="container">
-
-				<!-- entire top navbar -->
-				<div class="row">
-
-					<!-- skrutable brand/reset button and conditionally visibile action title -->
-	                <div class="col-md-4">
-
-						<div class="row">
-
-							<div class="col-md-4 col-xs-4">
-			                    <div class="navbar-header">
-			                        <a class="navbar-brand" style="background-color: #000;" href="./">vātāyana</a>
-		                    	</div>
-							</div>
-
-							<div class="col-md-8 col-xs-8">
-			                    <div class="navbar-header">
-			                        <a class="navbar-brand">: {{ page_subtitle }}</a>
-			                    </div>
-							</div>
-
-						</div>
-
-					</div>
-
-					<!-- about, tutorial, and conditionally visibile example links -->
-					<div class="col-md-4">
-
-						<div class="row">
-
-							<div class="col-md-4 col-xs-4">
-								<div class="navbar-header">
-		                    		<a class="navbar-brand float-right" href="./about">about</a>
-								</div>
-		                	</div>
-
-			                <div class="col-md-4 col-xs-4">
-		                        <div class="navbar-header">
-		                        	<a class="navbar-brand" href="./tutorial">tutorial</a>
-		                        </div>
-			                </div>
-
-							<div class="col-md-4 col-xs-4">
-								<div class="navbar-header" id="hiddenExample" style="visibility: hidden">
-									<a class="navbar-brand" href="./ex1">(example)</a>
-								</div>
-							</div>
-
-						</div>
-
-					</div>
-
-                </div><!-- entire top navbar row -->
-
-            </div><!-- container -->
-            
-        </nav>
+	    {% include "navbar.html" %}
 
         <div class="container">
 
-
-        	<h1>Explore Docs</h1>
-        	<br>
-        	
+			{% if not docExploreInner_HTML %}
+			<!-- SEARCH ELEMENTS -->
 			<form id="doc_explore_search_bar" action="/docExplore" method="POST">
 
 				<!-- input -->
 			    <div class="row">
-			    	<div class="col-md-2">
+			    	<div class="col-md-4">
 <!--			            <input id="doc_id" name="doc_id" type="text" class="form-control" placeholder="Enter doc id" size="30"/>-->
 						<select name="text_abbreviation_input" id="text_abbreviation_input" class="form-control">
 							<option value="" size="15" selected="selected">Select text</option>
@@ -94,38 +34,36 @@
 			        </div>
 					<div class="col-md-3">
 						<select name="local_doc_id_input" id="local_doc_id_input" class="form-control">
-							<option value="" size="15" selected="selected">Select query doc id</option>
+							<option value="" size="15" selected="selected">Select doc id</option>
+						</select>
+			        </div>
+					<div class="col-md-3">
+						<select name="local_doc_id_input_2" id="local_doc_id_input_2" class="form-control">
+							<option value="" size="15" selected="selected">Second doc id (batch mode only)</option>
 						</select>
 			        </div>
 			        <div class="col-md-1">
 			            <input id="doc_explore_submit_button" type="submit" class="btn btn-block btn-primary" value="Submit"/>
 			        </div>
-			    </div>
-				<br>
-				<div class="row">
-			    	<div class="col-md-2">
-			        </div>
-					<div class="col-md-3">
-						<select name="local_doc_id_input_2" id="local_doc_id_input_2" class="form-control">
-							<option value="" size="15" selected="selected">Subsequent doc id (batch mode)</option>
-						</select>
-			        </div>
 					<div class="col-md-1">
-			        </div>
+					</div>
 			    </div>
 				<br>
 				<div class="row" id="sw_threshold_slider_row" style='display: none;'>
-					<div class="col-md-2">
+					<div class="col-md-4">
 			        </div>
-					<div class="col-md-3" class="range">
+					<div class="col-md-5" class="range">
 						<input type="range" class="form-range" name="sw_threshold" id="sw_threshold" min="20" max="200" step="10" value="50"/>
 			        </div>
 					<div class="col-md-1">
 						<p id="sw_threshold_slider_label">sw score > 50</p>
 			        </div>
+					<div class="col-md-2">
+			        </div>
 				</div>
 
 			</form>
+			{% endif %}
 
             {{ docExploreInner_HTML | safe }}
 
@@ -198,7 +136,7 @@
 	  		sw_threshold_slider_row.style.display = "block";
 	  	}
 
-	  	sw_threshold.onchange = function() {
+	  	sw_threshold.oninput = function() {
 	  		var sw_threshold_slider_label = document.getElementById("sw_threshold_slider_label");
 	  		sw_threshold_slider_label.innerHTML = `sw score > ` + sw_threshold.value;
 	  	}
