@@ -1417,15 +1417,27 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
 
     results_HTML = HTML_templates['docCompareInner'].substitute(
                     doc_id_1=doc_id_1, doc_id_2=doc_id_2,
+                    doc_id_1_work_name=(doc_id_1_work_name := parse_complex_doc_id(doc_id_1)[0]),
+                    doc_id_2_work_name=(doc_id_2_work_name := parse_complex_doc_id(doc_id_2)[0]),
+                    doc_id_1_local=(doc_id_1_local := get_full_local_doc_id(doc_id_1)),
+                    doc_id_2_local=(doc_id_2_local := get_full_local_doc_id(doc_id_2)),
 
-                    doc_id_1_work_name=parse_complex_doc_id(doc_id_1)[0],
-                    doc_id_2_work_name=parse_complex_doc_id(doc_id_2)[0],
+                    text_1_doc_pos=abbrv2docs[doc_id_1_work_name].index(doc_id_1_local)+1,
+                    text_2_doc_pos=abbrv2docs[doc_id_2_work_name].index(doc_id_2_local)+1,
+                    text_1_doc_count=len(abbrv2docs[doc_id_1_work_name]),
+                    text_2_doc_count=len(abbrv2docs[doc_id_2_work_name]),
 
                     doc_section_1=section_labels[doc_id_1],
                     doc_section_2=section_labels[doc_id_2],
 
-                    prev_doc_id_1=doc_links[doc_id_1]['prev'], prev_doc_id_2=doc_links[doc_id_2]['prev'],
-                    next_doc_id_1=doc_links[doc_id_1]['next'], next_doc_id_2=doc_links[doc_id_2]['next'],
+                    first_doc_id_1=get_full_local_doc_id(doc_links[doc_id_1]['first']),
+                    first_doc_id_2=get_full_local_doc_id(doc_links[doc_id_2]['first']),
+                    prev_doc_id_1=get_full_local_doc_id(doc_links[doc_id_1]['prev']),
+                    prev_doc_id_2=get_full_local_doc_id(doc_links[doc_id_2]['prev']),
+                    next_doc_id_1=get_full_local_doc_id(doc_links[doc_id_1]['next']),
+                    next_doc_id_2=get_full_local_doc_id(doc_links[doc_id_2]['next']),
+                    last_doc_id_1=get_full_local_doc_id(doc_links[doc_id_1]['last']),
+                    last_doc_id_2=get_full_local_doc_id(doc_links[doc_id_2]['last']),
 
                     prev_sim_doc_id_for_2=prev_sim_doc_id_for_2, # left
                     next_sim_doc_id_for_2=next_sim_doc_id_for_2,
@@ -1438,6 +1450,8 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
                     sim_rank_of_prev_for_1=sim_rank_of_prev_for_1,
                     sim_rank_of_2_for_1=sim_rank_of_2_for_1,
                     sim_rank_of_next_for_1=sim_rank_of_next_for_1,
+
+                    N_sw_w=N_sw_w,
 
                     doc_segmented_highlighted_fulltext_1=highlighted_HTML_1,
                     doc_segmented_highlighted_fulltext_2=highlighted_HTML_2,

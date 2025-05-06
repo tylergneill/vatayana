@@ -1,108 +1,241 @@
+<style>
+  /* remove ugly blue outline/shadow on small btns when clicked */
+  .btn-no-outline:focus,
+  .btn-no-outline:active {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+</style>
+
 <div class="row">
 
-	<div class="col-md-6">
+	<div class="col-md-6" id="doc-compare-left"
+		data-current="$doc_id_1_local"
+		data-first="$first_doc_id_1"
+		data-last="$last_doc_id_1">
 
-		<h1>
-			<span title="$doc_section_1">$doc_id_1  </span>
-			<small><small><sup>(<a href="docExplore?doc_id=$doc_id_1">docExpl</a>) (<a href="textView?doc_id=$doc_id_1">txtVw</a>)</sup></small></small>
-		</h1>
+	  <h1>
+		<span title="$doc_section_1">$doc_id_1</span>
+		<small><sup>
+		  (<a href="docExplore?doc_id=$doc_id_1">docExpl</a>)
+		  (<a href="textView?doc_id=$doc_id_1">txtVw</a>)
+		</sup></small>
+	  </h1>
 
-		<div class="row">
-
-			<div class="col-md-4">
-				<form method="get" action="docCompare">
-					<input type="hidden" name="doc_id_1" value="$prev_doc_id_1" />
-					<input type="hidden" name="doc_id_2" value="$doc_id_2" />
-					<input type="submit" class="btn btn-block btn-primary" value="<< $prev_doc_id_1" />
-				</form>
-			</div>
-
-			<div class="col-md-4">
-				<form method="get" action="docCompare">
-					<input type="hidden" name="doc_id_1" value="$next_doc_id_1" />
-					<input type="hidden" name="doc_id_2" value="$doc_id_2" />
-					<input type="submit" class="btn btn-block btn-primary" value="$next_doc_id_1 >>" />
-				</form>
-			</div>
-
-			<p>within $doc_id_1_work_name</p>
-
+	  <!-- ─── 1) DOCUMENT NAVIGATION: FIRST  PREV  NEXT  LAST ─────────────────── -->
+	  <div class="row mb-2">
+		<div class="col-md-2">
+		  <form method="get" action="docCompare">
+			<input type="hidden" name="doc_id_1" value="${doc_id_1_work_name}_${first_doc_id_1}"/>
+			<input type="hidden" name="doc_id_2" value="$doc_id_2"/>
+			<button id="btn-first-left"
+					type="submit"
+					class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
+					data-doc-id="$first_doc_id_1"
+					title="Go to first passage ($first_doc_id_1)">
+			  «
+			</button>
+		  </form>
 		</div>
 
-		<div class="row" id="similar_doc_link_btns_left" style="visibility: hidden">
-
-			<div class="col-md-4">
-				<form method="get" action="docCompare">
-					<input type="hidden" name="doc_id_1" value="$prev_sim_doc_id_for_2" />
-					<input type="hidden" name="doc_id_2" value="$doc_id_2" />
-					<input type="submit" class="btn btn-block btn-primary" value="(#$sim_rank_of_prev_for_2) $prev_sim_doc_id_for_2" />
-				</form>
-			</div>
-
-			<div class="col-md-4">
-				<form method="get" action="docCompare">
-					<input type="hidden" name="doc_id_1" value="$next_sim_doc_id_for_2" />
-					<input type="hidden" name="doc_id_2" value="$doc_id_2" />
-					<input type="submit" class="btn btn-block btn-primary" value="(#$sim_rank_of_next_for_2) $next_sim_doc_id_for_2" />
-				</form>
-			</div>
-
-			<p>similar doc #$sim_rank_of_1_for_2 for <br>$doc_id_2</p>
-
+		<div class="col-md-2">
+		  <form method="get" action="docCompare">
+			<input type="hidden" name="doc_id_1" value="${doc_id_1_work_name}_${prev_doc_id_1}"/>
+			<input type="hidden" name="doc_id_2" value="$doc_id_2"/>
+			<button id="btn-prev-left"
+					type="submit"
+					class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
+					data-doc-id="$first_doc_id_1"
+					title="Go to previous passage ($prev_doc_id_1)">
+			  ←
+			</button>
+		  </form>
 		</div>
+
+		<div class="col-md-4 text-center">
+		  <small>within <em>$doc_id_1_work_name</em> $text_1_doc_pos of $text_1_doc_count</small>
+		</div>
+
+		<div class="col-md-2">
+		  <form method="get" action="docCompare">
+			<input type="hidden" name="doc_id_1" value="${doc_id_1_work_name}_${next_doc_id_1}"/>
+			<input type="hidden" name="doc_id_2" value="$doc_id_2"/>
+			<button id="btn-next-left"
+					type="submit"
+					class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
+					data-doc-id="$first_doc_id_1"
+					title="Go to next passage ($next_doc_id_1)">
+			  →
+			</button>
+		  </form>
+		</div>
+
+		<div class="col-md-2">
+		  <form method="get" action="docCompare">
+			<input type="hidden" name="doc_id_1" value="${doc_id_1_work_name}_${last_doc_id_1}"/>
+			<input type="hidden" name="doc_id_2" value="$doc_id_2"/>
+			<button id="btn-last-left"
+					type="submit"
+					class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
+					data-doc-id="$first_doc_id_1"
+					title="Go to last passage ($last_doc_id_1)">
+			  »
+			</button>
+		  </form>
+		</div>
+	  </div>
+
+	  <!-- ─── 2) SIMILARITY NAVIGATION ───────────────────────────────────────────── -->
+	  <div class="row mb-2" id="sim-nav-left" style="visibility: hidden"
+		   data-rank="$sim_rank_of_1_for_2"
+		   data-total="$N_sw_w">
+		<div class="col-md-4">
+		  <form method="get" action="docCompare">
+			<input type="hidden" name="doc_id_1" value="$prev_sim_doc_id_for_2"/>
+			<input type="hidden" name="doc_id_2" value="$doc_id_2"/>
+			<button id="sim-prev-btn-left"
+					type="submit"
+					class="btn btn-block btn-primary btn-no-outline"
+					title="Go to more similar (#$sim_rank_of_prev_for_2 of $N_sw_w)">
+			  ←
+			</button>
+		  </form>
+		</div>
+
+		<div class="col-md-4 text-center">
+		  <small id="sim-status-left">
+			most similar #$sim_rank_of_1_for_2 of $N_sw_w for <em>$doc_id_2</em>
+		  </small>
+		</div>
+
+		<div class="col-md-4 text-right">
+		  <form method="get" action="docCompare">
+			<input type="hidden" name="doc_id_1" value="$next_sim_doc_id_for_2"/>
+			<input type="hidden" name="doc_id_2" value="$doc_id_2"/>
+			<button id="sim-next-btn-left"
+					type="submit"
+					class="btn btn-block btn-primary btn-no-outline"
+					title="Go to less similar (#$sim_rank_of_next_for_2 of $N_sw_w)">
+			  →
+			</button>
+		  </form>
+		</div>
+	  </div>
 
 	</div>
 
-	<div class="col-md-6">
+	<div class="col-md-6" id="doc-compare-right"
+		data-current="$doc_id_2_local"
+		data-first="$first_doc_id_2"
+		data-last="$last_doc_id_2">
 
-		<h1>
-			<span title="$doc_section_2">$doc_id_2  </span>
-			<small><small><sup>(<a href="docExplore?doc_id=$doc_id_2">docExpl</a>) (<a href="textView?doc_id=$doc_id_2">txtVw</a>)</sup></small></small>
-		</h1>
+	  <h1>
+		<span title="$doc_section_2">$doc_id_2</span>
+		<small><sup>
+		  (<a href="docExplore?doc_id=$doc_id_2">docExpl</a>)
+		  (<a href="textView?doc_id=$doc_id_2">txtVw</a>)
+		</sup></small>
+	  </h1>
 
-		<div class="row">
-
-			<div class="col-md-4">
-				<form method="get" action="docCompare">
-					<input type="hidden" name="doc_id_1" value="$doc_id_1" />
-					<input type="hidden" name="doc_id_2" value="$prev_doc_id_2" />
-					<input type="submit" class="btn btn-block btn-primary" value="<< $prev_doc_id_2" />
-				</form>
-			</div>
-
-			<div class="col-md-4">
-				<form method="get" action="docCompare">
-					<input type="hidden" name="doc_id_1" value="$doc_id_1" />
-					<input type="hidden" name="doc_id_2" value="$next_doc_id_2" />
-					<input type="submit" class="btn btn-block btn-primary" value="$next_doc_id_2 >>" />
-				</form>
-			</div>
-
-			<p>within $doc_id_2_work_name</p>
-
+	  <!-- ─── 1) DOCUMENT NAVIGATION: FIRST  PREV  NEXT  LAST ─────────────────── -->
+	  <div class="row mb-2">
+		<div class="col-md-2">
+		  <form method="get" action="docCompare">
+			<input type="hidden" name="doc_id_2" value="${doc_id_2_work_name}_${first_doc_id_2}"/>
+			<input type="hidden" name="doc_id_1" value="$doc_id_1"/>
+			<button id="btn-first-right"
+					type="submit"
+					class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
+					data-doc-id="$first_doc_id_2"
+					title="Go to first passage ($first_doc_id_2)">
+			  «
+			</button>
+		  </form>
 		</div>
 
-		<div class="row" id="similar_doc_link_btns_right" style="visibility: hidden">
-
-			<div class="col-md-4">
-				<form method="get" action="docCompare">
-					<input type="hidden" name="doc_id_1" value="$doc_id_1" />
-					<input type="hidden" name="doc_id_2" value="$prev_sim_doc_id_for_1" />
-					<input type="submit" class="btn btn-block btn-primary" value="(#$sim_rank_of_prev_for_1) $prev_sim_doc_id_for_1" />
-				</form>
-			</div>
-
-			<div class="col-md-4">
-				<form method="get" action="docCompare">
-					<input type="hidden" name="doc_id_1" value="$doc_id_1" />
-					<input type="hidden" name="doc_id_2" value="$next_sim_doc_id_for_1" />
-					<input type="submit" class="btn btn-block btn-primary" value="(#$sim_rank_of_next_for_1) $next_sim_doc_id_for_1" />
-				</form>
-			</div>
-
-			<p>similar doc #$sim_rank_of_2_for_1 for <br>$doc_id_1</p>
-
+		<div class="col-md-2">
+		  <form method="get" action="docCompare">
+			<input type="hidden" name="doc_id_2" value="${doc_id_2_work_name}_${prev_doc_id_2}"/>
+			<input type="hidden" name="doc_id_1" value="$doc_id_1"/>
+			<button id="btn-prev-right"
+					type="submit"
+					class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
+					data-doc-id="$first_doc_id_2"
+					title="Go to previous passage ($prev_doc_id_2)">
+			  ←
+			</button>
+		  </form>
 		</div>
+
+		<div class="col-md-4 text-center">
+		  <small>within <em>$doc_id_2_work_name</em> $text_2_doc_pos of $text_2_doc_count</small>
+		</div>
+
+		<div class="col-md-2">
+		  <form method="get" action="docCompare">
+			<input type="hidden" name="doc_id_2" value="${doc_id_2_work_name}_${next_doc_id_2}"/>
+			<input type="hidden" name="doc_id_1" value="$doc_id_1"/>
+			<button id="btn-next-right"
+					type="submit"
+					class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
+					data-doc-id="$first_doc_id_2"
+					title="Go to next passage ($next_doc_id_2)">
+			  →
+			</button>
+		  </form>
+		</div>
+
+		<div class="col-md-2">
+		  <form method="get" action="docCompare">
+			<input type="hidden" name="doc_id_2" value="${doc_id_2_work_name}_${last_doc_id_2}"/>
+			<input type="hidden" name="doc_id_1" value="$doc_id_1"/>
+			<button id="btn-last-right"
+					type="submit"
+					class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
+					data-doc-id="$first_doc_id_2"
+					title="Go to last passage ($last_doc_id_2)">
+			  »
+			</button>
+		  </form>
+		</div>
+	  </div>
+
+	  <!-- ─── 2) SIMILARITY NAVIGATION ───────────────────────────────────────────── -->
+	  <div class="row mb-2" id="sim-nav-right" style="visibility: hidden"
+		   data-rank="$sim_rank_of_2_for_1"
+		   data-total="$N_sw_w">
+		<div class="col-md-4">
+		  <form method="get" action="docCompare">
+			<input type="hidden" name="doc_id_2" value="$prev_sim_doc_id_for_1"/>
+			<input type="hidden" name="doc_id_1" value="$doc_id_1"/>
+			<button id="sim-prev-btn-right"
+					type="submit"
+					class="btn btn-block btn-primary btn-no-outline"
+					title="Go to more similar (#$sim_rank_of_prev_for_1 of $N_sw_w)">
+			  ←
+			</button>
+		  </form>
+		</div>
+
+		<div class="col-md-4 text-center">
+		  <small id="sim-status-right">
+			most similar #$sim_rank_of_2_for_1 of $N_sw_w for <em>$doc_id_1</em>
+		  </small>
+		</div>
+
+		<div class="col-md-4 text-right">
+		  <form method="get" action="docCompare">
+			<input type="hidden" name="doc_id_2" value="$next_sim_doc_id_for_1"/>
+			<input type="hidden" name="doc_id_1" value="$doc_id_1"/>
+			<button id="sim-next-btn-right"
+					type="submit"
+					class="btn btn-block btn-primary btn-no-outline"
+					title="Go to less similar (#$sim_rank_of_next_for_1 of $N_sw_w)">
+			  →
+			</button>
+		  </form>
+		</div>
+	  </div>
 
 	</div>
 
@@ -126,14 +259,14 @@
 
 	<div class="col-md-6">
 		<h2>Topic Analysis</h2>
-		<img id="plot" src="/assets/doc_plot_pngs/$doc_id_1.png" alt="oops" width="550" height="385">
+		<img id="plot1" src="/assets/doc_plot_pngs/$doc_id_1.png" alt="oops" width="550" height="385">
 		$top_topics_summary_1
 	</div>
 
 
 	<div class="col-md-6">
 		<h2>Topic Analysis</h2>
-		<img id="plot" src="/assets/doc_plot_pngs/$doc_id_2.png" alt="oops" width="550" height="385">
+		<img id="plot2" src="/assets/doc_plot_pngs/$doc_id_2.png" alt="oops" width="550" height="385">
 		$top_topics_summary_2
 	</div>
 
@@ -145,23 +278,28 @@
 
 	<span style="text-align: center;">
 		<h2>Doc Similarity Scores</h2>
-		<table class='display' style="margin-left: auto; margin-right: auto;">
+		<table class='display' style="margin-left: auto; margin-right: auto; text-align: center;">
 			<tr>
-				<td><h2><small>Topic Similarity<span title="K-dim vector cosine similarity">*</span></small></h2></td>
+				<th style="text-align: center;"><h2><small><b>Comparison</b></small></h2></th>
+				<th style="text-align: center;"><h2><small><b>Score</b></small></h2></th>
+				<th style="text-align: center;"><h2><small><b>Score Type</b></small></h2></th>
+			</tr>
+			<tr>
+				<td><h2><small>Topic (LDA)</small></h2></td>
 				<td><h2><small>$topic_similiarity_score</small></h2></td>
+				<td><h2><small>Vector cosine similarity (0.0–1.0)</small></h2></td>
 			</tr>
 			<tr>
-				<td><h2><small>TF.IDF Similarity<span title="reduced-vocab-dim vector cosine similarity">*</span></small></h2></td>
+				<td><h2><small>Word (TF-IDF)</small></h2></td>
 				<td><h2><small>$TF_IDF_comparison_score</small></h2></td>
+				<td><h2><small>Vector cosine similarity (0.0–1.0)</small></h2></td>
 			</tr>
 			<tr>
-				<td><h2><small>Smith-Waterman Alignment Score<span title="based on char-level comparison of best word-level match">*</span></small></h2></td>
+				<td><h2><small>Phrase (Smith-Waterman)</small></h2></td>
 				<td><h2><small>$sw_w_align_score</small></h2></td>
-			</tr>
-			<tr>
-				<td><h2><small>Composite Alignment Score<span title="char-level, Needleman-Wunsch primed with Smith-Waterman, number of chars highlighted dark green">*</span></small></h2></td>
-				<td><h2><small>$sw_nw_score</small></h2></td>
+				<td><h2><small>Approx. char. count of longest fuzzy overlap</small></h2></td>
 			</tr>
 		</table>
 	</span>
-	</br></br>
+</div>
+</br></br>
