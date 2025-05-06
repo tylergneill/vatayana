@@ -159,18 +159,67 @@ with open(doc_id_list_full_fn,'w') as f_out:
     f_out.write('\n'.join(doc_ids))
 
 
-# turns list of elements into linking dictionary with 'prev' and 'next' keys
-def list2linkingDict(elem_list):
-    L = len(elem_list)
-    linking_dict = {}
-    linking_dict[elem_list[0]] = {'prev': elem_list[L-1], 'next': elem_list[1]}
-    for i in range(1, L-1):
-        linking_dict[elem_list[i]] = {'prev': elem_list[i-1], 'next': elem_list[i+1]}
-    linking_dict[elem_list[L-1]] = {'prev': elem_list[L-2], 'next': elem_list[0]}
-    return linking_dict
+def parse_complex_doc_id(doc_id):
+# NB: returns only first original doc id from any resizing modifications
+    if doc_id is None:
+        return None, None
+    first_underscore_pos = doc_id.find('_')
+    work_abbrv = doc_id[:first_underscore_pos]
+    local_doc_id = re.search('[^_\^:]+', doc_id[first_underscore_pos+1:]).group()
+    return work_abbrv, local_doc_id
 
-# e.g. doc_links[DOC_ID]['prev'] = another DOC_ID string
-doc_links = list2linkingDict(doc_ids)
+
+def get_full_local_doc_id(doc_id):
+    work_abbrv, _ = parse_complex_doc_id(doc_id)
+    if work_abbrv is None:
+        return None
+    return doc_id[len(work_abbrv)+1:]
+
+
+def build_similarity_doc_nav(elem_list):
+    nav = {}
+    for i, doc_id in enumerate(elem_list):
+        nav[doc_id] = {
+            'prev': elem_list[i - 1] if i > 0 else None,
+            'next': elem_list[i + 1] if i < len(elem_list) - 1 else None,
+        }
+    return nav
+
+
+def build_by_work_doc_nav(elem_list):
+    """
+    Given a flat list of doc_ids like ['NBhū_1,1', 'NBhū_1,2', ... , 'PVin_I,034,i', ...],
+    returns a dict mapping each doc_id to a dict of
+      {
+        'first':  <first in that work>,
+        'prev':   <prev in that work> or None,
+        'next':   <next in that work> or None,
+        'last':   <last  in that work>
+      }
+    """
+    # 1) group by work-prefix
+    groups = defaultdict(list)
+    for doc_id in elem_list:
+        work, _ = parse_complex_doc_id(doc_id)
+        groups[work].append(doc_id)
+
+    # 2) build navigation for each group
+    nav = {}
+    for work, ids in groups.items():
+        first, last = ids[0], ids[-1]
+        for i, doc_id in enumerate(ids):
+            prev_id = ids[i-1] if i > 0           else None
+            next_id = ids[i+1] if i < len(ids)-1  else None
+            nav[doc_id] = {
+                'first': first,
+                'prev':  prev_id,
+                'next':  next_id,
+                'last':  last
+            }
+
+    return nav
+
+doc_links = build_by_work_doc_nav(doc_ids)
 
 # load lookup table of filenames by conventional text abbreviation
 text_abbrev2fn = load_dict_from_json("assets/text_abbreviations_IASTreduced.json") # for accessing files
@@ -214,18 +263,6 @@ topic_wordcloud_fns = [ os.path.join(topic_wordclouds_relative_path, img_fn) # r
                             and img_fn != '.DS_Store'
                         ]
 topic_wordcloud_fns.sort()
-
-#######################################################
-# some handy general functions ...
-#######################################################
-
-def parse_complex_doc_id(doc_id):
-# NB: returns only first original doc id from any resizing modifications
-    first_underscore_pos = doc_id.find('_')
-    work_abbrv = doc_id[:first_underscore_pos]
-    local_doc_id = re.search('[^_\^:]+', doc_id[first_underscore_pos+1:]).group()
-    return work_abbrv, local_doc_id
-
 
 
 #######################################################
@@ -700,71 +737,6 @@ def get_closest_docs_with_db(
         upsert=True
     )
 
-    # end = datetime.now().time()
-    # overall_time = calc_dur(start, end)
-    # print("just getting stuff from db:", overall_time)
-    # start = datetime.now().time()
-    #
-    # # perform filtering and result supplementation based on priority doc list
-    # topic_similar_docs_filtered = {
-    #     k: v for k, v in topic_similar_docs.items() if parse_complex_doc_id(k)[0] in priority_texts
-    # }
-    #
-    # end = datetime.now().time()
-    # overall_time = calc_dur(start, end)
-    # print(f"filtering topic results (len(topic_similar_docs)=={len(topic_similar_docs)}):", overall_time)
-    # start = datetime.now().time()
-    #
-    # tf_idf_similar_docs_filtered = {
-    #     k:v for k,v in tf_idf_similar_docs.items() if parse_complex_doc_id(k)[0] in priority_texts
-    # }
-    #
-    # end = datetime.now().time()
-    # overall_time = calc_dur(start, end)
-    # print(f"filtering tf-idf results (len(tf_idf_similar_docs)=={len(tf_idf_similar_docs)}):", overall_time)
-    # start = datetime.now().time()
-    #
-    # sw_w_similar_docs_filtered = {
-    #     k: v for k, v in sw_w_similar_docs.items() if parse_complex_doc_id(k)[0] in priority_texts
-    # }
-    #
-    # end = datetime.now().time()
-    # overall_time = calc_dur(start, end)
-    # print(f"filtering sw_w results (len(sw_w_similar_docs)=={len(sw_w_similar_docs)}):", overall_time)
-    # start = datetime.now().time()
-    #
-    # additional_tfidf = rank_candidates_by_tiny_TF_IDF_similarity(
-    #     doc_id,
-    #     list(topic_similar_docs_filtered.keys())[len(tf_idf_similar_docs_filtered):N_tfidf]
-    # )
-    #
-    # end = datetime.now().time()
-    # overall_time = calc_dur(start, end)
-    # print(f"additional_tfidf ({N_tfidf-len(tf_idf_similar_docs_filtered)}):", overall_time)
-    #
-    # tf_idf_similar_docs_filtered = dict(tf_idf_similar_docs_filtered, **additional_tfidf)
-    #
-    # start = datetime.now().time()
-    #
-    # additional_sw = rank_candidates_by_sw_w_alignment_score(
-    #     doc_id,
-    #     list(tf_idf_similar_docs_filtered.keys())[len(sw_w_similar_docs_filtered):N_sw]
-    # )
-    #
-    # end = datetime.now().time()
-    # overall_time = calc_dur(start, end)
-    # print(f"additional_sw ({N_sw-len(sw_w_similar_docs_filtered)}):", overall_time)
-    #
-    # sw_w_similar_docs_filtered = dict(sw_w_similar_docs_filtered, **additional_sw)
-    #
-    # similar_docs = {
-    #     'topic': topic_similar_docs_filtered,
-    #     'tf_idf': tf_idf_similar_docs_filtered,
-    #     'sw_w': sw_w_similar_docs_filtered
-    # }
-    #
-    # breakpoint()
-
     return similar_docs
 
 
@@ -800,7 +772,7 @@ def get_closest_docs(   query_id,
     non_priority_texts = [text for text in list(text_abbrev2fn.keys()) if text not in priority_texts]
 
     start0 = datetime.now().time()
-    # get num of docs in priority_texts to use for comupatation time calculations
+    # get num of docs in priority_texts to use for computation time calculations
     num_priority_docs = sum([ num_docs_by_text[text_name] for text_name in priority_texts ])
 
     # start1 = datetime.now().time()
@@ -810,8 +782,23 @@ def get_closest_docs(   query_id,
     # handle blank
     if doc_fulltext[query_id] == '':
         results_HTML = HTML_templates['docExploreInner'].substitute(
-            query_id = query_id, query_section = section_labels[query_id], prev_doc_id = doc_links[query_id]['prev'], next_doc_id = doc_links[query_id]['next'],
-            query_original_fulltext = doc_original_fulltext[query_id], query_segmented_fulltext = '', top_topics_summary='', priority_results_list_content = '', secondary_results_list_content = '', priority_texts=str(priority_texts), non_priority_texts=str(non_priority_texts)
+            query_id = query_id,
+            query_work_name=(query_work_name := parse_complex_doc_id(query_id)[0]),
+            query_id_local=(query_id_local := get_full_local_doc_id(query_id)),
+            first_doc_id=get_full_local_doc_id(doc_links[query_id]['first']),
+            prev_doc_id=get_full_local_doc_id(doc_links[query_id]['prev']),
+            next_doc_id=get_full_local_doc_id(doc_links[query_id]['next']),
+            last_doc_id=get_full_local_doc_id(doc_links[query_id]['last']),
+            query_text_pos=abbrv2docs[query_work_name].index(query_id_local) + 1,
+            query_text_doc_count=len(abbrv2docs[query_work_name]),
+            query_section=section_labels[query_id],
+            query_original_fulltext = doc_original_fulltext[query_id],
+            query_segmented_fulltext = '',
+            top_topics_summary='',
+            priority_results_list_content = '',
+            secondary_results_list_content = '',
+            priority_texts=str(priority_texts),
+            non_priority_texts=str(non_priority_texts),
             )
         return results_HTML
 
@@ -961,7 +948,7 @@ def get_closest_docs(   query_id,
         # print("filtering_time:", filtering_time)
 
     if results_as_links_only:
-        similarity_result_doc_links = list2linkingDict(list(priority_ranked_results_complete.keys()))
+        similarity_result_doc_links = build_similarity_doc_nav(list(priority_ranked_results_complete.keys())[:N_sw_w])
         return similarity_result_doc_links
 
     if batch_mode:
@@ -1009,9 +996,15 @@ def get_closest_docs(   query_id,
         secondary_col_HTML = "<p>(none)</p>" # just neutralize for now until i can make faster
         results_HTML = HTML_templates['docExploreInner'].substitute(
                             query_id = query_id,
+                            query_work_name=(query_work_name := parse_complex_doc_id(query_id)[0]),
+                            query_id_local=(query_id_local := get_full_local_doc_id(query_id)),
+                            first_doc_id=get_full_local_doc_id(doc_links[query_id]['first']),
+                            prev_doc_id=get_full_local_doc_id(doc_links[query_id]['prev']),
+                            next_doc_id=get_full_local_doc_id(doc_links[query_id]['next']),
+                            last_doc_id=get_full_local_doc_id(doc_links[query_id]['last']),
+                            query_text_pos=abbrv2docs[query_work_name].index(query_id_local) + 1,
+                            query_text_doc_count=len(abbrv2docs[query_work_name]),
                             query_section = section_labels[query_id],
-                            prev_doc_id = doc_links[query_id]['prev'],
-                            next_doc_id = doc_links[query_id]['next'],
                             query_original_fulltext = doc_original_fulltext[query_id],
                             query_segmented_fulltext = doc_fulltext[query_id],
                             top_topics_summary=format_top_topic_summary(
@@ -1418,9 +1411,9 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
         ks_1 = list(similar_doc_links_for_1.keys())
         prev_sim_doc_id_for_1 = similar_doc_links_for_1[doc_id_2]['prev']
         next_sim_doc_id_for_1 = similar_doc_links_for_1[doc_id_2]['next']
-        sim_rank_of_prev_for_1 = ks_1.index(similar_doc_links_for_1[doc_id_2]['prev']) + 1
+        sim_rank_of_prev_for_1 = ks_1.index(prev_sim_doc_id_for_1) + 1 if prev_sim_doc_id_for_1 else None
         sim_rank_of_2_for_1 = ks_1.index(doc_id_2) + 1
-        sim_rank_of_next_for_1 = ks_1.index(similar_doc_links_for_1[doc_id_2]['next']) + 1
+        sim_rank_of_next_for_1 = ks_1.index(next_sim_doc_id_for_1) + 1 if next_sim_doc_id_for_1 else None
     else:
         activate_similar_link_buttons_right = ""
         prev_sim_doc_id_for_1 = next_sim_doc_id_for_1 = sim_rank_of_prev_for_1 = sim_rank_of_2_for_1 = sim_rank_of_next_for_1 = ""
@@ -1430,9 +1423,9 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
         ks_2 = list(similar_doc_links_for_2.keys())
         prev_sim_doc_id_for_2 = similar_doc_links_for_2[doc_id_1]['prev']
         next_sim_doc_id_for_2 = similar_doc_links_for_2[doc_id_1]['next']
-        sim_rank_of_prev_for_2 = ks_2.index(similar_doc_links_for_2[doc_id_1]['prev']) + 1
+        sim_rank_of_prev_for_2 = ks_2.index(prev_sim_doc_id_for_2) + 1 if prev_sim_doc_id_for_2 else None
         sim_rank_of_1_for_2 = ks_2.index(doc_id_1) + 1
-        sim_rank_of_next_for_2 = ks_2.index(similar_doc_links_for_2[doc_id_1]['next']) + 1
+        sim_rank_of_next_for_2 = ks_2.index(next_sim_doc_id_for_2) + 1 if next_sim_doc_id_for_2 else None
     else:
         activate_similar_link_buttons_left = ""
         prev_sim_doc_id_for_2 = next_sim_doc_id_for_2 = sim_rank_of_prev_for_2 = sim_rank_of_1_for_2 = sim_rank_of_next_for_2 = ""
@@ -1445,15 +1438,27 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
 
     results_HTML = HTML_templates['docCompareInner'].substitute(
                     doc_id_1=doc_id_1, doc_id_2=doc_id_2,
+                    doc_id_1_work_name=(doc_id_1_work_name := parse_complex_doc_id(doc_id_1)[0]),
+                    doc_id_2_work_name=(doc_id_2_work_name := parse_complex_doc_id(doc_id_2)[0]),
+                    doc_id_1_local=(doc_id_1_local := get_full_local_doc_id(doc_id_1)),
+                    doc_id_2_local=(doc_id_2_local := get_full_local_doc_id(doc_id_2)),
 
-                    doc_id_1_work_name=parse_complex_doc_id(doc_id_1)[0],
-                    doc_id_2_work_name=parse_complex_doc_id(doc_id_2)[0],
+                    text_1_doc_pos=abbrv2docs[doc_id_1_work_name].index(doc_id_1_local)+1,
+                    text_2_doc_pos=abbrv2docs[doc_id_2_work_name].index(doc_id_2_local)+1,
+                    text_1_doc_count=len(abbrv2docs[doc_id_1_work_name]),
+                    text_2_doc_count=len(abbrv2docs[doc_id_2_work_name]),
 
                     doc_section_1=section_labels[doc_id_1],
                     doc_section_2=section_labels[doc_id_2],
 
-                    prev_doc_id_1=doc_links[doc_id_1]['prev'], prev_doc_id_2=doc_links[doc_id_2]['prev'],
-                    next_doc_id_1=doc_links[doc_id_1]['next'], next_doc_id_2=doc_links[doc_id_2]['next'],
+                    first_doc_id_1=get_full_local_doc_id(doc_links[doc_id_1]['first']),
+                    first_doc_id_2=get_full_local_doc_id(doc_links[doc_id_2]['first']),
+                    prev_doc_id_1=get_full_local_doc_id(doc_links[doc_id_1]['prev']),
+                    prev_doc_id_2=get_full_local_doc_id(doc_links[doc_id_2]['prev']),
+                    next_doc_id_1=get_full_local_doc_id(doc_links[doc_id_1]['next']),
+                    next_doc_id_2=get_full_local_doc_id(doc_links[doc_id_2]['next']),
+                    last_doc_id_1=get_full_local_doc_id(doc_links[doc_id_1]['last']),
+                    last_doc_id_2=get_full_local_doc_id(doc_links[doc_id_2]['last']),
 
                     prev_sim_doc_id_for_2=prev_sim_doc_id_for_2, # left
                     next_sim_doc_id_for_2=next_sim_doc_id_for_2,
@@ -1466,6 +1471,8 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
                     sim_rank_of_prev_for_1=sim_rank_of_prev_for_1,
                     sim_rank_of_2_for_1=sim_rank_of_2_for_1,
                     sim_rank_of_next_for_1=sim_rank_of_next_for_1,
+
+                    N_sw_w=N_sw_w,
 
                     doc_segmented_highlighted_fulltext_1=highlighted_HTML_1,
                     doc_segmented_highlighted_fulltext_2=highlighted_HTML_2,

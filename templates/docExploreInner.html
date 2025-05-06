@@ -1,21 +1,72 @@
 <h1>$query_id <small><small>($query_section)</small></small></h1>
 
 <div class="row">
+    <div class="col-md-6" id="doc-explore-left"
+         data-current="$query_id_local"
+         data-first="$first_doc_id"
+         data-last="$last_doc_id">
 
-	<div class="col-md-2">
-		<form method="get" action="docExplore">
-			<input type="hidden" name="doc_id" value="$prev_doc_id" />
-			<input type="submit" class="btn btn-block btn-primary" value="<< $prev_doc_id" />
-		</form>
-	</div>
+        <!-- ─── 1) DOCUMENT NAVIGATION ON docExplore ───────────────────────────────── -->
+        <div class="row mb-2">
 
-	<div class="col-md-2">
-		<form method="get" action="docExplore">
-			<input type="hidden" name="doc_id" value="$next_doc_id" />
-			<input type="submit" class="btn btn-block btn-primary" value="$next_doc_id >>" />
-		</form>
-	</div>
+          <div class="col-md-2">
+            <form method="get" action="docExplore">
+              <input type="hidden" name="doc_id" value="${query_work_name}_${first_doc_id}"/>
+              <button id="btn-first-explore"
+                      type="submit"
+                      class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
+                      data-doc-id="$first_doc_id"
+                      title="Go to first passage within $query_work_name ($first_doc_id)">
+                «
+              </button>
+            </form>
+          </div>
 
+          <div class="col-md-2">
+            <form method="get" action="docExplore">
+              <input type="hidden" name="doc_id" value="${query_work_name}_${prev_doc_id}"/>
+              <button id="btn-prev-explore"
+                      type="submit"
+                      class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
+                      data-doc-id="$prev_doc_id"
+                      title="Go to previous passage within $query_work_name ($prev_doc_id)">
+                ‹
+              </button>
+            </form>
+          </div>
+
+          <div class="col-md-4 text-center">
+            <small>within <em>$query_work_name</em>:<br>doc #$query_text_pos of $query_text_doc_count</small>
+          </div>
+
+          <div class="col-md-2">
+            <form method="get" action="docExplore">
+              <input type="hidden" name="doc_id" value="${query_work_name}_${next_doc_id}"/>
+              <button id="btn-next-explore"
+                      type="submit"
+                      class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
+                      data-doc-id="$next_doc_id"
+                      title="Go to next passage within $query_work_name ($next_doc_id)">
+                ›
+              </button>
+            </form>
+          </div>
+
+          <div class="col-md-2">
+            <form method="get" action="docExplore">
+              <input type="hidden" name="doc_id" value="${query_work_name}_${last_doc_id}"/>
+              <button id="btn-last-explore"
+                      type="submit"
+                      class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
+                      data-doc-id="$last_doc_id"
+                      title="Go to last passage within $query_work_name ($last_doc_id)">
+                »
+              </button>
+            </form>
+          </div>
+
+        </div>
+    </div>
 </div>
 
 <div class="row">

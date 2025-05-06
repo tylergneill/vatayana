@@ -144,6 +144,33 @@
     </body>
 
 	<script type="text/javascript">
+		window.onload = function() {
+			// ─── DOCUMENT NAVIGATION: first/prev/next/last for left & right ─────────────────
+
+			const container = document.getElementById(`doc-explore-left`);
+			if (!container) return;
+
+			const current = container.dataset.current;
+			const first   = container.dataset.first;
+			const last    = container.dataset.last;
+
+			['first','prev','next','last'].forEach(type => {
+			  const btn = document.getElementById(`btn-${type}-explore`);
+			  if (!btn) return;
+
+			  // hide first & prev at the start
+			  if ((type === 'first' || type === 'prev') && current === first) {
+				btn.disabled = true;
+				btn.classList.add('disabled');
+			  }
+			  // hide next & last at the end
+			  if ((type === 'next' || type === 'last') && current === last) {
+				btn.disabled = true;
+				btn.classList.add('disabled');
+			  }
+			});
+		}
+
     	var abbrv2docs = {{ abbrv2docs|tojson|safe }};
     	var abbrev2title = {{ text_abbrev2title|tojson|safe }};
     	var section_labels = {{ section_labels|tojson|safe }};
