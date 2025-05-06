@@ -124,6 +124,37 @@
 
 <div class="row">
 
+	<span style="text-align: center;">
+		<h2>Similarity Scores</h2>
+		<table class='display' style="margin-left: auto; margin-right: auto; text-align: center;">
+			<tr>
+				<th style="text-align: center;"><h2><small><b>Comparison</b></small></h2></th>
+				<th style="text-align: center;"><h2><small><b>Score</b></small></h2></th>
+				<th style="text-align: center;"><h2><small><b>Explanation</b></small></h2></th>
+			</tr>
+			<tr>
+				<td><h2><small>Phrase (Smith-Waterman)</small></h2></td>
+				<td><h2><small>$sw_w_align_score</small></h2></td>
+				<td><h2><small>Character count of best match (roughly)</small></h2></td>
+			</tr>
+			<tr>
+				<td><h2><small>Word (TF-IDF)</small></h2></td>
+				<td><h2><small>$TF_IDF_comparison_score</small></h2></td>
+				<td><h2><small>Vector cosine similarity (0.0–1.0)</small></h2></td>
+			</tr>
+			<tr>
+				<td><h2><small>Topic (LDA)</small></h2></td>
+				<td><h2><small>$topic_similiarity_score</small></h2></td>
+				<td><h2><small>Vector cosine similarity (0.0–1.0)</small></h2></td>
+			</tr>
+		</table>
+	</span>
+</div>
+
+</br></br>
+
+<div class="row">
+
 	<div class="col-md-6">
 		<h2>Topic Analysis</h2>
 		<img id="plot1" src="/assets/doc_plot_pngs/$doc_id_1.png" alt="oops" width="550" height="385">
@@ -139,34 +170,4 @@
 
 </div>
 
-</br></br>
-
-<div class="row">
-
-	<span style="text-align: center;">
-		<h2>Doc Similarity Scores</h2>
-		<table class='display' style="margin-left: auto; margin-right: auto; text-align: center;">
-			<tr>
-				<th style="text-align: center;"><h2><small><b>Comparison</b></small></h2></th>
-				<th style="text-align: center;"><h2><small><b>Score</b></small></h2></th>
-				<th style="text-align: center;"><h2><small><b>Explanation</b></small></h2></th>
-			</tr>
-			<tr>
-				<td><h2><small>Topic (LDA)</small></h2></td>
-				<td><h2><small>$topic_similiarity_score</small></h2></td>
-				<td><h2><small>Vector cosine similarity (0.0–1.0)</small></h2></td>
-			</tr>
-			<tr>
-				<td><h2><small>Word (TF-IDF)</small></h2></td>
-				<td><h2><small>$TF_IDF_comparison_score</small></h2></td>
-				<td><h2><small>Vector cosine similarity (0.0–1.0)</small></h2></td>
-			</tr>
-			<tr>
-				<td><h2><small>Phrase (Smith-Waterman)</small></h2></td>
-				<td><h2><small>$sw_w_align_score</small></h2></td>
-				<td><h2><small>Character count of best match (roughly)</small></h2></td>
-			</tr>
-		</table>
-	</span>
-</div>
 </br></br>
