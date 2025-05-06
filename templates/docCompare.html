@@ -169,11 +169,13 @@
 
 				  // hide first & prev at the start
 				  if ((type === 'first' || type === 'prev') && current === first) {
-					btn.style.visibility = 'hidden';
+					btn.disabled = true;
+					btn.classList.add('disabled');
 				  }
 				  // hide next & last at the end
 				  if ((type === 'next' || type === 'last') && current === last) {
-					btn.style.visibility = 'hidden';
+					btn.disabled = true;
+					btn.classList.add('disabled');
 				  }
 				});
 			  });
@@ -198,13 +200,15 @@
 				// hide the “more similar” button at rank 1
 				const btnPrev = document.getElementById(`sim-prev-btn-${side}`);
 				if (rank === 1 && btnPrev) {
-				  btnPrev.style.visibility = 'hidden';
+				  btnPrev.disabled = true;
+				  btnPrev.classList.add('disabled');
 				}
 
 				// hide the “less similar” button at rank=total
 				const btnNext = document.getElementById(`sim-next-btn-${side}`);
 				if (rank === total && btnNext) {
-				  btnNext.style.visibility = 'hidden';
+				  btnNext.disabled = true;
+				  Next.classList.add('disabled');
 				}
 			  });
             }
