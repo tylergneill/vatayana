@@ -143,16 +143,70 @@
         	function conditionally_display_similar_doc_link_buttons() {
                 sim_btn_left = "{{ activate_similar_link_buttons_left }}";
                 if ( sim_btn_left.length > 0 ) {
-                    document.getElementById("similar_doc_link_btns_left").style.visibility = "visible";
+                    document.getElementById("sim-nav-left").style.visibility = "visible";
                 }
                 sim_btn_right = "{{ activate_similar_link_buttons_right }}";
                 if ( sim_btn_right.length > 0 ) {
-                    document.getElementById("similar_doc_link_btns_right").style.visibility = "visible";
+                    document.getElementById("sim-nav-right").style.visibility = "visible";
                 }
             }
 
          	window.onload = function() {
                 conditionally_display_similar_doc_link_buttons();
+
+              // ─── DOCUMENT NAVIGATION: first/prev/next/last for left & right ─────────────────
+			  ['left','right'].forEach(side => {
+				const container = document.getElementById(`doc-compare-${side}`);
+				if (!container) return;
+
+				const current = container.dataset.current;
+				const first   = container.dataset.first;
+				const last    = container.dataset.last;
+
+				['first','prev','next','last'].forEach(type => {
+				  const btn = document.getElementById(`btn-${type}-${side}`);
+				  if (!btn) return;
+
+				  // hide first & prev at the start
+				  if ((type === 'first' || type === 'prev') && current === first) {
+					btn.style.visibility = 'hidden';
+				  }
+				  // hide next & last at the end
+				  if ((type === 'next' || type === 'last') && current === last) {
+					btn.style.visibility = 'hidden';
+				  }
+				});
+			  });
+
+			  // ─── SIMILARITY NAVIGATION: for left & right ─────────────────────────────────────
+			  ['left','right'].forEach(side => {
+				const simNav = document.getElementById(`sim-nav-${side}`);
+				if (!simNav) return;
+
+				const rank  = parseInt(simNav.dataset.rank,  10) || 0;
+				const total = parseInt(simNav.dataset.total, 10) || 0;
+
+				// always show the row
+				simNav.style.display = '';
+
+				// hide entire row if invalid rank
+				if (rank < 1 || rank > total) {
+				  simNav.style.display = 'none';
+				  return;
+				}
+
+				// hide the “more similar” button at rank 1
+				const btnPrev = document.getElementById(`sim-prev-btn-${side}`);
+				if (rank === 1 && btnPrev) {
+				  btnPrev.style.visibility = 'hidden';
+				}
+
+				// hide the “less similar” button at rank=total
+				const btnNext = document.getElementById(`sim-next-btn-${side}`);
+				if (rank === total && btnNext) {
+				  btnNext.style.visibility = 'hidden';
+				}
+			  });
             }
 
 			var abbrv2docs = {{ abbrv2docs|tojson|safe }};
@@ -184,8 +238,6 @@
 				  docIdSel_2.options[docIdSel_2.options.length] = new Option(y + ' ' + section_labels[this.value + '_' + y], y);
 				}
 			}
-
-    </script>
         </script>
 
     </body>
