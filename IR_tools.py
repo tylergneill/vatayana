@@ -159,18 +159,67 @@ with open(doc_id_list_full_fn,'w') as f_out:
     f_out.write('\n'.join(doc_ids))
 
 
-# turns list of elements into linking dictionary with 'prev' and 'next' keys
-def list2linkingDict(elem_list):
-    L = len(elem_list)
-    linking_dict = {}
-    linking_dict[elem_list[0]] = {'prev': elem_list[L-1], 'next': elem_list[1]}
-    for i in range(1, L-1):
-        linking_dict[elem_list[i]] = {'prev': elem_list[i-1], 'next': elem_list[i+1]}
-    linking_dict[elem_list[L-1]] = {'prev': elem_list[L-2], 'next': elem_list[0]}
-    return linking_dict
+def parse_complex_doc_id(doc_id):
+# NB: returns only first original doc id from any resizing modifications
+    if doc_id is None:
+        return None, None
+    first_underscore_pos = doc_id.find('_')
+    work_abbrv = doc_id[:first_underscore_pos]
+    local_doc_id = re.search('[^_\^:]+', doc_id[first_underscore_pos+1:]).group()
+    return work_abbrv, local_doc_id
 
-# e.g. doc_links[DOC_ID]['prev'] = another DOC_ID string
-doc_links = list2linkingDict(doc_ids)
+
+def get_full_local_doc_id(doc_id):
+    work_abbrv, _ = parse_complex_doc_id(doc_id)
+    if work_abbrv is None:
+        return None
+    return doc_id[len(work_abbrv)+1:]
+
+
+def build_similarity_doc_nav(elem_list):
+    nav = {}
+    for i, doc_id in enumerate(elem_list):
+        nav[doc_id] = {
+            'prev': elem_list[i - 1] if i > 0 else None,
+            'next': elem_list[i + 1] if i < len(elem_list) - 1 else None,
+        }
+    return nav
+
+
+def build_by_work_doc_nav(elem_list):
+    """
+    Given a flat list of doc_ids like ['NBhū_1,1', 'NBhū_1,2', ... , 'PVin_I,034,i', ...],
+    returns a dict mapping each doc_id to a dict of
+      {
+        'first':  <first in that work>,
+        'prev':   <prev in that work> or None,
+        'next':   <next in that work> or None,
+        'last':   <last  in that work>
+      }
+    """
+    # 1) group by work-prefix
+    groups = defaultdict(list)
+    for doc_id in elem_list:
+        work, _ = parse_complex_doc_id(doc_id)
+        groups[work].append(doc_id)
+
+    # 2) build navigation for each group
+    nav = {}
+    for work, ids in groups.items():
+        first, last = ids[0], ids[-1]
+        for i, doc_id in enumerate(ids):
+            prev_id = ids[i-1] if i > 0           else None
+            next_id = ids[i+1] if i < len(ids)-1  else None
+            nav[doc_id] = {
+                'first': first,
+                'prev':  prev_id,
+                'next':  next_id,
+                'last':  last
+            }
+
+    return nav
+
+doc_links = build_by_work_doc_nav(doc_ids)
 
 # load lookup table of filenames by conventional text abbreviation
 text_abbrev2fn = load_dict_from_json("assets/text_abbreviations_IASTreduced.json") # for accessing files
@@ -214,18 +263,6 @@ topic_wordcloud_fns = [ os.path.join(topic_wordclouds_relative_path, img_fn) # r
                             and img_fn != '.DS_Store'
                         ]
 topic_wordcloud_fns.sort()
-
-#######################################################
-# some handy general functions ...
-#######################################################
-
-def parse_complex_doc_id(doc_id):
-# NB: returns only first original doc id from any resizing modifications
-    first_underscore_pos = doc_id.find('_')
-    work_abbrv = doc_id[:first_underscore_pos]
-    local_doc_id = re.search('[^_\^:]+', doc_id[first_underscore_pos+1:]).group()
-    return work_abbrv, local_doc_id
-
 
 
 #######################################################
@@ -961,7 +998,7 @@ def get_closest_docs(   query_id,
         # print("filtering_time:", filtering_time)
 
     if results_as_links_only:
-        similarity_result_doc_links = list2linkingDict(list(priority_ranked_results_complete.keys()))
+        similarity_result_doc_links = build_similarity_doc_nav(list(priority_ranked_results_complete.keys())[:N_sw_w])
         return similarity_result_doc_links
 
     if batch_mode:
@@ -1418,9 +1455,9 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
         ks_1 = list(similar_doc_links_for_1.keys())
         prev_sim_doc_id_for_1 = similar_doc_links_for_1[doc_id_2]['prev']
         next_sim_doc_id_for_1 = similar_doc_links_for_1[doc_id_2]['next']
-        sim_rank_of_prev_for_1 = ks_1.index(similar_doc_links_for_1[doc_id_2]['prev']) + 1
+        sim_rank_of_prev_for_1 = ks_1.index(prev_sim_doc_id_for_1) + 1 if prev_sim_doc_id_for_1 else None
         sim_rank_of_2_for_1 = ks_1.index(doc_id_2) + 1
-        sim_rank_of_next_for_1 = ks_1.index(similar_doc_links_for_1[doc_id_2]['next']) + 1
+        sim_rank_of_next_for_1 = ks_1.index(next_sim_doc_id_for_1) + 1 if next_sim_doc_id_for_1 else None
     else:
         activate_similar_link_buttons_right = ""
         prev_sim_doc_id_for_1 = next_sim_doc_id_for_1 = sim_rank_of_prev_for_1 = sim_rank_of_2_for_1 = sim_rank_of_next_for_1 = ""
@@ -1430,9 +1467,9 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
         ks_2 = list(similar_doc_links_for_2.keys())
         prev_sim_doc_id_for_2 = similar_doc_links_for_2[doc_id_1]['prev']
         next_sim_doc_id_for_2 = similar_doc_links_for_2[doc_id_1]['next']
-        sim_rank_of_prev_for_2 = ks_2.index(similar_doc_links_for_2[doc_id_1]['prev']) + 1
+        sim_rank_of_prev_for_2 = ks_2.index(prev_sim_doc_id_for_2) + 1 if prev_sim_doc_id_for_2 else None
         sim_rank_of_1_for_2 = ks_2.index(doc_id_1) + 1
-        sim_rank_of_next_for_2 = ks_2.index(similar_doc_links_for_2[doc_id_1]['next']) + 1
+        sim_rank_of_next_for_2 = ks_2.index(next_sim_doc_id_for_2) + 1 if next_sim_doc_id_for_2 else None
     else:
         activate_similar_link_buttons_left = ""
         prev_sim_doc_id_for_2 = next_sim_doc_id_for_2 = sim_rank_of_prev_for_2 = sim_rank_of_1_for_2 = sim_rank_of_next_for_2 = ""
