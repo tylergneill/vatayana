@@ -737,71 +737,6 @@ def get_closest_docs_with_db(
         upsert=True
     )
 
-    # end = datetime.now().time()
-    # overall_time = calc_dur(start, end)
-    # print("just getting stuff from db:", overall_time)
-    # start = datetime.now().time()
-    #
-    # # perform filtering and result supplementation based on priority doc list
-    # topic_similar_docs_filtered = {
-    #     k: v for k, v in topic_similar_docs.items() if parse_complex_doc_id(k)[0] in priority_texts
-    # }
-    #
-    # end = datetime.now().time()
-    # overall_time = calc_dur(start, end)
-    # print(f"filtering topic results (len(topic_similar_docs)=={len(topic_similar_docs)}):", overall_time)
-    # start = datetime.now().time()
-    #
-    # tf_idf_similar_docs_filtered = {
-    #     k:v for k,v in tf_idf_similar_docs.items() if parse_complex_doc_id(k)[0] in priority_texts
-    # }
-    #
-    # end = datetime.now().time()
-    # overall_time = calc_dur(start, end)
-    # print(f"filtering tf-idf results (len(tf_idf_similar_docs)=={len(tf_idf_similar_docs)}):", overall_time)
-    # start = datetime.now().time()
-    #
-    # sw_w_similar_docs_filtered = {
-    #     k: v for k, v in sw_w_similar_docs.items() if parse_complex_doc_id(k)[0] in priority_texts
-    # }
-    #
-    # end = datetime.now().time()
-    # overall_time = calc_dur(start, end)
-    # print(f"filtering sw_w results (len(sw_w_similar_docs)=={len(sw_w_similar_docs)}):", overall_time)
-    # start = datetime.now().time()
-    #
-    # additional_tfidf = rank_candidates_by_tiny_TF_IDF_similarity(
-    #     doc_id,
-    #     list(topic_similar_docs_filtered.keys())[len(tf_idf_similar_docs_filtered):N_tfidf]
-    # )
-    #
-    # end = datetime.now().time()
-    # overall_time = calc_dur(start, end)
-    # print(f"additional_tfidf ({N_tfidf-len(tf_idf_similar_docs_filtered)}):", overall_time)
-    #
-    # tf_idf_similar_docs_filtered = dict(tf_idf_similar_docs_filtered, **additional_tfidf)
-    #
-    # start = datetime.now().time()
-    #
-    # additional_sw = rank_candidates_by_sw_w_alignment_score(
-    #     doc_id,
-    #     list(tf_idf_similar_docs_filtered.keys())[len(sw_w_similar_docs_filtered):N_sw]
-    # )
-    #
-    # end = datetime.now().time()
-    # overall_time = calc_dur(start, end)
-    # print(f"additional_sw ({N_sw-len(sw_w_similar_docs_filtered)}):", overall_time)
-    #
-    # sw_w_similar_docs_filtered = dict(sw_w_similar_docs_filtered, **additional_sw)
-    #
-    # similar_docs = {
-    #     'topic': topic_similar_docs_filtered,
-    #     'tf_idf': tf_idf_similar_docs_filtered,
-    #     'sw_w': sw_w_similar_docs_filtered
-    # }
-    #
-    # breakpoint()
-
     return similar_docs
 
 
@@ -837,7 +772,7 @@ def get_closest_docs(   query_id,
     non_priority_texts = [text for text in list(text_abbrev2fn.keys()) if text not in priority_texts]
 
     start0 = datetime.now().time()
-    # get num of docs in priority_texts to use for comupatation time calculations
+    # get num of docs in priority_texts to use for computation time calculations
     num_priority_docs = sum([ num_docs_by_text[text_name] for text_name in priority_texts ])
 
     # start1 = datetime.now().time()
