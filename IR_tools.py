@@ -782,8 +782,23 @@ def get_closest_docs(   query_id,
     # handle blank
     if doc_fulltext[query_id] == '':
         results_HTML = HTML_templates['docExploreInner'].substitute(
-            query_id = query_id, query_section = section_labels[query_id], prev_doc_id = doc_links[query_id]['prev'], next_doc_id = doc_links[query_id]['next'],
-            query_original_fulltext = doc_original_fulltext[query_id], query_segmented_fulltext = '', top_topics_summary='', priority_results_list_content = '', secondary_results_list_content = '', priority_texts=str(priority_texts), non_priority_texts=str(non_priority_texts)
+            query_id = query_id,
+            query_work_name=(query_work_name := parse_complex_doc_id(query_id)[0]),
+            query_id_local=(query_id_local := get_full_local_doc_id(query_id)),
+            first_doc_id=get_full_local_doc_id(doc_links[query_id]['first']),
+            prev_doc_id=get_full_local_doc_id(doc_links[query_id]['prev']),
+            next_doc_id=get_full_local_doc_id(doc_links[query_id]['next']),
+            last_doc_id=get_full_local_doc_id(doc_links[query_id]['last']),
+            query_text_pos=abbrv2docs[query_work_name].index(query_id_local) + 1,
+            query_text_doc_count=len(abbrv2docs[query_work_name]),
+            query_section=section_labels[query_id],
+            query_original_fulltext = doc_original_fulltext[query_id],
+            query_segmented_fulltext = '',
+            top_topics_summary='',
+            priority_results_list_content = '',
+            secondary_results_list_content = '',
+            priority_texts=str(priority_texts),
+            non_priority_texts=str(non_priority_texts),
             )
         return results_HTML
 
@@ -981,9 +996,15 @@ def get_closest_docs(   query_id,
         secondary_col_HTML = "<p>(none)</p>" # just neutralize for now until i can make faster
         results_HTML = HTML_templates['docExploreInner'].substitute(
                             query_id = query_id,
+                            query_work_name=(query_work_name := parse_complex_doc_id(query_id)[0]),
+                            query_id_local=(query_id_local := get_full_local_doc_id(query_id)),
+                            first_doc_id=get_full_local_doc_id(doc_links[query_id]['first']),
+                            prev_doc_id=get_full_local_doc_id(doc_links[query_id]['prev']),
+                            next_doc_id=get_full_local_doc_id(doc_links[query_id]['next']),
+                            last_doc_id=get_full_local_doc_id(doc_links[query_id]['last']),
+                            query_text_pos=abbrv2docs[query_work_name].index(query_id_local) + 1,
+                            query_text_doc_count=len(abbrv2docs[query_work_name]),
                             query_section = section_labels[query_id],
-                            prev_doc_id = doc_links[query_id]['prev'],
-                            next_doc_id = doc_links[query_id]['next'],
                             query_original_fulltext = doc_original_fulltext[query_id],
                             query_segmented_fulltext = doc_fulltext[query_id],
                             top_topics_summary=format_top_topic_summary(
