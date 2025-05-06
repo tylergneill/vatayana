@@ -32,7 +32,7 @@
 					type="submit"
 					class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
 					data-doc-id="$first_doc_id_1"
-					title="Go to first passage ($first_doc_id_1)">
+					title="Go to first passage within $doc_id_1_work_name ($first_doc_id_1)">
 			  «
 			</button>
 		  </form>
@@ -46,7 +46,7 @@
 					type="submit"
 					class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
 					data-doc-id="$first_doc_id_1"
-					title="Go to previous passage ($prev_doc_id_1)">
+					title="Go to previous passage within $doc_id_1_work_name ($prev_doc_id_1)">
 			  ←
 			</button>
 		  </form>
@@ -64,7 +64,7 @@
 					type="submit"
 					class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
 					data-doc-id="$first_doc_id_1"
-					title="Go to next passage ($next_doc_id_1)">
+					title="Go to next passage within $doc_id_1_work_name ($next_doc_id_1)">
 			  →
 			</button>
 		  </form>
@@ -78,7 +78,7 @@
 					type="submit"
 					class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
 					data-doc-id="$first_doc_id_1"
-					title="Go to last passage ($last_doc_id_1)">
+					title="Go to last passage within $doc_id_1_work_name ($last_doc_id_1)">
 			  »
 			</button>
 		  </form>
@@ -96,7 +96,7 @@
 			<button id="sim-prev-btn-left"
 					type="submit"
 					class="btn btn-block btn-primary btn-no-outline"
-					title="Go to more similar (#$sim_rank_of_prev_for_2 of $N_sw_w)">
+					title="Go to more similar for $doc_id_2 (#$sim_rank_of_prev_for_2 of $N_sw_w)">
 			  ←
 			</button>
 		  </form>
@@ -113,7 +113,7 @@
 			<button id="sim-next-btn-left"
 					type="submit"
 					class="btn btn-block btn-primary btn-no-outline"
-					title="Go to less similar (#$sim_rank_of_next_for_2 of $N_sw_w)">
+					title="Go to less similar for $doc_id_2 (#$sim_rank_of_next_for_2 of $N_sw_w)">
 			  →
 			</button>
 		  </form>
@@ -145,7 +145,7 @@
 					type="submit"
 					class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
 					data-doc-id="$first_doc_id_2"
-					title="Go to first passage ($first_doc_id_2)">
+					title="Go to first passage within $doc_id_2_work_name ($first_doc_id_2)">
 			  «
 			</button>
 		  </form>
@@ -159,7 +159,7 @@
 					type="submit"
 					class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
 					data-doc-id="$first_doc_id_2"
-					title="Go to previous passage ($prev_doc_id_2)">
+					title="Go to previous passage within $doc_id_2_work_name ($prev_doc_id_2)">
 			  ←
 			</button>
 		  </form>
@@ -177,7 +177,7 @@
 					type="submit"
 					class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
 					data-doc-id="$first_doc_id_2"
-					title="Go to next passage ($next_doc_id_2)">
+					title="Go to next passage within $doc_id_2_work_name ($next_doc_id_2)">
 			  →
 			</button>
 		  </form>
@@ -191,7 +191,7 @@
 					type="submit"
 					class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
 					data-doc-id="$first_doc_id_2"
-					title="Go to last passage ($last_doc_id_2)">
+					title="Go to last passage within $doc_id_2_work_name ($last_doc_id_2)">
 			  »
 			</button>
 		  </form>
@@ -209,7 +209,7 @@
 			<button id="sim-prev-btn-right"
 					type="submit"
 					class="btn btn-block btn-primary btn-no-outline"
-					title="Go to more similar (#$sim_rank_of_prev_for_1 of $N_sw_w)">
+					title="Go to more similar for $doc_id_1 (#$sim_rank_of_prev_for_1 of $N_sw_w)">
 			  ←
 			</button>
 		  </form>
@@ -226,7 +226,7 @@
 			<button id="sim-next-btn-right"
 					type="submit"
 					class="btn btn-block btn-primary btn-no-outline"
-					title="Go to less similar (#$sim_rank_of_next_for_1 of $N_sw_w)">
+					title="Go to less similar for $doc_id_1 (#$sim_rank_of_next_for_1 of $N_sw_w)">
 			  →
 			</button>
 		  </form>
@@ -264,7 +264,7 @@
 			<tr>
 				<td><h2><small>Phrase (Smith-Waterman)</small></h2></td>
 				<td><h2><small>$sw_w_align_score</small></h2></td>
-				<td><h2><small>Approx. char. count of longest fuzzy overlap</small></h2></td>
+				<td><h2><small>Character count<span title="approximately, after factoring in fuzzy matching">*</span> of longest overlap</small></h2></td>
 			</tr>
 			<tr>
 				<td><h2><small>Word (TF-IDF)</small></h2></td>
