@@ -1,6 +1,7 @@
 import logging
 import os
 import html
+import string
 
 from flask import Flask, session, redirect, render_template, request, url_for, send_from_directory, abort
 from flask_pymongo import PyMongo
@@ -281,6 +282,12 @@ def doc_compare():
                                 text_abbrev2title=IR_tools.text_abbrev2title,
                                 section_labels=IR_tools.section_labels,
                                 )
+
+def clean_title(raw_title):
+    cleaned_title = raw_title.replace('sāṃkhya_', '')
+    cleaned_title = cleaned_title.replace('_', "’s ")
+    cleaned_title = string.capwords(cleaned_title)
+    return cleaned_title
 
 @app.route('/textView', methods=["GET", "POST"])
 def text_view():
