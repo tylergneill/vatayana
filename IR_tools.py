@@ -767,7 +767,7 @@ def get_closest_docs(   query_id,
                         similarity_data: Optional[PymongoCollection]=None,
                         batch_mode: Optional[bool]=False,
                         sw_w_min_threshold: Optional[int]=50,
-                        text_type_toggle_choice="original",
+                        text_type_toggle="original",
                         ):
 
     non_priority_texts = [text for text in list(text_abbrev2fn.keys()) if text not in priority_texts]
@@ -800,7 +800,7 @@ def get_closest_docs(   query_id,
             secondary_results_list_content = '',
             priority_texts=str(priority_texts),
             non_priority_texts=str(non_priority_texts),
-            text_type_toggle_choice=text_type_toggle_choice,
+            text_type_toggle=text_type_toggle,
             )
         return results_HTML
 
@@ -1018,7 +1018,7 @@ def get_closest_docs(   query_id,
                             secondary_col_content = secondary_col_HTML,
                             priority_texts=str(priority_texts),
                             non_priority_texts=str(non_priority_texts),
-                            text_type_toggle_choice=text_type_toggle_choice,
+                            text_type_toggle=text_type_toggle,
                             )
 
     # import pdb; pdb.set_trace()

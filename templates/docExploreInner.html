@@ -11,13 +11,13 @@
      data-first="$first_doc_id"
      data-last="$last_doc_id">
 
-    <!-- ─── 1) DOCUMENT NAVIGATION ON docExplore ───────────────────────────────── -->
+    <!-- ─── 1) DOCUMENT NAVIGATION ───────────────────────────────── -->
     <div class="row align-items-center g-2 mb-4">
 
       <div class="col-md-2">
         <form method="get" action="docExplore">
           <input type="hidden" name="doc_id" value="${query_work_name}_${first_doc_id}"/>
-          <input type="hidden" name="text_type_toggle" id="text_type_toggle_input_first" value="$text_type_toggle_choice" />
+          <input type="hidden" name="text_type_toggle" id="text_type_toggle_input_first" value="$text_type_toggle" />
           <button id="btn-first-explore"
                   type="submit"
                   class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
@@ -31,7 +31,7 @@
       <div class="col-md-2">
         <form method="get" action="docExplore">
           <input type="hidden" name="doc_id" value="${query_work_name}_${prev_doc_id}"/>
-          <input type="hidden" name="text_type_toggle" id="text_type_toggle_input_prev" value="$text_type_toggle_choice" />
+          <input type="hidden" name="text_type_toggle" id="text_type_toggle_input_prev" value="$text_type_toggle" />
           <button id="btn-prev-explore"
                   type="submit"
                   class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
@@ -49,7 +49,7 @@
       <div class="col-md-2">
         <form method="get" action="docExplore">
           <input type="hidden" name="doc_id" value="${query_work_name}_${next_doc_id}"/>
-          <input type="hidden" name="text_type_toggle" id="text_type_toggle_input_next" value="$text_type_toggle_choice" />
+          <input type="hidden" name="text_type_toggle" id="text_type_toggle_input_next" value="$text_type_toggle" />
           <button id="btn-next-explore"
                   type="submit"
                   class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
@@ -63,7 +63,7 @@
       <div class="col-md-2">
         <form method="get" action="docExplore">
           <input type="hidden" name="doc_id" value="${query_work_name}_${last_doc_id}"/>
-          <input type="hidden" name="text_type_toggle" id="text_type_toggle_input_last" value="$text_type_toggle_choice" />
+          <input type="hidden" name="text_type_toggle" id="text_type_toggle_input_last" value="$text_type_toggle" />
           <button id="btn-last-explore"
                   type="submit"
                   class="btn btn-block btn-primary btn-no-outline doc-nav-btn"
@@ -77,9 +77,9 @@
     </div>
 
     <!-- NEUTRAL DUMMY INPUT FOR JS TO READ FROM ON PAGE LOAD -->
-    <input type="hidden" id="text_type_toggle_value" value="$text_type_toggle_choice">
+    <input type="hidden" id="text_type_toggle_value" value="$text_type_toggle">
 
-    <!-- TEXT TYPE TOGGLE BLOCK -->
+    <!-- TEXT TYPE TOGGLE -->
     <div class="panel panel-default" style="margin-top: 30px">
       <div class="panel-body" style="padding: 10px;">
 
@@ -112,6 +112,7 @@
 
 </div>
 
+<!-- SIMILARITY RESULTS -->
 <div class="col-md-6 mb-5" id="doc-explore-right">
 
     <h3 class="mb-3" style="margin-top: 0px; margin-bottom: 0px;">
@@ -140,17 +141,14 @@
 
     // original-segmented toggle
 
-    // grab your two chunks of HTML (in your template engine these will be expanded in‐place)
     const originalHTML = `<p>$query_original_fulltext</p>`;
     const segmentedHTML = `<p>$query_segmented_fulltext</p>`;
-
-    // cache DOM nodes
     const container = document.getElementById('text-container');
     const btnOrig   = document.getElementById('btn-original');
     const btnSeg    = document.getElementById('btn-segmented');
     const hiddenInputs = document.querySelectorAll('input[name="text_type_toggle"]');
 
-    // read the passed value from the hidden input
+    // read passed value from hidden input
     const initialToggle = document.getElementById('text_type_toggle_value').value;
 
     function updateHiddenInputs(value) {
@@ -177,14 +175,13 @@
     // initial load
     show(initialToggle === 'segmented' ? 'seg' : 'orig');
 
-  // Before any form submits, remove unnecessary hidden fields
-  document.querySelectorAll('form').forEach(form => {
-      form.addEventListener('submit', () => {
-          const toggleInput = form.querySelector('input[name="text_type_toggle"]');
-          if (toggleInput && toggleInput.value === initialToggle) {
-              toggleInput.parentNode.removeChild(toggleInput);
-          }
-      });
-  });
-
+    // Before any form submits, remove unnecessary hidden fields
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', () => {
+            const toggleInput = form.querySelector('input[name="text_type_toggle"]');
+            if (toggleInput && toggleInput.value === initialToggle) {
+                toggleInput.parentNode.removeChild(toggleInput);
+            }
+        });
+    });
 </script>

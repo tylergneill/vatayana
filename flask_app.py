@@ -161,12 +161,10 @@ def doc_explore():
             doc_id_2 = text_id_list[-1]
 
         if 'text_type_toggle' in request.args:
-            text_type_toggle_choice = request.args.get("text_type_toggle")
-            session["text_type_toggle"] = text_type_toggle_choice
+            session["text_type_toggle"] = request.args.get("text_type_toggle")
             session.modified = True
         elif 'text_type_toggle' in request.form:
-            text_type_toggle_choice = request.form.get("text_type_toggle")
-            session["text_type_toggle"] = text_type_toggle_choice
+            session["text_type_toggle"] = request.form.get("text_type_toggle")
             session.modified = True
 
         valid_doc_ids = IR_tools.doc_ids
@@ -196,7 +194,7 @@ def doc_explore():
                     N_tf_idf=session["N_tf_idf"],
                     N_sw_w=session["N_sw_w"],
                     similarity_data=similarity_data,
-                    text_type_toggle_choice=session["text_type_toggle"],
+                    text_type_toggle=session["text_type_toggle"],
                 )
         else:
             docExploreInner_HTML = "<br><p>Please verify sequence of two inputs.</p>"
