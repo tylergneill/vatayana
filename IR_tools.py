@@ -793,6 +793,9 @@ def get_closest_docs(   query_id,
             query_id = query_id,
             query_work_name=(query_work_name := parse_complex_doc_id(query_id)[0]),
             query_id_local=(query_id_local := get_full_local_doc_id(query_id)),
+            text_display_name=clean_title(
+                text_abbrev2title[parse_complex_doc_id(query_id)[0]]
+            ),
             first_doc_id=get_full_local_doc_id(doc_links[query_id]['first']),
             prev_doc_id=get_full_local_doc_id(doc_links[query_id]['prev']),
             next_doc_id=get_full_local_doc_id(doc_links[query_id]['next']),
@@ -1007,6 +1010,9 @@ def get_closest_docs(   query_id,
                             query_id = query_id,
                             query_work_name=(query_work_name := parse_complex_doc_id(query_id)[0]),
                             query_id_local=(query_id_local := get_full_local_doc_id(query_id)),
+                            text_display_name=clean_title(
+                                text_abbrev2title[parse_complex_doc_id(query_id)[0]]
+                            ),
                             first_doc_id=get_full_local_doc_id(doc_links[query_id]['first']),
                             prev_doc_id=get_full_local_doc_id(doc_links[query_id]['prev']),
                             next_doc_id=get_full_local_doc_id(doc_links[query_id]['next']),
@@ -1452,6 +1458,8 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
                     doc_id_2_work_name=(doc_id_2_work_name := parse_complex_doc_id(doc_id_2)[0]),
                     doc_id_1_local=(doc_id_1_local := get_full_local_doc_id(doc_id_1)),
                     doc_id_2_local=(doc_id_2_local := get_full_local_doc_id(doc_id_2)),
+                    text_1_display_name=clean_title(text_abbrev2title[doc_id_1_work_name]),
+                    text_2_display_name=clean_title(text_abbrev2title[doc_id_2_work_name]),
 
                     text_1_doc_pos=abbrv2docs[doc_id_1_work_name].index(doc_id_1_local)+1,
                     text_2_doc_pos=abbrv2docs[doc_id_2_work_name].index(doc_id_2_local)+1,
