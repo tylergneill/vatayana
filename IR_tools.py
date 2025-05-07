@@ -2,6 +2,7 @@ import os
 import json
 import re
 import math
+import string
 from typing import List, Dict, Optional, Union, Tuple, Any
 
 import numpy as np
@@ -226,6 +227,12 @@ text_abbrev2fn = load_dict_from_json("assets/text_abbreviations_IASTreduced.json
 text_abbrev2title = load_dict_from_json("assets/text_abbreviations.json") # for human eyes
 # e.g. text_abbrev2fn[TEXT_ABBRV] = STRING
 # don't sort these yet because they're in chronological order for presenting prioritization options
+
+def clean_title(raw_title):
+    cleaned_title = raw_title.replace('sāṃkhya_', '')
+    cleaned_title = cleaned_title.replace('_', "’s ")
+    cleaned_title = string.capwords(cleaned_title)
+    return cleaned_title
 
 # create lookup table of local_doc_ids by text abbreviation
 abbrv2docs = defaultdict(lambda:[])
