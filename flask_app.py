@@ -309,7 +309,7 @@ def text_view():
         if text_abbreviation_input in disallowed_fulltexts:
             text_HTML = "<br><p>sorry, fulltext is not available for these texts at present: " + str(disallowed_fulltexts)[1:-1] + " (see <a href='https://github.com/tylergneill/pramana-nlp/tree/master/data_prep/1_etext_originals' target='_blank'>note</a> for more info)</p>"
         elif text_abbreviation_input in valid_text_abbrvs:
-            text_title = IR_tools.text_abbrev2fn[text_abbreviation_input]
+            text_title = clean_title(IR_tools.text_abbrev2title[text_abbreviation_input])
             text_HTML = IR_tools.get_text_view(text_abbreviation_input)
         else:
             text_HTML = "<br><p>Please enter valid doc ids like " + str(IR_tools.ex_doc_ids)[1:-1] + " etc.</p><p>See <a href='assets/doc_id_list.txt' target='_blank'>doc id list</a> and <a href='assets/corpus_texts.txt' target='_blank'>corpus text list</a> for hints to get started.</p>"
