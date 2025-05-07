@@ -525,9 +525,9 @@ def format_top_topic_summary(doc_id, top_topic_indices, topic_labels):
     top_topic_summary_HTML += "<div class='container' style='margin-left: 40px;'><table>"
     top_topic_summary_HTML += ''.join(
         [ """<tr>
-                <td><h2><small>{:.1%}</small></h2></td>
-                <td><h2><small>{}</small></h2></td>
-                <td><h2><small>({})</small></h2></td>
+                <td><h3><small>{:.1%}</small></h3></td>
+                <td><h3><small>{}</small></h3></td>
+                <td><h3><small>({})</small></h3></td>
             </tr>""".format(
                 thetas[doc_id][i],
                 topic_labels[i],
