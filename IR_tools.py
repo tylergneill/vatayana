@@ -2,6 +2,7 @@ import os
 import json
 import re
 import math
+import string
 from typing import List, Dict, Optional, Union, Tuple, Any
 
 import numpy as np
@@ -221,9 +222,16 @@ def build_by_work_doc_nav(elem_list):
 
 doc_links = build_by_work_doc_nav(doc_ids)
 
+def clean_title(raw_title):
+    cleaned_title = raw_title.replace('sāṃkhya_', '')
+    cleaned_title = cleaned_title.replace('_', "’s ")
+    cleaned_title = string.capwords(cleaned_title)
+    return cleaned_title
+
 # load lookup table of filenames by conventional text abbreviation
 text_abbrev2fn = load_dict_from_json("assets/text_abbreviations_IASTreduced.json") # for accessing files
 text_abbrev2title = load_dict_from_json("assets/text_abbreviations.json") # for human eyes
+clean_titles = {k: clean_title(v) for k, v in text_abbrev2title.items()}
 # e.g. text_abbrev2fn[TEXT_ABBRV] = STRING
 # don't sort these yet because they're in chronological order for presenting prioritization options
 
@@ -518,9 +526,9 @@ def format_top_topic_summary(doc_id, top_topic_indices, topic_labels):
     top_topic_summary_HTML += "<div class='container' style='margin-left: 40px;'><table>"
     top_topic_summary_HTML += ''.join(
         [ """<tr>
-                <td><h2><small>{:.1%}</small></h2></td>
-                <td><h2><small>{}</small></h2></td>
-                <td><h2><small>({})</small></h2></td>
+                <td><h3 style="margin-bottom: 0px;"><small>{:.1%}</small></h3></td>
+                <td><h3 style="margin-bottom: 0px;"><small>{}</small></h3></td>
+                <td><h3 style="margin-bottom: 0px;"><small>({})</small></h3></td>
             </tr>""".format(
                 thetas[doc_id][i],
                 topic_labels[i],
@@ -533,7 +541,8 @@ def format_top_topic_summary(doc_id, top_topic_indices, topic_labels):
 
 def format_docView_link(doc_id):
     # looks like doc_id
-    return "<a href='docExplore?doc_id=%s' title='%s'>%s</a>" % (doc_id, section_labels[doc_id], doc_id)
+    clean_work_name = clean_titles[parse_complex_doc_id(doc_id)[0]]
+    return "<a href='docExplore?doc_id=%s' title='%s {%s}'>%s</a>" % (doc_id, clean_work_name, section_labels[doc_id], doc_id)
 
 def format_textView_link(doc_id):
     # each one looks like fixed string "txtVw"
@@ -786,6 +795,7 @@ def get_closest_docs(   query_id,
             query_id = query_id,
             query_work_name=(query_work_name := parse_complex_doc_id(query_id)[0]),
             query_id_local=(query_id_local := get_full_local_doc_id(query_id)),
+            text_display_name=clean_titles[query_work_name],
             first_doc_id=get_full_local_doc_id(doc_links[query_id]['first']),
             prev_doc_id=get_full_local_doc_id(doc_links[query_id]['prev']),
             next_doc_id=get_full_local_doc_id(doc_links[query_id]['next']),
@@ -1000,6 +1010,7 @@ def get_closest_docs(   query_id,
                             query_id = query_id,
                             query_work_name=(query_work_name := parse_complex_doc_id(query_id)[0]),
                             query_id_local=(query_id_local := get_full_local_doc_id(query_id)),
+                            text_display_name=clean_titles[query_work_name],
                             first_doc_id=get_full_local_doc_id(doc_links[query_id]['first']),
                             prev_doc_id=get_full_local_doc_id(doc_links[query_id]['prev']),
                             next_doc_id=get_full_local_doc_id(doc_links[query_id]['next']),
@@ -1445,6 +1456,8 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
                     doc_id_2_work_name=(doc_id_2_work_name := parse_complex_doc_id(doc_id_2)[0]),
                     doc_id_1_local=(doc_id_1_local := get_full_local_doc_id(doc_id_1)),
                     doc_id_2_local=(doc_id_2_local := get_full_local_doc_id(doc_id_2)),
+                    text_1_display_name=clean_titles[doc_id_1_work_name],
+                    text_2_display_name=clean_titles[doc_id_2_work_name],
 
                     text_1_doc_pos=abbrv2docs[doc_id_1_work_name].index(doc_id_1_local)+1,
                     text_2_doc_pos=abbrv2docs[doc_id_2_work_name].index(doc_id_2_local)+1,

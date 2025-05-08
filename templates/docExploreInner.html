@@ -1,7 +1,7 @@
 <div class="row">
   <div class="col-md-12">
-    <h1 style="margin-top: 0px">
-      $query_id <small><small>($query_section)</small></small>
+    <h1 title="$text_display_name" style="margin-top: 0px">
+        $query_id <small><small>{$query_section}</small></small>
     </h1>
   </div>
 </div>
@@ -43,7 +43,7 @@
       </div>
 
       <div class="col-md-4 text-center">
-        <small>within <em>$query_work_name</em>:<br>doc #$query_text_pos of $query_text_doc_count</small>
+        <small>within <em title="$text_display_name">$query_work_name</em>:<br>doc #$query_text_pos of $query_text_doc_count</small>
       </div>
 
       <div class="col-md-2">
