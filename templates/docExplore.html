@@ -20,7 +20,6 @@
 
         <div class="container">
 
-			{% if not docExploreInner_HTML %}
 			<!-- SEARCH ELEMENTS -->
 			<form id="doc_explore_search_bar" action="/docExplore" method="POST">
 
@@ -48,8 +47,8 @@
 					<div class="col-md-1">
 					</div>
 			    </div>
-				<br>
 				<div class="row" id="sw_threshold_slider_row" style='display: none;'>
+					<br>
 					<div class="col-md-4">
 			        </div>
 					<div class="col-md-5" class="range">
@@ -63,7 +62,6 @@
 				</div>
 
 			</form>
-			{% endif %}
 
             {{ docExploreInner_HTML | safe }}
 
@@ -116,11 +114,6 @@
 			var textSel = document.getElementById(textSelId);
 			var docSel1 = document.getElementById(docSelId1);
 			var docSel2 = document.getElementById(docSelId2);
-
-			if (!textSel || !docSel1 || !docSel2) {
-				console.log("One or more inputs not found — skipping setup for", textSelId);
-				return;
-			}
 
 			// Populate text abbreviation options
 			textSel.length = 1;  // keep dummy option
