@@ -541,7 +541,8 @@ def format_top_topic_summary(doc_id, top_topic_indices, topic_labels):
 
 def format_docView_link(doc_id):
     # looks like doc_id
-    return "<a href='docExplore?doc_id=%s' title='%s'>%s</a>" % (doc_id, section_labels[doc_id], doc_id)
+    clean_work_name = clean_titles[parse_complex_doc_id(doc_id)[0]]
+    return "<a href='docExplore?doc_id=%s' title='%s {%s}'>%s</a>" % (doc_id, clean_work_name, section_labels[doc_id], doc_id)
 
 def format_textView_link(doc_id):
     # each one looks like fixed string "txtVw"
