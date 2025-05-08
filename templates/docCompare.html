@@ -155,30 +155,56 @@
 			var abbrev2title = {{ text_abbrev2title|tojson|safe }};
 			var section_labels = {{ section_labels|tojson|safe }};
 
-			var textAbbrevSel_1 = document.getElementById("text_abbreviation_input_1");
-			var docIdSel_1 = document.getElementById("local_doc_id_input_1");
-			textAbbrevSel_1.length = 1;
-			for (var x in abbrv2docs) {
-				textAbbrevSel_1.options[textAbbrevSel_1.options.length] = new Option(x + ' ' + abbrev2title[x], x);
-			}
-			textAbbrevSel_1.onchange = function() {
-				docIdSel_1.length = 1;
-				for (var y of abbrv2docs[this.value]) {
-				  docIdSel_1.options[docIdSel_1.options.length] = new Option(y + ' ' + section_labels[this.value + '_' + y], y);
+			var initial_values = [
+				{
+					text_abbreviation: "{{ text_abbreviation_1 }}",
+					local_doc_id: "{{ local_doc_id_1 }}",
+					textSelId: "text_abbreviation_input_1",
+					docSelId: "local_doc_id_input_1"
+				},
+				{
+					text_abbreviation: "{{ text_abbreviation_2 }}",
+					local_doc_id: "{{ local_doc_id_2 }}",
+					textSelId: "text_abbreviation_input_2",
+					docSelId: "local_doc_id_input_2"
 				}
+			];
+
+			function setupSelectorPair(textSelId, docSelId, initialTextAbbr, initialDocId) {
+				var textSel = document.getElementById(textSelId);
+				var docSel = document.getElementById(docSelId);
+
+				// Reset text abbreviation options
+				textSel.length = 1;  // keep the dummy option
+				for (var abbrev in abbrv2docs) {
+					textSel.options[textSel.options.length] = new Option(abbrev + ' ' + abbrev2title[abbrev], abbrev);
+				}
+
+				// Set initial abbreviation
+				textSel.value = initialTextAbbr;
+
+				// Populate doc IDs for that abbreviation
+				function populateDocIds(abbreviation) {
+					docSel.length = 1;  // keep the dummy option
+					for (var docId of abbrv2docs[abbreviation]) {
+						var label = section_labels[abbreviation + '_' + docId] || '';
+						docSel.options[docSel.options.length] = new Option(docId + ' ' + label, docId);
+					}
+				}
+
+				// Initial population of doc IDs
+				populateDocIds(initialTextAbbr);
+				docSel.value = initialDocId;
+
+				// Wire up onchange for future changes
+				textSel.onchange = function() {
+					populateDocIds(this.value);
+				};
 			}
 
-			var textAbbrevSel_2 = document.getElementById("text_abbreviation_input_2");
-			var docIdSel_2 = document.getElementById("local_doc_id_input_2");
-			textAbbrevSel_2.length = 1;
-			for (var x in abbrv2docs) {
-				textAbbrevSel_2.options[textAbbrevSel_2.options.length] = new Option(x + ' ' + abbrev2title[x], x);
-			}
-			textAbbrevSel_2.onchange = function() {
-				docIdSel_2.length = 1;
-				for (var y of abbrv2docs[this.value]) {
-				  docIdSel_2.options[docIdSel_2.options.length] = new Option(y + ' ' + section_labels[this.value + '_' + y], y);
-				}
+			// --- Apply to both pairs ---
+			for (var pair of initial_values) {
+				setupSelectorPair(pair.textSelId, pair.docSelId, pair.text_abbreviation, pair.local_doc_id);
 			}
         </script>
 
