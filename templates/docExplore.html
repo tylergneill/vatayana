@@ -20,7 +20,6 @@
 
         <div class="container">
 
-			{% if not docExploreInner_HTML %}
 			<!-- SEARCH ELEMENTS -->
 			<form id="doc_explore_search_bar" action="/docExplore" method="POST">
 
@@ -48,8 +47,8 @@
 					<div class="col-md-1">
 					</div>
 			    </div>
-				<br>
 				<div class="row" id="sw_threshold_slider_row" style='display: none;'>
+					<br>
 					<div class="col-md-4">
 			        </div>
 					<div class="col-md-5" class="range">
@@ -63,7 +62,6 @@
 				</div>
 
 			</form>
-			{% endif %}
 
             {{ docExploreInner_HTML | safe }}
 
@@ -78,8 +76,6 @@
 
 		} );
 	</script>
-
-    </body>
 
 	<script type="text/javascript">
 		window.onload = function() {
@@ -110,37 +106,55 @@
 		}
 
     	var abbrv2docs = {{ abbrv2docs|tojson|safe }};
-    	var abbrev2title = {{ text_abbrev2title|tojson|safe }};
-    	var section_labels = {{ section_labels|tojson|safe }};
+		var abbrev2title = {{ text_abbrev2title|tojson|safe }};
+		var section_labels = {{ section_labels|tojson|safe }};
 
-		var textAbbrevSel = document.getElementById("text_abbreviation_input");
-		var docIdSel = document.getElementById("local_doc_id_input");
-		var docIdSel_2 = document.getElementById("local_doc_id_input_2");
+		function setupSingleSelector(textSelId, docSelId1, docSelId2) {
 
-		textAbbrevSel.length = 1;
-		for (var x in abbrv2docs) {
-			textAbbrevSel.options[textAbbrevSel.options.length] = new Option(x + ' ' + abbrev2title[x], x);
-		}
-		textAbbrevSel.onchange = function() {
-			docIdSel.length = 1;
-			docIdSel_2.length = 1;
-			for (var y of abbrv2docs[this.value]) {
-			  docIdSel.options[docIdSel.options.length] = new Option(y + ' ' + section_labels[this.value + '_' + y], y);
-			  <!-- eventually want this to contract based on docIdSel -->
-			  docIdSel_2.options[docIdSel_2.options.length] = new Option(y + ' ' + section_labels[this.value + '_' + y], y);
+			var textSel = document.getElementById(textSelId);
+			var docSel1 = document.getElementById(docSelId1);
+			var docSel2 = document.getElementById(docSelId2);
+
+			// Populate text abbreviation options
+			textSel.length = 1;  // keep dummy option
+			for (var abbrev in abbrv2docs) {
+				textSel.options[textSel.options.length] = new Option(abbrev + ' ' + abbrev2title[abbrev], abbrev);
+			}
+
+			// On abbreviation change, repopulate both doc ID selects
+			textSel.onchange = function() {
+				docSel1.length = 1;
+				docSel2.length = 1;
+				for (var docId of abbrv2docs[this.value]) {
+					var label = section_labels[this.value + '_' + docId] || '';
+					docSel1.options[docSel1.options.length] = new Option(docId + ' ' + label, docId);
+					docSel2.options[docSel2.options.length] = new Option(docId + ' ' + label, docId);
+				}
+			};
+
+			// docSel2 onchange triggers slider row to appear
+			docSel2.onchange = function() {
+				var sw_threshold_slider_row = document.getElementById("sw_threshold_slider_row");
+				if (sw_threshold_slider_row) {
+					sw_threshold_slider_row.style.display = "block";
+				}
+			};
+
+			// Slider label update (only if slider exists)
+			var sw_threshold = document.getElementById("sw_threshold");
+			var sw_threshold_slider_label = document.getElementById("sw_threshold_slider_label");
+			if (sw_threshold && sw_threshold_slider_label) {
+				sw_threshold.oninput = function() {
+					sw_threshold_slider_label.innerHTML = `sw score > ${sw_threshold.value}`;
+				};
 			}
 		}
 
-		docIdSel_2.onchange = function() {
-			var sw_threshold_slider_row = document.getElementById("sw_threshold_slider_row");
-	  		sw_threshold_slider_row.style.display = "block";
-	  	}
-
-	  	sw_threshold.oninput = function() {
-	  		var sw_threshold_slider_label = document.getElementById("sw_threshold_slider_label");
-	  		sw_threshold_slider_label.innerHTML = `sw score > ` + sw_threshold.value;
-	  	}
+		// --- Apply to the docExplore selects ---
+		setupSingleSelector("text_abbreviation_input", "local_doc_id_input", "local_doc_id_input_2");
 
     </script>
+
+	</body>
 
 </html>

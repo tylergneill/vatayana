@@ -232,13 +232,17 @@ def doc_compare():
         if 'doc_id_1' in request.args:
             doc_id_1 = request.args.get("doc_id_1")
             doc_id_2 = request.args.get("doc_id_2")
+            text_abbreviation_1 = IR_tools.parse_complex_doc_id(doc_id_1)[0]
+            local_doc_id_1 = IR_tools.get_full_local_doc_id(doc_id_1)
+            text_abbreviation_2 = IR_tools.parse_complex_doc_id(doc_id_2)[0]
+            local_doc_id_2 = IR_tools.get_full_local_doc_id(doc_id_2)
         else:
-            text_abbreviation_input_1 = request.form.get("text_abbreviation_input_1")
-            local_doc_id_input_1 = request.form.get("local_doc_id_input_1")
-            doc_id_1 = text_abbreviation_input_1 + '_' + local_doc_id_input_1
-            text_abbreviation_input_2 = request.form.get("text_abbreviation_input_2")
-            local_doc_id_input_2 = request.form.get("local_doc_id_input_2")
-            doc_id_2 = text_abbreviation_input_2 + '_' + local_doc_id_input_2
+            text_abbreviation_1 = request.form.get("text_abbreviation_input_1")
+            local_doc_id_1 = request.form.get("local_doc_id_input_1")
+            doc_id_1 = text_abbreviation_1 + '_' + local_doc_id_1
+            text_abbreviation_2 = request.form.get("text_abbreviation_input_2")
+            local_doc_id_2 = request.form.get("local_doc_id_input_2")
+            doc_id_2 = text_abbreviation_2 + '_' + local_doc_id_2
 
         valid_doc_ids = IR_tools.doc_ids
         sim_btn_left = sim_btn_right = ""
@@ -262,6 +266,10 @@ def doc_compare():
                                 page_subtitle="docCompare",
                                 doc_id_1=doc_id_1,
                                 doc_id_2=doc_id_2,
+                                text_abbreviation_1=text_abbreviation_1,
+                                text_abbreviation_2=text_abbreviation_2,
+                                local_doc_id_1=local_doc_id_1,
+                                local_doc_id_2=local_doc_id_2,
                                 activate_similar_link_buttons_left=sim_btn_left,
                                 activate_similar_link_buttons_right=sim_btn_right,
                                 docCompareInner_HTML=docCompareInner_HTML,
