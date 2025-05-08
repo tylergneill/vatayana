@@ -69,6 +69,7 @@ flask_session_variable_names = [
     "topic_labels",
     "priority_texts",
     "N_tf_idf", "N_sw_w",
+    "text_type_toggle"
     ]
 
 def ensure_keys():
@@ -85,6 +86,7 @@ def reset_variables():
     session["priority_texts"] = list(IR_tools.text_abbrev2fn.keys())
     session["N_tf_idf"] = IR_tools.search_N_defaults["N_tf_idf"]
     session["N_sw_w"] = IR_tools.search_N_defaults["N_sw_w"]
+    session["text_type_toggle"] = "original"
     session.modified = True
     return redirect(url_for('index'))
 
@@ -158,6 +160,13 @@ def doc_explore():
             doc_id = text_id_list[0]
             doc_id_2 = text_id_list[-1]
 
+        if 'text_type_toggle' in request.args:
+            session["text_type_toggle"] = request.args.get("text_type_toggle")
+            session.modified = True
+        elif 'text_type_toggle' in request.form:
+            session["text_type_toggle"] = request.form.get("text_type_toggle")
+            session.modified = True
+
         valid_doc_ids = IR_tools.doc_ids
         if (
                 doc_id in valid_doc_ids
@@ -185,7 +194,8 @@ def doc_explore():
                     N_tf_idf=session["N_tf_idf"],
                     N_sw_w=session["N_sw_w"],
                     similarity_data=similarity_data,
-                    )
+                    text_type_toggle=session["text_type_toggle"],
+                )
         else:
             docExploreInner_HTML = "<br><p>Please verify sequence of two inputs.</p>"
                                    # "Please enter valid doc ids like " + str(IR_tools.ex_doc_ids)[1:-1] + " etc.</p><p>See <a href='assets/doc_id_list.txt' target='_blank'>doc id list</a> and <a href='assets/corpus_texts.txt' target='_blank'>corpus text list</a> for hints to get started."
