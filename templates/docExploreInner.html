@@ -79,17 +79,21 @@
     <!-- NEUTRAL DUMMY INPUT FOR JS TO READ FROM ON PAGE LOAD -->
     <input type="hidden" id="text_type_toggle_value" value="$text_type_toggle">
 
-    <!-- TEXT TYPE TOGGLE -->
+    <!-- TEXT TYPE TOGGLE AND TEXT VIEW LINK-->
     <div class="panel panel-default">
       <div class="panel-body" style="padding: 10px;">
 
-        <div class="btn-toolbar" style="margin: 0 0 10px 0;">
+        <div class="btn-toolbar " style="margin: 0 0 10px 0; display: flex; align-items: center;">
           <div class="btn-group" style="margin-right: 10px; vertical-align: middle;">
             <strong style="line-height: 30px;">Text type:</strong>
           </div>
           <div class="btn-group btn-group-sm">
             <button id="btn-original"  class="btn btn-primary btn-sm">Original</button>
             <button id="btn-segmented" class="btn btn-default btn-sm">Segmented</button>
+          </div>
+          <div style="flex-grow: 1;"></div>
+          <div class="btn-group btn-group-sm" style="margin-left: font-size: 1.5em; auto; vertical-align: middle;">
+            (<a href="textView?doc_id=$query_id">txtVw</a>)
           </div>
         </div>
 
