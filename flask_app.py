@@ -300,35 +300,35 @@ def text_view():
 
         if 'doc_id' in request.args:
             doc_id = request.args.get("doc_id")
-            text_abbreviation_input, local_doc_id_input = IR_tools.parse_complex_doc_id(doc_id)
-            return redirect('/textView?text_abbrv={}#{}'.format(text_abbreviation_input, local_doc_id_input))
+            text_abbreviation, local_doc_id = IR_tools.parse_complex_doc_id(doc_id)
+            return redirect('/textView?text_abbrv={}#{}'.format(text_abbreviation, local_doc_id))
         elif 'text_abbrv' in request.args:
-            text_abbreviation_input =  request.args.get('text_abbrv')
-            local_doc_id_input = ""
+            text_abbreviation =  request.args.get('text_abbrv')
+            local_doc_id = ""
         else:
-            text_abbreviation_input = request.form.get("text_abbreviation_input")
-            local_doc_id_input = request.form.get("local_doc_id_input")
-            if local_doc_id_input != "":
-                # re-parse to discard unwanted parts of local_doc_id_input
-                doc_id = text_abbreviation_input + '_' + local_doc_id_input
-                text_abbreviation_input, local_doc_id_input = IR_tools.parse_complex_doc_id(doc_id)
-            return redirect('/textView?text_abbrv={}#{}'.format(text_abbreviation_input, local_doc_id_input))
+            text_abbreviation = request.form.get("text_abbreviation_input")
+            local_doc_id = request.form.get("local_doc_id_input")
+            if local_doc_id != "":
+                # re-parse to discard unwanted parts of local_doc_id
+                doc_id = text_abbreviation + '_' + local_doc_id
+                text_abbreviation, local_doc_id = IR_tools.parse_complex_doc_id(doc_id)
+            return redirect('/textView?text_abbrv={}#{}'.format(text_abbreviation, local_doc_id))
 
         text_title = ""
         valid_text_abbrvs = list(IR_tools.text_abbrev2fn.keys())
         disallowed_fulltexts = IR_tools.disallowed_fulltexts
-        if text_abbreviation_input in disallowed_fulltexts:
+        if text_abbreviation in disallowed_fulltexts:
             text_HTML = "<br><p>sorry, fulltext is not available for these texts at present: " + str(disallowed_fulltexts)[1:-1] + " (see <a href='https://github.com/tylergneill/pramana-nlp/tree/master/data_prep/1_etext_originals' target='_blank'>note</a> for more info)</p>"
-        elif text_abbreviation_input in valid_text_abbrvs:
-            text_title = IR_tools.clean_titles[text_abbreviation_input]
-            text_HTML = IR_tools.get_text_view(text_abbreviation_input)
+        elif text_abbreviation in valid_text_abbrvs:
+            text_title = IR_tools.clean_titles[text_abbreviation]
+            text_HTML = IR_tools.get_text_view(text_abbreviation)
         else:
             text_HTML = "<br><p>Please enter valid doc ids like " + str(IR_tools.ex_doc_ids)[1:-1] + " etc.</p><p>See <a href='assets/doc_id_list.txt' target='_blank'>doc id list</a> and <a href='assets/corpus_texts.txt' target='_blank'>corpus text list</a> for hints to get started.</p>"
 
         return render_template("textView.html",
                                 page_subtitle="textView",
-                                text_abbreviation=text_abbreviation_input,
-                                local_doc_id=local_doc_id_input,
+                                text_abbreviation=text_abbreviation,
+                                local_doc_id=local_doc_id,
                                 text_title=text_title,
                                 text_HTML=text_HTML,
                                 abbrv2docs=IR_tools.abbrv2docs,
