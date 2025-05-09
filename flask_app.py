@@ -130,23 +130,26 @@ def doc_explore():
         text_abbreviation_input = ""
         doc_id = ""
         doc_id_2 = ""
-        local_doc_id_input = ""
-        local_doc_id_input_2 = ""
+        local_doc_id = ""
+        local_doc_id_2 = ""
 
         if 'doc_id' in request.args:
             doc_id = request.args.get("doc_id")
+            text_abbreviation = IR_tools.parse_complex_doc_id(doc_id)[0]
+            local_doc_id = IR_tools.get_full_local_doc_id(doc_id)
         else:
-            text_abbreviation_input = request.form.get("text_abbreviation_input")
-            local_doc_id_input = request.form.get("local_doc_id_input")
-            if local_doc_id_input not in ['', None]:
-                doc_id = text_abbreviation_input + '_' + local_doc_id_input
+            text_abbreviation = request.form.get("text_abbreviation_input")
+            local_doc_id = request.form.get("local_doc_id_input")
+            if local_doc_id not in ['', None]:
+                doc_id = text_abbreviation_input + '_' + local_doc_id
 
         if 'doc_id_2' in request.args:
             doc_id_2 = request.args.get("doc_id_2")
+            local_doc_id_2 = IR_tools.get_full_local_doc_id(doc_id_2)
         else:
-            local_doc_id_input_2 = request.form.get("local_doc_id_input_2")
-            if local_doc_id_input_2 not in ['', None]:
-                doc_id_2 = text_abbreviation_input + '_' + local_doc_id_input_2
+            local_doc_id_2 = request.form.get("local_doc_id_input_2")
+            if local_doc_id_2 not in ['', None]:
+                doc_id_2 = text_abbreviation_input + '_' + local_doc_id_2
 
         if 'sw_threshold' in request.args:
             sw_threshold = request.args.get("sw_threshold")
@@ -155,7 +158,7 @@ def doc_explore():
         else:
             sw_threshold = 50
 
-        if doc_id in ['', None] and local_doc_id_input in ['', None] and local_doc_id_input_2 in ['', None]:
+        if doc_id in ['', None] and local_doc_id in ['', None] and local_doc_id_2 in ['', None]:
             text_id_list = IR_tools.text_doc_ids[text_abbreviation_input]
             doc_id = text_id_list[0]
             doc_id_2 = text_id_list[-1]
@@ -202,9 +205,9 @@ def doc_explore():
 
         return render_template(    "docExplore.html",
                                 page_subtitle="docExplore",
-                                text_abbreviation=text_abbreviation_input,
-                                local_doc_id=local_doc_id_input,
-                                local_doc_id_2=local_doc_id_input_2,
+                                text_abbreviation=text_abbreviation,
+                                local_doc_id=local_doc_id,
+                                local_doc_id_2=local_doc_id_2,
                                 docExploreInner_HTML=docExploreInner_HTML,
                                 abbrv2docs=IR_tools.abbrv2docs,
                                 text_abbrev2title=IR_tools.text_abbrev2title,

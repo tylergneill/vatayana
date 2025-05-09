@@ -109,27 +109,56 @@
 		var abbrev2title = {{ text_abbrev2title|tojson|safe }};
 		var section_labels = {{ section_labels|tojson|safe }};
 
-		function setupSingleSelector(textSelId, docSelId1, docSelId2) {
+		var initial_values = {
+			text_abbreviation: "{{ text_abbreviation }}",
+			local_doc_id: "{{ local_doc_id }}",
+			local_doc_id_2: "{{ local_doc_id_2 }}",
+			textSelId: "text_abbreviation_input",
+			docSelId: "local_doc_id_input",
+			docSelId2: "local_doc_id_input_2"
+		};
+		console.log(initial_values.local_doc_id)
+		console.log(initial_values.local_doc_id_2)
+
+		function setupSelectorTrio(
+			textSelId,
+			docSelId,
+			docSelId2,
+			initialTextAbbr,
+			initialDocId,
+			initialDocId2,
+		) {
 
 			var textSel = document.getElementById(textSelId);
-			var docSel1 = document.getElementById(docSelId1);
+			var docSel1 = document.getElementById(docSelId);
 			var docSel2 = document.getElementById(docSelId2);
 
-			// Populate text abbreviation options
+			// Reset text abbreviation options
 			textSel.length = 1;  // keep dummy option
 			for (var abbrev in abbrv2docs) {
 				textSel.options[textSel.options.length] = new Option(abbrev + ' ' + abbrev2title[abbrev], abbrev);
 			}
+			textSel.value = initialTextAbbr;
 
-			// On abbreviation change, repopulate both doc ID selects
-			textSel.onchange = function() {
-				docSel1.length = 1;
-				docSel2.length = 1;
-				for (var docId of abbrv2docs[this.value]) {
-					var label = section_labels[this.value + '_' + docId] || '';
+			// Populate doc IDs for that abbreviation
+			function populateDocIds(abbreviation) {
+				docSel1.length = 1;  // keep the dummy option
+				docSel2.length = 1
+				for (var docId of abbrv2docs[abbreviation]) {
+					var label = section_labels[abbreviation + '_' + docId] || '';
 					docSel1.options[docSel1.options.length] = new Option(docId + ' ' + label, docId);
 					docSel2.options[docSel2.options.length] = new Option(docId + ' ' + label, docId);
 				}
+			}
+
+			// Initial population of doc IDs
+			populateDocIds(initialTextAbbr);
+			docSel1.value = initialDocId;
+			docSel2.value = initialDocId2;
+
+			// Wire up onchange for future changes
+			textSel.onchange = function() {
+				populateDocIds(this.value);
 			};
 
 			// docSel2 onchange triggers slider row to appear
@@ -150,8 +179,15 @@
 			}
 		}
 
-		// --- Apply to the docExplore selects ---
-		setupSingleSelector("text_abbreviation_input", "local_doc_id_input", "local_doc_id_input_2");
+		// --- Apply to the trio of dropdowns ---
+		setupSelectorTrio(
+			initial_values.textSelId,
+			initial_values.docSelId,
+			initial_values.docSelId2,
+			initial_values.text_abbreviation,
+			initial_values.local_doc_id,
+			initial_values.local_doc_id_2
+		);
 
     </script>
 
