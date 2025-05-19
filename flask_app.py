@@ -211,6 +211,7 @@ def doc_explore():
                                 abbrv2docs=IR_tools.abbrv2docs,
                                 text_abbrev2title=IR_tools.text_abbrev2title,
                                 section_labels=IR_tools.section_labels,
+                                sw_threshold=sw_threshold,
                                 )
 
     else: # request.method == "GET" and no arguments or URL query malformed
