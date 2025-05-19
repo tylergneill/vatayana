@@ -193,8 +193,10 @@
 				}
 
 				// Initial population of doc IDs
-				populateDocIds(initialTextAbbr);
-				docSel.value = initialDocId;
+				if (initialTextAbbr && abbrv2docs[initialTextAbbr]) {
+					populateDocIds(initialTextAbbr);
+					docSel.value = initialDocId;
+				}
 
 				// Wire up onchange for future changes
 				textSel.onchange = function() {

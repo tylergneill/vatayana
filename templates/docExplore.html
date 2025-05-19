@@ -117,8 +117,6 @@
 			docSelId: "local_doc_id_input",
 			docSelId2: "local_doc_id_input_2"
 		};
-		console.log(initial_values.local_doc_id)
-		console.log(initial_values.local_doc_id_2)
 
 		function setupSelectorTrio(
 			textSelId,
@@ -152,10 +150,11 @@
 			}
 
 			// Initial population of doc IDs
-			populateDocIds(initialTextAbbr);
-			docSel1.value = initialDocId;
-			docSel2.value = initialDocId2;
-
+			if (initialTextAbbr && abbrv2docs[initialTextAbbr]) {
+				populateDocIds(initialTextAbbr);
+				docSel1.value = initialDocId;
+				docSel2.value = initialDocId2;
+			}
 			// Wire up onchange for future changes
 			textSel.onchange = function() {
 				populateDocIds(this.value);
