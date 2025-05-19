@@ -1,0 +1,69 @@
+<br>
+
+<form method="post" action="textSelect">
+
+	$text_select_HTML
+	</br>
+
+	<div class="row">
+		<div class="col-md-5">
+			<input id="text_select_submit_button" type="submit" class="btn btn-block btn-primary" value="Save Changes"/>
+		</div>
+	</div>
+
+</form>
+
+</br></br>
+
+<h2>Reset to All Texts</h2>
+
+<form method="post" id="select_all_texts_form" action="textSelect">
+
+	<div class="row">
+		<div class="col-md-5">
+			<input type="hidden" name="select_all_texts" id="select_all_texts_hidden_input"/>
+			<input id="select_all_texts_button" type="submit" class="btn btn-block btn-primary" value="Reset"/>
+		</div>
+	</div>
+
+</form>
+
+</br></br>
+
+<h2>Re-Center Selection On Single Text</h2>
+
+<div class="row">
+
+	<form method="post" id="select_one_text_form" action="textSelect">
+
+	<div class="col-md-3">
+		<select id="select_one_text_text_input" name="select_one_text" class="form-control">
+			<option value="{{ text_abbreviation }}" size="30" selected="selected">Select text</option>
+		</select>
+		</br>
+		<div class="row">
+			<div class="col-md-8">
+				<p>Also earlier than this text</p>
+			</div>
+			<div class="col-md-4">
+				<input type='checkbox' id="select_earlier_checkbox" name="select_earlier_checkbox"/>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-8">
+				<p>Also later than this text</p>
+			</div>
+			<div class="col-md-4">
+				<input type='checkbox' id="select_later_checkbox" name="select_later_checkbox"/>
+			</div>
+		</div>
+	</div>
+
+	<div class="col-md-2">
+		<input id="select_one_text_button" type="submit" class="btn btn-block btn-primary" value="Submit"/>
+	</div>
+	</form>
+
+	<br><br>
+
+</div>
