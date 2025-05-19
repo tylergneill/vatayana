@@ -1615,18 +1615,18 @@ def format_search_depth_slider_pair(N_tf_idf, N_sw_w, priority_texts):
     <div class='col-md-2'>
        <p><b>Topics</b></p>
     </div>
-    <div class='col-md-6'>
+    <div class='col-md-4'>
        <p>(Always compared for all docs.)</p>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-6">
        <p>({} or 100% of docs) * ( {:.7f} s / topic comparison) = {:.2f} s</p>
     </div>
 </div><!-- topic no-slider -->
 <div class='row'><!-- note no-slider -->
-    <div class='col-md-8'>
+    <div class='col-md-6'>
        <p>(The below two comparisons are performed only for max <a href='textPrioritize'>{} priority docs</a>.)</p>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-6">
        <p></p>
     </div>
 </div><!-- note no-slider -->
@@ -1647,12 +1647,12 @@ def format_search_depth_slider_pair(N_tf_idf, N_sw_w, priority_texts):
     <div class='col-md-2'>
        <p><b>{}</b></p>
     </div>
-    <div class='col-md-6'>
+    <div class='col-md-4'>
        <div class='range'>
            <input type='range' class='form-range' name='{}_slider' id='{}_slider' min='0' max='{}' step='{}' value='{}'/>
        </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-6">
        <p id="{}_slider_curr_val_p"></p>
     </div>
 </div><!-- slider with text -->""".format(long_name, name, name,
@@ -1674,8 +1674,8 @@ var {}_slider_curr_val_p = document.getElementById("{}_slider_curr_val_p");
     <div class='col-md-2'>
         <p><b>Total Computation Time:</b></p>
     </div>
-    <div class='col-md-6'></div>
-    <div class="col-md-4">
+    <div class='col-md-4'></div>
+    <div class="col-md-6">
        <p id="total_computation_time_p"></p>
     </div>
 </div><!-- row for total -->
