@@ -561,29 +561,25 @@ def format_similarity_result_columns(query_id, priority_results_list_content, se
                                 </tr>
                             </thead>"""
     table_row_template =     """<tr>
-                                    <td>%d</td>
-                                    <td>%s</td>
-                                    <td>%.2f</td>
-                                    <td>%s</td>
-                                    <td>%s</td>
-                                    <td>%s</td>
+                                    <td>{}</td>
+                                    <td>{}</td>
+                                    <td>{:.0%}</td>
+                                    <td>{:.0%}</td>
+                                    <td>{}</td>
+                                    <td>{}</td>
                                 </tr>"""
-    #                                     <th>links</th>
-    #                                     <td>%s&nbsp;&nbsp;%s</td>
 
     priority_col_HTML = "<table id='priority_col_table' class='display'>"
     priority_col_HTML += table_header_row + "<tbody>"
 
     priority_col_HTML += ''.join( [
-        table_row_template % (
+        table_row_template.format(
             i+1,
             format_docView_link(doc_id),
-            results[0], # topic score
-            results[1], # tf-idf score
+            float(results[0]), # topic score
+            float(results[1]), # tf-idf score
             results[2][0], # alignment score
             format_docCompare_link(query_id, doc_id, display_string=results[2][1][:25], title=results[2][1]),  # alignment phrase, max 25 chars
-            # format_textView_link(doc_id),
-            # format_docCompare_link(query_id, doc_id)
             )
         for i, (doc_id, results) in enumerate(priority_results_list_content.items())
         ] )
@@ -1164,8 +1160,8 @@ def format_batch_result_rows(results: List[Dict[str, Union[str, float]]], priori
               <td>{}</td>
               <td>{}</td>
               <td>{}</td>
-              <td>{:.1%}</td>
-              <td>{:.1%}</td>
+              <td>{:.0%}</td>
+              <td>{:.0%}</td>
               <td>{}</td>
               <td>{}</td>
             </tr>
