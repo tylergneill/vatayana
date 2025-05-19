@@ -242,12 +242,6 @@ for doc_id in doc_ids:
     abbrv, local_doc_id = doc_id[:first_underscore], doc_id[first_underscore+1:]
     abbrv2docs[abbrv].append(local_doc_id)
 
-# save fresh corpus text list to file
-corpus_texts_list_relative_path_fn = 'assets/corpus_texts.txt'
-corpus_texts_list_full_fn = os.path.join(CURRENT_FOLDER, corpus_texts_list_relative_path_fn)
-with open(corpus_texts_list_full_fn,'w') as f_out:
-    f_out.write('\n'.join([abbrv+'\t'+fn for (abbrv, fn) in text_abbrev2title.items()]))
-
 
 ###################################################
 # load post-processed illustrations of topic meaning
@@ -567,29 +561,25 @@ def format_similarity_result_columns(query_id, priority_results_list_content, se
                                 </tr>
                             </thead>"""
     table_row_template =     """<tr>
-                                    <td>%d</td>
-                                    <td>%s</td>
-                                    <td>%.2f</td>
-                                    <td>%s</td>
-                                    <td>%s</td>
-                                    <td>%s</td>
+                                    <td>{}</td>
+                                    <td>{}</td>
+                                    <td>{:.0%}</td>
+                                    <td>{:.0%}</td>
+                                    <td>{}</td>
+                                    <td>{}</td>
                                 </tr>"""
-    #                                     <th>links</th>
-    #                                     <td>%s&nbsp;&nbsp;%s</td>
 
     priority_col_HTML = "<table id='priority_col_table' class='display'>"
     priority_col_HTML += table_header_row + "<tbody>"
 
     priority_col_HTML += ''.join( [
-        table_row_template % (
+        table_row_template.format(
             i+1,
             format_docView_link(doc_id),
-            results[0], # topic score
-            results[1], # tf-idf score
+            float(results[0]), # topic score
+            float(results[1]), # tf-idf score
             results[2][0], # alignment score
             format_docCompare_link(query_id, doc_id, display_string=results[2][1][:25], title=results[2][1]),  # alignment phrase, max 25 chars
-            # format_textView_link(doc_id),
-            # format_docCompare_link(query_id, doc_id)
             )
         for i, (doc_id, results) in enumerate(priority_results_list_content.items())
         ] )
@@ -1170,8 +1160,8 @@ def format_batch_result_rows(results: List[Dict[str, Union[str, float]]], priori
               <td>{}</td>
               <td>{}</td>
               <td>{}</td>
-              <td>{:.1%}</td>
-              <td>{:.1%}</td>
+              <td>{:.0%}</td>
+              <td>{:.0%}</td>
               <td>{}</td>
               <td>{}</td>
             </tr>
@@ -1621,18 +1611,18 @@ def format_search_depth_slider_pair(N_tf_idf, N_sw_w, priority_texts):
     <div class='col-md-2'>
        <p><b>Topics</b></p>
     </div>
-    <div class='col-md-6'>
+    <div class='col-md-4'>
        <p>(Always compared for all docs.)</p>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-6">
        <p>({} or 100% of docs) * ( {:.7f} s / topic comparison) = {:.2f} s</p>
     </div>
 </div><!-- topic no-slider -->
 <div class='row'><!-- note no-slider -->
-    <div class='col-md-8'>
+    <div class='col-md-6'>
        <p>(The below two comparisons are performed only for max <a href='textPrioritize'>{} priority docs</a>.)</p>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-6">
        <p></p>
     </div>
 </div><!-- note no-slider -->
@@ -1653,12 +1643,12 @@ def format_search_depth_slider_pair(N_tf_idf, N_sw_w, priority_texts):
     <div class='col-md-2'>
        <p><b>{}</b></p>
     </div>
-    <div class='col-md-6'>
+    <div class='col-md-4'>
        <div class='range'>
            <input type='range' class='form-range' name='{}_slider' id='{}_slider' min='0' max='{}' step='{}' value='{}'/>
        </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-6">
        <p id="{}_slider_curr_val_p"></p>
     </div>
 </div><!-- slider with text -->""".format(long_name, name, name,
@@ -1680,8 +1670,8 @@ var {}_slider_curr_val_p = document.getElementById("{}_slider_curr_val_p");
     <div class='col-md-2'>
         <p><b>Total Computation Time:</b></p>
     </div>
-    <div class='col-md-6'></div>
-    <div class="col-md-4">
+    <div class='col-md-4'></div>
+    <div class="col-md-6">
        <p id="total_computation_time_p"></p>
     </div>
 </div><!-- row for total -->

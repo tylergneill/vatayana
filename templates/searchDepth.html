@@ -35,15 +35,15 @@
 			<p>
 				The system compares documents using fast topic modeling,
 				slower TF-IDF, and slowest Smith-Waterman methods.
-				Limits control how many comparisons occur in the latter two steps,
-				balancing speed and quality.
+				The sliders here control how many comparisons occur in the latter two steps,
+				letting you modify the balance between speed and quality.
 			</p>
 			<p>
 				Top similarity scores from TF-IDF and Smith-Waterman are saved to speed up future searches.
 				By default, up to 500 TF-IDF and 25 Smith-Waterman results are stored,
-				increasing over time to limits of 4000 and 200.
-				Choosing values within these limits contributes to faster results later;
-				higher values are processed but not saved.
+				increasing over time to limits of 4000 and 200 as users initiate searches that uncover new results.
+				Choosing values within these limits contributes to faster results for everyone later;
+				searches performed with higher values are processed and shown but not saved.
 			</p>
 			<p>
 				Time estimates apply to one docExplore query.

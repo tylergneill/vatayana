@@ -59,13 +59,11 @@ def block_bots():
 # def serve_files():
 #     return send_file('assets/index.html')
 
-# this helps app work both publically (e.g. on PythonAnywhere) and locally
+# this helps app work both remotely and locally
 CURRENT_FOLDER = os.path.dirname(os.path.abspath(__file__))
 
 # variable names for flask.session() object
 flask_session_variable_names = [
-    "doc_id", "doc_id_1", "doc_id_2",
-    "text_abbreviation_input", "local_doc_id",
     "topic_labels",
     "priority_texts",
     "N_tf_idf", "N_sw_w",
@@ -80,8 +78,6 @@ def ensure_keys():
 
 @app.route('/reset')
 def reset_variables():
-    session["doc_id"] = ""; session["doc_id_1"] = ""; session["doc_id_2"] = "",
-    session["text_abbreviation_input"] = ""; session["local_doc_id"] = ""
     session["topic_labels"] = IR_tools.topic_interpretations
     session["priority_texts"] = list(IR_tools.text_abbrev2fn.keys())
     session["N_tf_idf"] = IR_tools.search_N_defaults["N_tf_idf"]
@@ -127,26 +123,26 @@ def doc_explore():
     if request.method == "POST" or 'doc_id' in request.args:
         # NB: not yet supported is sending 'text_abbrv' and 'local_doc_id' via GET
 
-        text_abbreviation_input = ""
         doc_id = ""
         doc_id_2 = ""
-        local_doc_id_input = ""
-        local_doc_id_input_2 = ""
 
         if 'doc_id' in request.args:
             doc_id = request.args.get("doc_id")
+            text_abbreviation = IR_tools.parse_complex_doc_id(doc_id)[0]
+            local_doc_id = IR_tools.get_full_local_doc_id(doc_id)
         else:
-            text_abbreviation_input = request.form.get("text_abbreviation_input")
-            local_doc_id_input = request.form.get("local_doc_id_input")
-            if local_doc_id_input not in ['', None]:
-                doc_id = text_abbreviation_input + '_' + local_doc_id_input
+            text_abbreviation = request.form.get("text_abbreviation_input")
+            local_doc_id = request.form.get("local_doc_id_input")
+            if local_doc_id not in ['', None]:
+                doc_id = text_abbreviation + '_' + local_doc_id
 
         if 'doc_id_2' in request.args:
             doc_id_2 = request.args.get("doc_id_2")
+            local_doc_id_2 = IR_tools.get_full_local_doc_id(doc_id_2)
         else:
-            local_doc_id_input_2 = request.form.get("local_doc_id_input_2")
-            if local_doc_id_input_2 not in ['', None]:
-                doc_id_2 = text_abbreviation_input + '_' + local_doc_id_input_2
+            local_doc_id_2 = request.form.get("local_doc_id_input_2")
+            if local_doc_id_2 not in ['', None]:
+                doc_id_2 = text_abbreviation + '_' + local_doc_id_2
 
         if 'sw_threshold' in request.args:
             sw_threshold = request.args.get("sw_threshold")
@@ -155,8 +151,8 @@ def doc_explore():
         else:
             sw_threshold = 50
 
-        if doc_id in ['', None] and local_doc_id_input in ['', None] and local_doc_id_input_2 in ['', None]:
-            text_id_list = IR_tools.text_doc_ids[text_abbreviation_input]
+        if doc_id in ['', None] and local_doc_id in ['', None] and local_doc_id_2 in ['', None]:
+            text_id_list = IR_tools.text_doc_ids[text_abbreviation]
             doc_id = text_id_list[0]
             doc_id_2 = text_id_list[-1]
 
@@ -167,27 +163,16 @@ def doc_explore():
             session["text_type_toggle"] = request.form.get("text_type_toggle")
             session.modified = True
 
-        valid_doc_ids = IR_tools.doc_ids
-        if (
-                doc_id in valid_doc_ids
-        ) and (
-                doc_id_2 == ""
-        ) or (
-                (
-                    doc_id_2 in valid_doc_ids
-                ) and (
-                    IR_tools.doc_ids.index(doc_id) < IR_tools.doc_ids.index(doc_id_2)
-                )
-        ):
+        def process_doc_ids(doc_id, doc_id_2):
 
-            if doc_id_2 != "":
+            valid_doc_ids = IR_tools.doc_ids
 
-                best_results = IR_tools.batch_mode(similarity_data, doc_id, doc_id_2, sw_threshold)
-                docExploreInner_HTML = IR_tools.format_batch_results(best_results, doc_id, doc_id_2, session["priority_texts"])
+            if doc_id not in valid_doc_ids:
+                return "<br><p>Doc id invalid, please doublecheck.</p>"
 
-            else:
+            if doc_id_2 == "":
                 # single-query mode
-                docExploreInner_HTML = IR_tools.get_closest_docs(
+                return IR_tools.get_closest_docs(
                     query_id=doc_id,
                     topic_labels=session['topic_labels'],
                     priority_texts=session["priority_texts"],
@@ -196,15 +181,32 @@ def doc_explore():
                     similarity_data=similarity_data,
                     text_type_toggle=session["text_type_toggle"],
                 )
-        else:
-            docExploreInner_HTML = "<br><p>Please verify sequence of two inputs.</p>"
-                                   # "Please enter valid doc ids like " + str(IR_tools.ex_doc_ids)[1:-1] + " etc.</p><p>See <a href='assets/doc_id_list.txt' target='_blank'>doc id list</a> and <a href='assets/corpus_texts.txt' target='_blank'>corpus text list</a> for hints to get started."
+
+            if doc_id_2 not in valid_doc_ids:
+                return "<br><p>Second doc id invalid, please doublecheck.</p>"
+
+            text_1 = IR_tools.parse_complex_doc_id(doc_id)[0]
+            text_2 = IR_tools.parse_complex_doc_id(doc_id_2)[0]
+
+            if text_1 != text_2:
+                return "<br><p>Documents must be from same text.</p>"
+
+            if IR_tools.text_doc_ids[text_1].index(doc_id) >= IR_tools.text_doc_ids[text_1].index(doc_id_2):
+                return "<br><p>Please verify sequence of doc id inputs.</p>"
+
+            else:
+                # batch-query mode
+                best_results = IR_tools.batch_mode(similarity_data, doc_id, doc_id_2, sw_threshold)
+                return IR_tools.format_batch_results(best_results, doc_id, doc_id_2, session["priority_texts"])
+
+
+        docExploreInner_HTML = process_doc_ids(doc_id, doc_id_2)
 
         return render_template(    "docExplore.html",
                                 page_subtitle="docExplore",
-                                text_abbreviation=text_abbreviation_input,
-                                local_doc_id=local_doc_id_input,
-                                local_doc_id_2=local_doc_id_input_2,
+                                text_abbreviation=text_abbreviation,
+                                local_doc_id=local_doc_id,
+                                local_doc_id_2=local_doc_id_2,
                                 docExploreInner_HTML=docExploreInner_HTML,
                                 abbrv2docs=IR_tools.abbrv2docs,
                                 text_abbrev2title=IR_tools.text_abbrev2title,
@@ -232,13 +234,17 @@ def doc_compare():
         if 'doc_id_1' in request.args:
             doc_id_1 = request.args.get("doc_id_1")
             doc_id_2 = request.args.get("doc_id_2")
+            text_abbreviation_1 = IR_tools.parse_complex_doc_id(doc_id_1)[0]
+            local_doc_id_1 = IR_tools.get_full_local_doc_id(doc_id_1)
+            text_abbreviation_2 = IR_tools.parse_complex_doc_id(doc_id_2)[0]
+            local_doc_id_2 = IR_tools.get_full_local_doc_id(doc_id_2)
         else:
-            text_abbreviation_input_1 = request.form.get("text_abbreviation_input_1")
-            local_doc_id_input_1 = request.form.get("local_doc_id_input_1")
-            doc_id_1 = text_abbreviation_input_1 + '_' + local_doc_id_input_1
-            text_abbreviation_input_2 = request.form.get("text_abbreviation_input_2")
-            local_doc_id_input_2 = request.form.get("local_doc_id_input_2")
-            doc_id_2 = text_abbreviation_input_2 + '_' + local_doc_id_input_2
+            text_abbreviation_1 = request.form.get("text_abbreviation_input_1")
+            local_doc_id_1 = request.form.get("local_doc_id_input_1")
+            doc_id_1 = text_abbreviation_1 + '_' + local_doc_id_1
+            text_abbreviation_2 = request.form.get("text_abbreviation_input_2")
+            local_doc_id_2 = request.form.get("local_doc_id_input_2")
+            doc_id_2 = text_abbreviation_2 + '_' + local_doc_id_2
 
         valid_doc_ids = IR_tools.doc_ids
         sim_btn_left = sim_btn_right = ""
@@ -256,12 +262,16 @@ def doc_compare():
                 similarity_data=similarity_data,
                 )
         else:
-            docCompareInner_HTML = "<br><p>Please enter two valid doc ids like " + str(IR_tools.ex_doc_ids)[1:-1] + " etc.</p><p>See <a href='assets/doc_id_list.txt' target='_blank'>doc id list</a> and <a href='assets/corpus_texts.txt' target='_blank'>corpus text list</a> for hints to get started.</p>"
+            docCompareInner_HTML = "<br><p>One or more doc ids invalid, please doublecheck.</p>"
 
         return render_template(    "docCompare.html",
                                 page_subtitle="docCompare",
                                 doc_id_1=doc_id_1,
                                 doc_id_2=doc_id_2,
+                                text_abbreviation_1=text_abbreviation_1,
+                                text_abbreviation_2=text_abbreviation_2,
+                                local_doc_id_1=local_doc_id_1,
+                                local_doc_id_2=local_doc_id_2,
                                 activate_similar_link_buttons_left=sim_btn_left,
                                 activate_similar_link_buttons_right=sim_btn_right,
                                 docCompareInner_HTML=docCompareInner_HTML,
@@ -289,35 +299,35 @@ def text_view():
 
         if 'doc_id' in request.args:
             doc_id = request.args.get("doc_id")
-            text_abbreviation_input, local_doc_id_input = IR_tools.parse_complex_doc_id(doc_id)
-            return redirect('/textView?text_abbrv={}#{}'.format(text_abbreviation_input, local_doc_id_input))
+            text_abbreviation, local_doc_id = IR_tools.parse_complex_doc_id(doc_id)
+            return redirect('/textView?text_abbrv={}#{}'.format(text_abbreviation, local_doc_id))
         elif 'text_abbrv' in request.args:
-            text_abbreviation_input =  request.args.get('text_abbrv')
-            local_doc_id_input = ""
+            text_abbreviation =  request.args.get('text_abbrv')
+            local_doc_id = ""
         else:
-            text_abbreviation_input = request.form.get("text_abbreviation_input")
-            local_doc_id_input = request.form.get("local_doc_id_input")
-            if local_doc_id_input != "":
-                # re-parse to discard unwanted parts of local_doc_id_input
-                doc_id = text_abbreviation_input + '_' + local_doc_id_input
-                text_abbreviation_input, local_doc_id_input = IR_tools.parse_complex_doc_id(doc_id)
-            return redirect('/textView?text_abbrv={}#{}'.format(text_abbreviation_input, local_doc_id_input))
+            text_abbreviation = request.form.get("text_abbreviation_input")
+            local_doc_id = request.form.get("local_doc_id_input")
+            if local_doc_id != "":
+                # re-parse to discard unwanted parts of local_doc_id
+                doc_id = text_abbreviation + '_' + local_doc_id
+                text_abbreviation, local_doc_id = IR_tools.parse_complex_doc_id(doc_id)
+            return redirect('/textView?text_abbrv={}#{}'.format(text_abbreviation, local_doc_id))
 
         text_title = ""
         valid_text_abbrvs = list(IR_tools.text_abbrev2fn.keys())
         disallowed_fulltexts = IR_tools.disallowed_fulltexts
-        if text_abbreviation_input in disallowed_fulltexts:
+        if text_abbreviation in disallowed_fulltexts:
             text_HTML = "<br><p>sorry, fulltext is not available for these texts at present: " + str(disallowed_fulltexts)[1:-1] + " (see <a href='https://github.com/tylergneill/pramana-nlp/tree/master/data_prep/1_etext_originals' target='_blank'>note</a> for more info)</p>"
-        elif text_abbreviation_input in valid_text_abbrvs:
-            text_title = IR_tools.clean_titles[text_abbreviation_input]
-            text_HTML = IR_tools.get_text_view(text_abbreviation_input)
+        elif text_abbreviation in valid_text_abbrvs:
+            text_title = IR_tools.clean_titles[text_abbreviation]
+            text_HTML = IR_tools.get_text_view(text_abbreviation)
         else:
-            text_HTML = "<br><p>Please enter valid doc ids like " + str(IR_tools.ex_doc_ids)[1:-1] + " etc.</p><p>See <a href='assets/doc_id_list.txt' target='_blank'>doc id list</a> and <a href='assets/corpus_texts.txt' target='_blank'>corpus text list</a> for hints to get started.</p>"
+            text_HTML = "<br><p>Doc id invalid, please doublecheck.</p>"
 
         return render_template("textView.html",
                                 page_subtitle="textView",
-                                text_abbreviation=text_abbreviation_input,
-                                local_doc_id=local_doc_id_input,
+                                text_abbreviation=text_abbreviation,
+                                local_doc_id=local_doc_id,
                                 text_title=text_title,
                                 text_HTML=text_HTML,
                                 abbrv2docs=IR_tools.abbrv2docs,
