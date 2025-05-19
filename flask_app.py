@@ -163,27 +163,16 @@ def doc_explore():
             session["text_type_toggle"] = request.form.get("text_type_toggle")
             session.modified = True
 
-        valid_doc_ids = IR_tools.doc_ids
-        if (
-                doc_id in valid_doc_ids
-        ) and (
-                doc_id_2 == ""
-        ) or (
-                (
-                    doc_id_2 in valid_doc_ids
-                ) and (
-                    IR_tools.doc_ids.index(doc_id) < IR_tools.doc_ids.index(doc_id_2)
-                )
-        ):
+        def process_doc_ids(doc_id, doc_id_2):
 
-            if doc_id_2 != "":
+            valid_doc_ids = IR_tools.doc_ids
 
-                best_results = IR_tools.batch_mode(similarity_data, doc_id, doc_id_2, sw_threshold)
-                docExploreInner_HTML = IR_tools.format_batch_results(best_results, doc_id, doc_id_2, session["priority_texts"])
+            if doc_id not in valid_doc_ids:
+                return "<br><p>Doc id invalid, please doublecheck.</p>"
 
-            else:
+            if doc_id_2 == "":
                 # single-query mode
-                docExploreInner_HTML = IR_tools.get_closest_docs(
+                return IR_tools.get_closest_docs(
                     query_id=doc_id,
                     topic_labels=session['topic_labels'],
                     priority_texts=session["priority_texts"],
@@ -192,9 +181,26 @@ def doc_explore():
                     similarity_data=similarity_data,
                     text_type_toggle=session["text_type_toggle"],
                 )
-        else:
-            docExploreInner_HTML = "<br><p>Please verify sequence of two inputs.</p>"
-                                   # "Please enter valid doc ids like " + str(IR_tools.ex_doc_ids)[1:-1] + " etc.</p><p>See <a href='assets/doc_id_list.txt' target='_blank'>doc id list</a> and <a href='assets/corpus_texts.txt' target='_blank'>corpus text list</a> for hints to get started."
+
+            if doc_id_2 not in valid_doc_ids:
+                return "<br><p>Second doc id invalid, please doublecheck.</p>"
+
+            text_1 = IR_tools.parse_complex_doc_id(doc_id)[0]
+            text_2 = IR_tools.parse_complex_doc_id(doc_id_2)[0]
+
+            if text_1 != text_2:
+                return "<br><p>Documents must be from same text.</p>"
+
+            if IR_tools.text_doc_ids[text_1].index(doc_id) >= IR_tools.text_doc_ids[text_1].index(doc_id_2):
+                return "<br><p>Please verify sequence of doc id inputs.</p>"
+
+            else:
+                # batch-query mode
+                best_results = IR_tools.batch_mode(similarity_data, doc_id, doc_id_2, sw_threshold)
+                return IR_tools.format_batch_results(best_results, doc_id, doc_id_2, session["priority_texts"])
+
+
+        docExploreInner_HTML = process_doc_ids(doc_id, doc_id_2)
 
         return render_template(    "docExplore.html",
                                 page_subtitle="docExplore",
@@ -256,7 +262,7 @@ def doc_compare():
                 similarity_data=similarity_data,
                 )
         else:
-            docCompareInner_HTML = "<br><p>Please enter two valid doc ids like " + str(IR_tools.ex_doc_ids)[1:-1] + " etc.</p><p>See <a href='assets/doc_id_list.txt' target='_blank'>doc id list</a> and <a href='assets/corpus_texts.txt' target='_blank'>corpus text list</a> for hints to get started.</p>"
+            docCompareInner_HTML = "<br><p>One or more doc ids invalid, please doublecheck.</p>"
 
         return render_template(    "docCompare.html",
                                 page_subtitle="docCompare",
@@ -316,7 +322,7 @@ def text_view():
             text_title = IR_tools.clean_titles[text_abbreviation]
             text_HTML = IR_tools.get_text_view(text_abbreviation)
         else:
-            text_HTML = "<br><p>Please enter valid doc ids like " + str(IR_tools.ex_doc_ids)[1:-1] + " etc.</p><p>See <a href='assets/doc_id_list.txt' target='_blank'>doc id list</a> and <a href='assets/corpus_texts.txt' target='_blank'>corpus text list</a> for hints to get started.</p>"
+            text_HTML = "<br><p>Doc id invalid, please doublecheck.</p>"
 
         return render_template("textView.html",
                                 page_subtitle="textView",

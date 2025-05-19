@@ -242,12 +242,6 @@ for doc_id in doc_ids:
     abbrv, local_doc_id = doc_id[:first_underscore], doc_id[first_underscore+1:]
     abbrv2docs[abbrv].append(local_doc_id)
 
-# save fresh corpus text list to file
-corpus_texts_list_relative_path_fn = 'assets/corpus_texts.txt'
-corpus_texts_list_full_fn = os.path.join(CURRENT_FOLDER, corpus_texts_list_relative_path_fn)
-with open(corpus_texts_list_full_fn,'w') as f_out:
-    f_out.write('\n'.join([abbrv+'\t'+fn for (abbrv, fn) in text_abbrev2title.items()]))
-
 
 ###################################################
 # load post-processed illustrations of topic meaning
