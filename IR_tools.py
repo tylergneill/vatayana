@@ -1045,8 +1045,10 @@ def format_batch_results(results, doc_id_1, doc_id_2, selected_texts):
 
     # begin with head of table
     table_header_HTML = """
-                    <h1 align="center">Similarity Results: {} – {} ({} docs)</h1>""".format(
-        doc_id_1, doc_id_2, batch_size
+                    <h1 style="margin-top: 0px; margin-bottom: 0px;">{} – {} ({} docs)</h1>
+                    <h3>Similar Docs from Selected Texts<a href="/textSelect" target="_blank"><span style="text-decoration: underline;" title="{}">*</span></a></h3>
+                    """.format(
+        doc_id_1, doc_id_2, batch_size, selected_texts
     )
     table_header_HTML += "<br>"
     table_header_HTML += """
