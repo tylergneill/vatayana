@@ -7,7 +7,7 @@
 
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
 
-        <title>vātāyana: textPrioritize</title>
+        <title>vātāyana: textSelect</title>
 
     </head>
 
@@ -17,7 +17,7 @@
 
         <div class="container">
 
-           <h1>Prioritize Texts</h1>
+           <h1>Select Texts</h1>
            <br>
 			<p>
 				The following is a roughly chronological presentation of texts in the corpus.
@@ -34,10 +34,22 @@
 				i.e., until cookies and other site data are cleared.
 			</p>
 
-           {{ textPrioritizeInner_HTML | safe }}
+           {{ textSelectInner_HTML | safe }}
 
         </div><!-- container -->
 
     </body>
+
+    <script type="text/javascript">
+    	var abbrv2docs = {{ abbrv2docs|tojson|safe }};
+    	var abbrev2title = {{ text_abbrev2title|tojson|safe }};
+
+		var textAbbrevSel = document.getElementById("select_one_text_text_input");
+		textAbbrevSel.length = 1;
+		for (var x in abbrv2docs) {
+			textAbbrevSel.options[textAbbrevSel.options.length] = new Option(x + ' ' + abbrev2title[x], x);
+		}
+    </script>
+
 
 </html>

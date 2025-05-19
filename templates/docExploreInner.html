@@ -121,29 +121,16 @@
 <div class="col-md-6 mb-5" id="doc-explore-right">
 
     <h3 class="mb-3" style="margin-top: 0px; margin-bottom: 0px;">
-      Similar Docs of Priority Texts<span title="$priority_texts">*</span>
+      Similar Docs of Selected Texts<a href="/textSelect" target="_blank"><span style="text-decoration: underline;" title="$selected_texts">*</span></a>
     </h3>
     <br>
-    $priority_col_content
+    $similarity_results_content
 
     <br><br>
-
-<!--    <button class="btn btn-block btn-primary" onclick="show_secondary()">Show Non-Priority Results</button>-->
-
-<!--    <div id="secondary_col_div" style='display: none;'>-->
-<!--        <h2>Similar<span title="by topic">*</span> Docs of Non-Priority Texts<span title="$non_priority_texts">*</span></h2>-->
-<!--        <br>-->
-<!--        $secondary_col_content-->
-<!--    </div>-->
 
 </div>
 
 <script>
-	function show_secondary() {
-	  var secondary_col_div = document.getElementById("secondary_col_div");
-	  secondary_col_div.style.display = "block";
-	}
-
     // original-segmented toggle
 
     const originalHTML = `<p>$query_original_fulltext</p>`;

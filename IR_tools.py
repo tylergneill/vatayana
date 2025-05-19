@@ -35,7 +35,7 @@ template_names = [
     'docExploreBatchInner',
     'docCompareInner',
     'topicAdjustInner',
-    'textPrioritizeInner',
+    'textSelectInner',
     'searchDepthInner'
     ]
 for template_name in template_names:
@@ -67,9 +67,9 @@ def process_theta_data() -> Tuple[Any]:
     theta_fn_full_path = os.path.join(CURRENT_FOLDER, theta_fn)
     with open(theta_fn_full_path,'r') as f_in:
         theta_rows = f_in.read().split('\n')
-    theta_rows.pop(-1); # blank final row
-    theta_rows.pop(0); # unwanted header row with topic abbreviations (store same from phi data)
-    theta_rows.pop(0); # unwanted second header row with "!ctsdata" and alpha values
+    theta_rows.pop(-1) # blank final row
+    theta_rows.pop(0) # unwanted header row with topic abbreviations (store same from phi data)
+    theta_rows.pop(0) # unwanted second header row with "!ctsdata" and alpha values
 
     # store theta data (doc ids, doc full-text, and theta numbers)
     doc_ids = []
@@ -233,7 +233,7 @@ text_abbrev2fn = load_dict_from_json("assets/text_abbreviations_IASTreduced.json
 text_abbrev2title = load_dict_from_json("assets/text_abbreviations.json") # for human eyes
 clean_titles = {k: clean_title(v) for k, v in text_abbrev2title.items()}
 # e.g. text_abbrev2fn[TEXT_ABBRV] = STRING
-# don't sort these yet because they're in chronological order for presenting prioritization options
+# don't sort these yet because they're in chronological order for presenting selected options
 
 # create lookup table of local_doc_ids by text abbreviation
 abbrv2docs = defaultdict(lambda:[])
@@ -408,15 +408,12 @@ def rank_all_candidates_by_topic_similarity(query_id):
     return sorted_results
 
 
-def divide_doc_id_list_by_work_priority(list_of_doc_ids_to_prune, priority_works):
-    prioritized = []
-    secondary = []
+def filter_doc_id_list_by_selected_texts(list_of_doc_ids_to_prune, selected_works):
+    selected_doc_ids = []
     for doc_id in list_of_doc_ids_to_prune:
-        if parse_complex_doc_id(doc_id)[0] in priority_works:
-            prioritized.append(doc_id)
-        else:
-            secondary.append(doc_id)
-    return prioritized, secondary
+        if parse_complex_doc_id(doc_id)[0] in selected_works:
+            selected_doc_ids.append(doc_id)
+    return selected_doc_ids
 
 
 def get_TF_IDF_vector(doc_id):
@@ -547,9 +544,8 @@ def format_docCompare_link(doc_id_1, doc_id_2, display_string="dcCp", title=""):
     # each one looks like fixed string "dcCp" unless otherwise specified
     return "<a href='docCompare?doc_id_1=%s&doc_id_2=%s' target='docCompare' title='%s'>%s</a>" % (doc_id_1, doc_id_2, title, display_string)
 
-def format_similarity_result_columns(query_id, priority_results_list_content, secondary_results_list_content):
+def format_similarity_result(query_id, selected_results_list_content):
 
-    # priority
     table_header_row =     """<thead>
                                 <tr>
                                     <th>rank</th>
@@ -569,10 +565,10 @@ def format_similarity_result_columns(query_id, priority_results_list_content, se
                                     <td>{}</td>
                                 </tr>"""
 
-    priority_col_HTML = "<table id='priority_col_table' class='display'>"
-    priority_col_HTML += table_header_row + "<tbody>"
+    similarity_results_HTML = "<table id='similarity_results_table' class='display'>"
+    similarity_results_HTML += table_header_row + "<tbody>"
 
-    priority_col_HTML += ''.join( [
+    similarity_results_HTML += ''.join( [
         table_row_template.format(
             i+1,
             format_docView_link(doc_id),
@@ -581,30 +577,11 @@ def format_similarity_result_columns(query_id, priority_results_list_content, se
             results[2][0], # alignment score
             format_docCompare_link(query_id, doc_id, display_string=results[2][1][:25], title=results[2][1]),  # alignment phrase, max 25 chars
             )
-        for i, (doc_id, results) in enumerate(priority_results_list_content.items())
+        for i, (doc_id, results) in enumerate(selected_results_list_content.items())
         ] )
-    priority_col_HTML += "</tbody></table>"
+    similarity_results_HTML += "</tbody></table>"
 
-    # secondary
-
-    secondary_col_HTML = "<table id='secondary_col_table' class='display'>"
-    secondary_col_HTML += table_header_row + "<tbody>"
-
-    secondary_col_HTML += ''.join( [
-        table_row_template % (
-            i+1,
-            format_docView_link(doc_id),
-            result, # topic only
-            "", # no tf-idf
-            "", # no alignment
-            format_textView_link(doc_id),
-            format_docCompare_link(query_id, doc_id)
-            )
-        for i, (doc_id, result) in enumerate(secondary_results_list_content.items())
-        ] )
-    secondary_col_HTML += "</tbody></table>"
-
-    return priority_col_HTML, secondary_col_HTML
+    return similarity_results_HTML
 
 
 def rank_candidates_by_sw_w_alignment_score(query_id, candidate_ids, sw_w_score_threshold=30):
@@ -653,7 +630,6 @@ def get_closest_docs_with_db(
         query_id,
         N_tfidf=N_TDIDF_SAVE_LIMIT,
         N_sw=N_SW_SAVE_LIMIT,
-        priority_texts: List[str]=list(text_abbrev2fn.keys()),
     ) -> Dict[str, Dict[str, float]]:
     # start = datetime.now().time()
     if not (
@@ -759,7 +735,7 @@ def calculate_similar_docs(query_id, N_tfidf=4300, N_sw=200) -> Dict[str, Dict[s
 
 def get_closest_docs(   query_id,
                         topic_labels=topic_interpretations,
-                        priority_texts=list(text_abbrev2fn.keys()),
+                        selected_texts=list(text_abbrev2fn.keys()),
                         N_tf_idf=search_N_defaults["N_tf_idf"],
                         N_sw_w=search_N_defaults["N_sw_w"],
                         results_as_links_only=False,
@@ -769,11 +745,9 @@ def get_closest_docs(   query_id,
                         text_type_toggle="original",
                         ):
 
-    non_priority_texts = [text for text in list(text_abbrev2fn.keys()) if text not in priority_texts]
+    non_selected_texts = [text for text in list(text_abbrev2fn.keys()) if text not in selected_texts]
 
     start0 = datetime.now().time()
-    # get num of docs in priority_texts to use for computation time calculations
-    num_priority_docs = sum([ num_docs_by_text[text_name] for text_name in priority_texts ])
 
     # start1 = datetime.now().time()
     # end1 = datetime.now().time()
@@ -796,10 +770,8 @@ def get_closest_docs(   query_id,
             query_original_fulltext = doc_original_fulltext[query_id],
             query_segmented_fulltext = '',
             top_topics_summary='',
-            priority_results_list_content = '',
-            secondary_results_list_content = '',
-            priority_texts=str(priority_texts),
-            non_priority_texts=str(non_priority_texts),
+            similarity_results_content = '',
+            selected_texts=str(selected_texts),
             text_type_toggle=text_type_toggle,
             )
         return results_HTML
@@ -812,18 +784,17 @@ def get_closest_docs(   query_id,
             query_id,
             N_tfidf = N_tf_idf,
             N_sw = N_sw_w,
-            priority_texts=priority_texts, # not used!
             )
 
-        priority_topic_candidates = similar_docs['topic']
+        topic_candidates = similar_docs['topic']
         tf_idf_candidates = similar_docs['tf_idf']
         sw_w_alignment_candidates = similar_docs['sw_w']
 
-        # do NOT prioritize by text at all
+        # do NOT filter by text selections at all
 
     else:
 
-        # prioritize by text and by topic similarity
+        # filter by text selection and by topic similarity
 
         # get N preliminary candidates by topic score (dimensionality = K, fast)
 
@@ -836,40 +807,30 @@ def get_closest_docs(   query_id,
         end1 = datetime.now().time()
         topic_time = calc_dur(start1, end1)
 
-        # prioritize candidates by text name
-        priority_candidate_ids, secondary_candidate_ids = divide_doc_id_list_by_work_priority(
+        # filter candidates for user's text selections
+        selected_candidate_ids = filter_doc_id_list_by_selected_texts(
             list(all_topic_candidates.keys()),
-            priority_texts
+            selected_texts
             )
-        priority_topic_candidates = { doc_id: all_topic_candidates[doc_id]
-            for doc_id in priority_candidate_ids
-            }
-        secondary_topic_candidates = { doc_id: all_topic_candidates[doc_id]
-            for doc_id in secondary_candidate_ids
+        topic_candidates = { doc_id: all_topic_candidates[doc_id]
+            for doc_id in selected_candidate_ids
             }
 
         # limit further computation to only top N_tf_idf of sorted candidates (minus query itself)
-        pruned_priority_topic_candidates = truncate_dict(priority_topic_candidates, N_tf_idf)
+        pruned_topic_candidates = truncate_dict(topic_candidates, N_tf_idf)
 
         start2 = datetime.now().time()
 
         # further rank candidates by tiny tf-idf
         tf_idf_candidates = rank_candidates_by_tiny_TF_IDF_similarity(
             query_id,
-            list(pruned_priority_topic_candidates.keys())
+            list(pruned_topic_candidates.keys())
             )
 
         end2 = datetime.now().time()
         tf_idf_time = calc_dur(start2, end2)
 
-        # would like to bottom of priority list other priority-text docs for which only topics compared
-        # but very inefficient on page render
-        # for now, thereofre, shunt these to secondary results (end of list for now)...
-        for k, v in priority_topic_candidates.items():
-            if k not in tf_idf_candidates:
-                secondary_topic_candidates[k] = v
-
-            # limit further computation to only top N_sw_w of sorted candidates
+        # limit further computation to only top N_sw_w of sorted candidates
         pruned_tf_idf_candidates = truncate_dict(tf_idf_candidates, N_sw_w)
 
         start3 = datetime.now().time()
@@ -910,39 +871,40 @@ def get_closest_docs(   query_id,
         else: sw_w_alignment_candidates[k] = (str(sw_w_alignment_candidates[k][0]), sw_w_alignment_candidates[k][1])
 
     # again add blank entries to bottom of list for all docs for which sw_w comparison not performed
-    for k in tf_idf_candidates.keys(): # contains priority_topic_candidates.keys() too
+    for k in tf_idf_candidates.keys(): # contains topic_candidates.keys() too
         if k not in sw_w_alignment_candidates:
             sw_w_alignment_candidates[k] = ("", "")
 
-    # thus final results list has sw_w candidates on top, tf_idf candidates after that, and priority_topic_candidates after that
+    # thus final results list has sw_w candidates on top, tf_idf candidates after that, and topic_candidates after that
 
-    priority_ranked_results_ids = list(sw_w_alignment_candidates.keys())
+    filtered_ranked_results_ids = list(sw_w_alignment_candidates.keys())
 
-    priority_ranked_results_complete = {
-        k: (priority_topic_candidates[k], tf_idf_candidates[k], sw_w_alignment_candidates[k])
-        for k in priority_ranked_results_ids
+    filtered_ranked_results_complete = {
+        k: (topic_candidates[k], tf_idf_candidates[k], sw_w_alignment_candidates[k])
+        for k in filtered_ranked_results_ids
     }
 
     if similarity_data != None:
-        # need to filter for priority texts at this point
+        # need to filter for text selections at this point
         # this is relatively computationally expensive!
 
         start4 = datetime.now().time()
 
         FILTRATION_LIMIT = 2000
         # truncate results at reasonable limit to speed up following steps
-        # filter out non-priority texts
-        priority_ranked_results_complete = {
-            k: v for k, v in list(priority_ranked_results_complete.items())[:FILTRATION_LIMIT]
-            if parse_complex_doc_id(k)[0] in priority_texts
+        # filter out non-selected texts
+        filtered_ranked_results_complete = {
+            k: v for k, v in list(filtered_ranked_results_complete.items())[:FILTRATION_LIMIT]
+            if parse_complex_doc_id(k)[0] in selected_texts
         }
 
-        LOADING_LIMIT = 500
         # further truncate what gets loaded on page
-        priority_ranked_results_complete = truncate_dict(priority_ranked_results_complete, LOADING_LIMIT)
+        LOADING_LIMIT = 500
+        filtered_ranked_results_complete = truncate_dict(filtered_ranked_results_complete, LOADING_LIMIT)
+
         # TODO: add "Load more" button that loads rest into table (repurpose "secondary" structure)
         # additional_ranked_results_complete = {
-        #     k: v for k, v in list(priority_ranked_results_complete.items())[LOADING_LIMIT:]
+        #     k: v for k, v in list(filtered_ranked_results_complete.items())[LOADING_LIMIT:]
         # }
 
         end4 = datetime.now().time()
@@ -950,13 +912,13 @@ def get_closest_docs(   query_id,
         # print("filtering_time:", filtering_time)
 
     if results_as_links_only:
-        similarity_result_doc_links = build_similarity_doc_nav(list(priority_ranked_results_complete.keys())[:N_sw_w])
+        similarity_result_doc_links = build_similarity_doc_nav(list(filtered_ranked_results_complete.keys())[:N_sw_w])
         return similarity_result_doc_links
 
     if batch_mode:
         # pick out absolute best results
         best_results = {}
-        for doc_id_2, result in priority_ranked_results_complete.items():
+        for doc_id_2, result in filtered_ranked_results_complete.items():
             if float(result[2]) >= sw_w_min_threshold:
                 best_results[doc_id_2] = result
             else:
@@ -987,15 +949,11 @@ def get_closest_docs(   query_id,
 
     else:
 
-        priority_col_HTML, secondary_col_HTML = format_similarity_result_columns(
+        similarity_results_HTML = format_similarity_result(
             query_id,
-            priority_ranked_results_complete,
-            # secondary_topic_candidates
-            {}
+            filtered_ranked_results_complete,
         )
-        if priority_col_HTML == "": priority_col_HTML = "<p>(none)</p>"
-        # if secondary_col_HTML == "": secondary_col_HTML = "<p>(none)</p>"
-        secondary_col_HTML = "<p>(none)</p>" # just neutralize for now until i can make faster
+        if similarity_results_HTML == "": similarity_results_HTML = "<p>(none)</p>"
         results_HTML = HTML_templates['docExploreInner'].substitute(
                             query_id = query_id,
                             query_work_name=(query_work_name := parse_complex_doc_id(query_id)[0]),
@@ -1015,14 +973,11 @@ def get_closest_docs(   query_id,
                                 get_top_topic_indices(query_id, max_N=5, threshold=0.03),
                                 topic_labels=topic_labels
                                 ),
-                            priority_col_content = priority_col_HTML,
-                            secondary_col_content = secondary_col_HTML,
-                            priority_texts=str(priority_texts),
-                            non_priority_texts=str(non_priority_texts),
+                            similarity_results_content = similarity_results_HTML,
+                            selected_texts=str(selected_texts),
+                            non_selected_texts=str(non_selected_texts),
                             text_type_toggle=text_type_toggle,
                             )
-
-    # import pdb; pdb.set_trace()
 
     return results_HTML
 
@@ -1084,7 +1039,7 @@ def batch_mode(
     return best_results
 
 
-def format_batch_results(results, doc_id_1, doc_id_2, priority_texts):
+def format_batch_results(results, doc_id_1, doc_id_2, selected_texts):
     # calculate number of docs
     batch_size = doc_ids.index(doc_id_2) - doc_ids.index(doc_id_1)
 
@@ -1118,7 +1073,7 @@ def format_batch_results(results, doc_id_1, doc_id_2, priority_texts):
                )
 
     # format rows
-    table_rows_HTML = format_batch_result_rows(results, priority_texts)
+    table_rows_HTML = format_batch_result_rows(results, selected_texts)
 
     # close off table
     table_footer_HTML = """
@@ -1147,10 +1102,10 @@ def order_results(results):
         )
     )
 
-def format_batch_result_rows(results: List[Dict[str, Union[str, float]]], priority_texts):
+def format_batch_result_rows(results: List[Dict[str, Union[str, float]]], selected_texts):
 
     # filter and resort
-    results = [r for r in results if parse_complex_doc_id(r['doc_id_2'])[0] in priority_texts]
+    results = [r for r in results if parse_complex_doc_id(r['doc_id_2'])[0] in selected_texts]
     results = order_results(results)
 
     HTML_rows = ""
@@ -1327,7 +1282,7 @@ def sw_nw_align(seq1, seq2):
 
 def compare_doc_pair(   doc_id_1, doc_id_2,
                         topic_labels=topic_interpretations,
-                        priority_texts=list(text_abbrev2fn.keys()),
+                        selected_texts=list(text_abbrev2fn.keys()),
                         N_tf_idf=search_N_defaults["N_tf_idf"],
                         N_sw_w=search_N_defaults["N_sw_w"],
                         similarity_data: Optional[PymongoCollection]=None,
@@ -1394,7 +1349,7 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
 
     common_kwargs = {
         "topic_labels": topic_labels,
-        "priority_texts": priority_texts,
+        "selected_texts": selected_texts,
         "N_tf_idf": N_tf_idf,
         "N_sw_w": N_sw_w,
         "results_as_links_only": True,
@@ -1542,17 +1497,17 @@ for txt_abbrv in list(text_abbrev2fn.keys()):
                            ])
 
 
-def format_text_prioritize_output(*priority_texts_input):
+def format_text_select_output(*selected_texts_input):
 
     overall_buffer = ""
     for abbrev, title in text_abbrev2title.items():
 
         # doing with templating
-        checked_string = "checked" * (abbrev in priority_texts_input)
+        checked_string = "checked" * (abbrev in selected_texts_input)
         overall_buffer += """
         <div class="row">
             <div class='col-md-1'>
-                <input type='checkbox' id="checkbox_{}" name="priority_checkboxes" value="{}" {}/>
+                <input type='checkbox' id="checkbox_{}" name="text_select_checkboxes" value="{}" {}/>
             </div>
             <div class='col-md-1'>
                 <p>{}</p>
@@ -1566,8 +1521,8 @@ def format_text_prioritize_output(*priority_texts_input):
         </div>
         """.format(abbrev, abbrev, checked_string, abbrev, title, num_docs_by_text[abbrev])
 
-    # get num of docs in priority_texts to use for computation time calculations
-    num_priority_docs = sum([ num_docs_by_text[text_name] for text_name in priority_texts_input ])
+    # get num of docs in selected_texts to use for computation time calculations
+    num_docs_in_selected_texts = sum([ num_docs_by_text[text_name] for text_name in selected_texts_input ])
 
     overall_buffer += """
     <div class="row">
@@ -1576,25 +1531,25 @@ def format_text_prioritize_output(*priority_texts_input):
         <div class='col-md-1'>
         </div>
         <div class='col-md-3'>
-            <p><b>Total number of prioritized documents:</b></p>
+            <p><b>Total number of docs in selected texts:</b></p>
         </div>
         <div class='col-md-2'>
-            <p>[{}]</p>
+            <p><b>[{}]</b></p>
         </div>
     </div>
-    """.format(num_priority_docs)
+    """.format(num_docs_in_selected_texts)
 
-    textPrioritizeInner_HTML = HTML_templates['textPrioritizeInner'].substitute(
-                                    text_priority_HTML=overall_buffer
+    textSelectInner_HTML = HTML_templates['textSelectInner'].substitute(
+                                    text_select_HTML=overall_buffer
                                     )
 
-    return textPrioritizeInner_HTML
+    return textSelectInner_HTML
 
 
-def format_search_depth_slider_pair(N_tf_idf, N_sw_w, priority_texts):
+def format_search_depth_slider_pair(N_tf_idf, N_sw_w, selected_texts):
 
-    # get num of docs in priority_texts to use for computation time calculations
-    num_priority_docs = sum([ num_docs_by_text[text_name] for text_name in priority_texts ])
+    # get num of docs in selected_texts to use for computation time calculations
+    num_docs_in_selected_texts = sum([ num_docs_by_text[text_name] for text_name in selected_texts ])
 
     N_vals = {
         'N_tf_idf': N_tf_idf,
@@ -1602,7 +1557,7 @@ def format_search_depth_slider_pair(N_tf_idf, N_sw_w, priority_texts):
     }
 
     N_max_vals = {
-        'N_tf_idf': num_priority_docs,
+        'N_tf_idf': num_docs_in_selected_texts,
         'N_sw_w': N_tf_idf,
     }
 
@@ -1620,13 +1575,13 @@ def format_search_depth_slider_pair(N_tf_idf, N_sw_w, priority_texts):
 </div><!-- topic no-slider -->
 <div class='row'><!-- note no-slider -->
     <div class='col-md-6'>
-       <p>(The below two comparisons are performed only for max <a href='textPrioritize'>{} priority docs</a>.)</p>
+       <p>(The other two comparisons are performed for max <a href='textSelect'>{} docs of selected texts</a>.)</p>
     </div>
     <div class="col-md-6">
        <p></p>
     </div>
 </div><!-- note no-slider -->
-""".format(num_docs, topic_secs_per_comparison, num_docs*topic_secs_per_comparison, num_priority_docs)
+""".format(num_docs, topic_secs_per_comparison, num_docs*topic_secs_per_comparison, num_docs_in_selected_texts)
 
     slider_JS_buffer = """
 <script>"""
@@ -1716,7 +1671,7 @@ total_computation_time_p.innerHTML = `<b>${{ total_computation_time }} s per que
 
     return HTML_buffer, slider_JS_buffer
 
-def format_search_depth_output(N_tf_idf, N_sw_w, priority_texts):
+def format_search_depth_output(N_tf_idf, N_sw_w, selected_texts):
 
     JS_preamble = """
 <script>
@@ -1736,7 +1691,7 @@ var total_computation_time_p;
 </script>
 """.format(topic_secs_per_comparison, tf_idf_secs_per_comparison, sw_w_secs_per_comparison, num_docs*topic_secs_per_comparison)
 
-    slider_HTML, slider_JS = format_search_depth_slider_pair(N_tf_idf, N_sw_w, priority_texts)
+    slider_HTML, slider_JS = format_search_depth_slider_pair(N_tf_idf, N_sw_w, selected_texts)
 
     search_N_defaults_HTML = """
     <div class='row'>

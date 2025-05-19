@@ -32,8 +32,6 @@ mongo_db_client = PyMongo(app)
 similarity_data = mongo_db_client.db.similarity
 print("number of records in collection:", similarity_data.count_documents({}))
 
-# result = IR_tools.get_closest_docs_with_db(similarity_data, IR_tools.doc_ids[629], priority_texts=['VS'])
-
 
 # for serving static files from assets folder
 @app.route('/assets/<path:name>')
@@ -65,7 +63,7 @@ CURRENT_FOLDER = os.path.dirname(os.path.abspath(__file__))
 # variable names for flask.session() object
 flask_session_variable_names = [
     "topic_labels",
-    "priority_texts",
+    "selected_texts",
     "N_tf_idf", "N_sw_w",
     "text_type_toggle"
     ]
@@ -79,7 +77,7 @@ def ensure_keys():
 @app.route('/reset')
 def reset_variables():
     session["topic_labels"] = IR_tools.topic_interpretations
-    session["priority_texts"] = list(IR_tools.text_abbrev2fn.keys())
+    session["selected_texts"] = list(IR_tools.text_abbrev2fn.keys())
     session["N_tf_idf"] = IR_tools.search_N_defaults["N_tf_idf"]
     session["N_sw_w"] = IR_tools.search_N_defaults["N_sw_w"]
     session["text_type_toggle"] = "original"
@@ -175,7 +173,7 @@ def doc_explore():
                 return IR_tools.get_closest_docs(
                     query_id=doc_id,
                     topic_labels=session['topic_labels'],
-                    priority_texts=session["priority_texts"],
+                    selected_texts=session["selected_texts"],
                     N_tf_idf=session["N_tf_idf"],
                     N_sw_w=session["N_sw_w"],
                     similarity_data=similarity_data,
@@ -197,7 +195,7 @@ def doc_explore():
             else:
                 # batch-query mode
                 best_results = IR_tools.batch_mode(similarity_data, doc_id, doc_id_2, sw_threshold)
-                return IR_tools.format_batch_results(best_results, doc_id, doc_id_2, session["priority_texts"])
+                return IR_tools.format_batch_results(best_results, doc_id, doc_id_2, session["selected_texts"])
 
 
         docExploreInner_HTML = process_doc_ids(doc_id, doc_id_2)
@@ -257,7 +255,7 @@ def doc_compare():
                 doc_id_1,
                 doc_id_2,
                 topic_labels=session['topic_labels'],
-                priority_texts=session["priority_texts"],
+                selected_texts=session["selected_texts"],
                 N_tf_idf=session["N_tf_idf"],
                 N_sw_w=session["N_sw_w"],
                 similarity_data=similarity_data,
@@ -391,53 +389,52 @@ def topic_adjust():
                             )
 
 
-@app.route('/textPrioritize', methods=["GET", "POST"])
-def text_prioritize():
+@app.route('/textSelect', methods=["GET", "POST"])
+def text_select():
 
     ensure_keys()
 
     if request.method == "POST":
 
-        priority_texts_input = []
+        text_select_input = []
         one_text = ""
         all_texts = list(IR_tools.text_abbrev2fn.keys())
         for key, val in request.form.items():
-            if key == "prioritize_all_texts":
+            if key == "select_all_texts":
                 # reset to all in default chronological order
-                priority_texts_input = all_texts
-            # elif key == "prioritize_none":
-            #     # string for current text prepared in form
-            #     priority_texts_input = [ val ]
+                text_select_input = all_texts
+        
+            elif key == "text_select_checkboxes": # list
+                text_select_input = request.form.getlist("text_select_checkboxes")
 
-            elif key == "priority_checkboxes": # list
-                priority_texts_input = request.form.getlist("priority_checkboxes")
-
-            elif key == "prioritize_one_text":
+            elif key == "select_one_text":
                 one_text = val
                 if one_text in all_texts:
-                    priority_texts_input = [ one_text ]
+                    text_select_input = [ one_text ]
                 else:
-                    priority_texts_input = session["priority_texts"]
+                    text_select_input = session["selected_texts"]
                     break
-            elif key == "prioritize_earlier_checkbox": # checkbox
-                priority_texts_input = all_texts[:all_texts.index(one_text)] + priority_texts_input
-            elif key == "prioritize_later_checkbox": # checkbox
-                priority_texts_input = priority_texts_input + all_texts[all_texts.index(one_text)+1:]
+            elif key == "select_earlier_checkbox": # checkbox
+                text_select_input = all_texts[:all_texts.index(one_text)] + text_select_input
+            elif key == "select_later_checkbox": # checkbox
+                text_select_input = text_select_input + all_texts[all_texts.index(one_text)+1:]
 
 
-        session["priority_texts"] = priority_texts_input
+        session["selected_texts"] = text_select_input
         session.modified = True
 
     else:
         pass
 
-    textPrioritizeInner_HTML = IR_tools.format_text_prioritize_output(
-        *session["priority_texts"]
+    textSelectInner_HTML = IR_tools.format_text_select_output(
+        *session["selected_texts"]
         )
 
-    return render_template(    "textPrioritize.html",
-                            page_subtitle="textPrioritize",
-                            textPrioritizeInner_HTML=textPrioritizeInner_HTML
+    return render_template(    "textSelect.html",
+                            page_subtitle="textSelect",
+                            textSelectInner_HTML=textSelectInner_HTML,
+                            abbrv2docs=IR_tools.abbrv2docs,
+                            text_abbrev2title=IR_tools.text_abbrev2title,
                             )
 
 
@@ -462,7 +459,7 @@ def search_depth():
     searchDepthInner_HTML = IR_tools.format_search_depth_output(
         N_tf_idf=session["N_tf_idf"],
         N_sw_w=session["N_sw_w"],
-        priority_texts=session["priority_texts"],
+        selected_texts=session["selected_texts"],
         )
 
     return render_template(    "searchDepth.html",
