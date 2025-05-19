@@ -59,13 +59,11 @@ def block_bots():
 # def serve_files():
 #     return send_file('assets/index.html')
 
-# this helps app work both publically (e.g. on PythonAnywhere) and locally
+# this helps app work both remotely and locally
 CURRENT_FOLDER = os.path.dirname(os.path.abspath(__file__))
 
 # variable names for flask.session() object
 flask_session_variable_names = [
-    "doc_id", "doc_id_1", "doc_id_2",
-    "text_abbreviation_input", "local_doc_id",
     "topic_labels",
     "priority_texts",
     "N_tf_idf", "N_sw_w",
@@ -80,8 +78,6 @@ def ensure_keys():
 
 @app.route('/reset')
 def reset_variables():
-    session["doc_id"] = ""; session["doc_id_1"] = ""; session["doc_id_2"] = "",
-    session["text_abbreviation_input"] = ""; session["local_doc_id"] = ""
     session["topic_labels"] = IR_tools.topic_interpretations
     session["priority_texts"] = list(IR_tools.text_abbrev2fn.keys())
     session["N_tf_idf"] = IR_tools.search_N_defaults["N_tf_idf"]
@@ -127,11 +123,8 @@ def doc_explore():
     if request.method == "POST" or 'doc_id' in request.args:
         # NB: not yet supported is sending 'text_abbrv' and 'local_doc_id' via GET
 
-        text_abbreviation_input = ""
         doc_id = ""
         doc_id_2 = ""
-        local_doc_id = ""
-        local_doc_id_2 = ""
 
         if 'doc_id' in request.args:
             doc_id = request.args.get("doc_id")
@@ -141,7 +134,7 @@ def doc_explore():
             text_abbreviation = request.form.get("text_abbreviation_input")
             local_doc_id = request.form.get("local_doc_id_input")
             if local_doc_id not in ['', None]:
-                doc_id = text_abbreviation_input + '_' + local_doc_id
+                doc_id = text_abbreviation + '_' + local_doc_id
 
         if 'doc_id_2' in request.args:
             doc_id_2 = request.args.get("doc_id_2")
@@ -149,7 +142,7 @@ def doc_explore():
         else:
             local_doc_id_2 = request.form.get("local_doc_id_input_2")
             if local_doc_id_2 not in ['', None]:
-                doc_id_2 = text_abbreviation_input + '_' + local_doc_id_2
+                doc_id_2 = text_abbreviation + '_' + local_doc_id_2
 
         if 'sw_threshold' in request.args:
             sw_threshold = request.args.get("sw_threshold")
@@ -159,7 +152,7 @@ def doc_explore():
             sw_threshold = 50
 
         if doc_id in ['', None] and local_doc_id in ['', None] and local_doc_id_2 in ['', None]:
-            text_id_list = IR_tools.text_doc_ids[text_abbreviation_input]
+            text_id_list = IR_tools.text_doc_ids[text_abbreviation]
             doc_id = text_id_list[0]
             doc_id_2 = text_id_list[-1]
 
