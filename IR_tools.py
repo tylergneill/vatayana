@@ -559,8 +559,8 @@ def format_similarity_result(query_id, selected_results_list_content):
     table_row_template =     """<tr>
                                     <td>{}</td>
                                     <td>{}</td>
-                                    <td>{:.0%}</td>
-                                    <td>{:.0%}</td>
+                                    <td>{}</td>
+                                    <td>{}</td>
                                     <td>{}</td>
                                     <td>{}</td>
                                 </tr>"""
@@ -572,9 +572,9 @@ def format_similarity_result(query_id, selected_results_list_content):
         table_row_template.format(
             i+1,
             format_docView_link(doc_id),
-            float(results[0]), # topic score
-            float(results[1]), # tf-idf score
-            results[2][0], # alignment score
+            results[0], # topic score
+            float(results[1]) if results[1] else "",  # tf-idf score
+            f"{float(results[2][0]):.1f}" if results[2][0] else "",  # alignment score
             format_docCompare_link(query_id, doc_id, display_string=results[2][1][:25], title=results[2][1]),  # alignment phrase, max 25 chars
             )
         for i, (doc_id, results) in enumerate(selected_results_list_content.items())
