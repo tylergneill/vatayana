@@ -70,8 +70,24 @@
     <script>
 		$(document).ready( function () {
 
-	    	$('#similarity_results_table').DataTable( {"pageLength": 25} );
-	    	$('#batch_result_table').DataTable( {"pageLength": 25} );
+	    	$('#similarity_results_table').DataTable({
+	    		"pageLength": 25,
+	    		columnDefs: [
+				  {
+				    targets: [2, 3, 4],
+				    orderSequence: ['desc', 'asc']
+				  }
+			    ]
+	    	});
+	    	$('#batch_result_table').DataTable({
+	    		"pageLength": 25,
+	    		columnDefs: [
+				  {
+				    targets: [2, 3, 4],
+				    orderSequence: ['desc', 'asc']
+				  }
+			    ]
+	    	});
 
 		} );
 	</script>
