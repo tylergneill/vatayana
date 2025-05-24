@@ -1081,6 +1081,7 @@ def format_batch_results(results, doc_id_1, doc_id_2, selected_texts):
     table_footer_HTML = """
           </tbody>
         </table>
+        <br><br>
     """
 
     docExploreInner_HTML = HTML_templates['docExploreBatchInner'].substitute(
