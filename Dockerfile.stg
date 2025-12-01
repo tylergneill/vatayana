@@ -9,5 +9,5 @@ COPY --chown=sanskrit:appgroup templates /app/templates
 COPY --chown=sanskrit:appgroup ./*.py /app/
 COPY --chown=sanskrit:appgroup ./VERSION /app/
 USER sanskrit
-CMD gunicorn --bind 0.0.0.0:5020 --log-level info --error-logfile - flask_app:app
-EXPOSE 5020
+CMD gunicorn --bind 0.0.0.0:5021 --log-level info --error-logfile - flask_app:app
+EXPOSE 5021
