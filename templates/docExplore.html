@@ -212,6 +212,24 @@
 
     </script>
 
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.body.addEventListener('click', function(event) {
+            const link = event.target.closest('.doc-compare-link');
+            if (link) {
+                event.preventDefault();
+                event.stopPropagation();
+                const doc1 = link.getAttribute('data-doc1');
+                const doc2 = link.getAttribute('data-doc2');
+                if (doc1 && doc2) {
+                    const url = `docCompare?doc_id_1=${doc1}&doc_id_2=${doc2}`;
+                    window.open(url, link.getAttribute('target') || '_self');
+                }
+            }
+        }, true); // Using capture phase
+    });
+    </script>
+
 	</body>
 
 </html>
