@@ -543,7 +543,7 @@ def format_textView_link(doc_id):
 def format_docCompare_link(doc_id_1, doc_id_2, display_string="dcCp", title=""):
     # each one looks like fixed string "dcCp" unless otherwise specified
     # return "<a href='docCompare?doc_id_1=%s&doc_id_2=%s' target='docCompare' title='%s'>%s</a>" % (doc_id_1, doc_id_2, title, display_string)
-    return f"<a class='doc-compare-link' data-doc1='{doc_id_1}' data-doc2='{doc_id_2}' target='docCompare' title='{title}' style='cursor:pointer; text-decoration:underline; color:#007bff;'>{display_string}</a>"
+    return f"<a class='doc-compare-link' data-doc1='{doc_id_1}' data-doc2='{doc_id_2}' target='docCompare' title='{title}' style='cursor:pointer; text-decoration:underline;'>{display_string}</a>"
 
 def format_similarity_result(query_id, selected_results_list_content):
 
