@@ -74,13 +74,20 @@
         </div><!-- container -->
 
         <script>
-        	function loadSimilarDocNav(queryDocId, otherDocId, side) {
+        	function loadSimilarDocNav(queryDocId, otherDocId, side, attempt) {
+                attempt = attempt || 1;
                 var simNav = document.getElementById('sim-nav-' + side);
                 if (!simNav || !queryDocId || !otherDocId) return;
                 fetch('/api/similar_doc_links?doc_id=' + encodeURIComponent(queryDocId) + '&other_doc_id=' + encodeURIComponent(otherDocId))
-                    .then(function(r) { return r.json(); })
+                    .then(function(r) {
+                        if (r.status === 503 && attempt < 4) {
+                            setTimeout(function() { loadSimilarDocNav(queryDocId, otherDocId, side, attempt + 1); }, attempt * 1000);
+                            return null;
+                        }
+                        return r.json();
+                    })
                     .then(function(data) {
-                        if (!data.found) return;
+                        if (!data || !data.found) return;
                         simNav.dataset.rank = data.rank;
                         simNav.dataset.total = data.total;
 
