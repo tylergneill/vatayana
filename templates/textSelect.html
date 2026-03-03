@@ -37,14 +37,19 @@
     </body>
 
     <script type="text/javascript">
-    	var abbrv2docs = {{ abbrv2docs|tojson|safe }};
-    	var abbrev2title = {{ text_abbrev2title|tojson|safe }};
+		Promise.all([
+			fetch('/api/abbrv2docs.json').then(function(r) { return r.json(); }),
+			fetch('/api/abbrev2title.json').then(function(r) { return r.json(); }),
+		]).then(function(results) {
+			var abbrv2docs = results[0];
+			var abbrev2title = results[1];
 
-		var textAbbrevSel = document.getElementById("select_one_text_text_input");
-		textAbbrevSel.length = 1;
-		for (var x in abbrv2docs) {
-			textAbbrevSel.options[textAbbrevSel.options.length] = new Option(x + ' ' + abbrev2title[x], x);
-		}
+			var textAbbrevSel = document.getElementById("select_one_text_text_input");
+			textAbbrevSel.length = 1;
+			for (var x in abbrv2docs) {
+				textAbbrevSel.options[textAbbrevSel.options.length] = new Option(x + ' ' + abbrev2title[x], x);
+			}
+		});
     </script>
 
 

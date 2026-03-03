@@ -74,19 +74,57 @@
         </div><!-- container -->
 
         <script>
-        	function conditionally_display_similar_doc_link_buttons() {
-                sim_btn_left = "{{ activate_similar_link_buttons_left }}";
-                if ( sim_btn_left.length > 0 ) {
-                    document.getElementById("sim-nav-left").style.visibility = "visible";
-                }
-                sim_btn_right = "{{ activate_similar_link_buttons_right }}";
-                if ( sim_btn_right.length > 0 ) {
-                    document.getElementById("sim-nav-right").style.visibility = "visible";
-                }
+        	function loadSimilarDocNav(queryDocId, otherDocId, side, attempt) {
+                attempt = attempt || 1;
+                var simNav = document.getElementById('sim-nav-' + side);
+                if (!simNav || !queryDocId || !otherDocId) return;
+                fetch('/api/similar_doc_links?doc_id=' + encodeURIComponent(queryDocId) + '&other_doc_id=' + encodeURIComponent(otherDocId))
+                    .then(function(r) {
+                        if (r.status === 503 && attempt < 4) {
+                            setTimeout(function() { loadSimilarDocNav(queryDocId, otherDocId, side, attempt + 1); }, attempt * 1000);
+                            return null;
+                        }
+                        return r.json();
+                    })
+                    .then(function(data) {
+                        if (!data || !data.found) return;
+                        simNav.dataset.rank = data.rank;
+                        simNav.dataset.total = data.total;
+
+                        // Update button form values
+                        var prevBtn = document.getElementById('sim-prev-btn-' + side);
+                        var nextBtn = document.getElementById('sim-next-btn-' + side);
+                        if (prevBtn) {
+                            var prevInput = prevBtn.closest('form').querySelector('input[name="doc_id_' + (side === 'left' ? '1' : '2') + '"]');
+                            if (prevInput) prevInput.value = data.prev_doc_id || '';
+                            prevBtn.title = 'More similar (#' + (data.prev_rank || '') + ' of ' + data.total + ')';
+                            if (!data.prev_doc_id || data.rank === 1) {
+                                prevBtn.disabled = true;
+                                prevBtn.classList.add('disabled');
+                            }
+                        }
+                        if (nextBtn) {
+                            var nextInput = nextBtn.closest('form').querySelector('input[name="doc_id_' + (side === 'left' ? '1' : '2') + '"]');
+                            if (nextInput) nextInput.value = data.next_doc_id || '';
+                            nextBtn.title = 'Less similar (#' + (data.next_rank || '') + ' of ' + data.total + ')';
+                            if (!data.next_doc_id || data.rank === data.total) {
+                                nextBtn.disabled = true;
+                                nextBtn.classList.add('disabled');
+                            }
+                        }
+
+                        // Update rank text
+                        var rankText = simNav.querySelector('.text-center small');
+                        if (rankText) {
+                            rankText.innerHTML = 'for <em>' + queryDocId + '</em>:<br>most similar #' + data.rank + ' of ' + data.total;
+                        }
+
+                        simNav.style.visibility = 'visible';
+                    })
+                    .catch(function(e) { console.error('sim-nav-' + side + ' error:', e); });
             }
 
          	window.onload = function() {
-                conditionally_display_similar_doc_link_buttons();
 
               // ─── DOCUMENT NAVIGATION: first/prev/next/last for left & right ─────────────────
 			  ['left','right'].forEach(side => {
@@ -114,42 +152,13 @@
 				});
 			  });
 
-			  // ─── SIMILARITY NAVIGATION: for left & right ─────────────────────────────────────
-			  ['left','right'].forEach(side => {
-				const simNav = document.getElementById(`sim-nav-${side}`);
-				if (!simNav) return;
-
-				const rank  = parseInt(simNav.dataset.rank,  10) || 0;
-				const total = parseInt(simNav.dataset.total, 10) || 0;
-
-				// always show the row
-				simNav.style.display = '';
-
-				// hide entire row if invalid rank
-				if (rank < 1 || rank > total) {
-				  simNav.style.display = 'none';
-				  return;
-				}
-
-				// hide the “more similar” button at rank 1
-				const btnPrev = document.getElementById(`sim-prev-btn-${side}`);
-				if (rank === 1 && btnPrev) {
-				  btnPrev.disabled = true;
-				  btnPrev.classList.add('disabled');
-				}
-
-				// hide the “less similar” button at rank=total
-				const btnNext = document.getElementById(`sim-next-btn-${side}`);
-				if (rank === total && btnNext) {
-				  btnNext.disabled = true;
-				  Next.classList.add('disabled');
-				}
-			  });
             }
 
-			var abbrv2docs = {{ abbrv2docs|tojson|safe }};
-			var abbrev2title = {{ text_abbrev2title|tojson|safe }};
-			var section_labels = {{ section_labels|tojson|safe }};
+			var abbrv2docs = {};
+			var abbrev2title = {};
+			var section_labels = {};
+			var doc1 = "{{ doc_id_1 }}";
+			var doc2 = "{{ doc_id_2 }}";
 
 			var initial_values = [
 				{
@@ -200,10 +209,23 @@
 				};
 			}
 
-			// --- Apply to both pairs ---
-			for (var pair of initial_values) {
-				setupSelectorPair(pair.textSelId, pair.docSelId, pair.text_abbreviation, pair.local_doc_id);
-			}
+			// --- Fetch data from API, then apply to both pairs ---
+			Promise.all([
+				fetch('/api/abbrv2docs.json').then(function(r) { return r.json(); }),
+				fetch('/api/abbrev2title.json').then(function(r) { return r.json(); }),
+				fetch('/api/section_labels.json').then(function(r) { return r.json(); }),
+			]).then(function(results) {
+				abbrv2docs = results[0];
+				abbrev2title = results[1];
+				section_labels = results[2];
+				for (var pair of initial_values) {
+					setupSelectorPair(pair.textSelId, pair.docSelId, pair.text_abbreviation, pair.local_doc_id);
+				}
+				if (doc1 && doc2) {
+					loadSimilarDocNav(doc2, doc1, 'left');
+					loadSimilarDocNav(doc1, doc2, 'right');
+				}
+			});
         </script>
 
     </body>
