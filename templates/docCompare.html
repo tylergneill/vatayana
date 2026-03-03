@@ -116,8 +116,7 @@
                         // Update rank text
                         var rankText = simNav.querySelector('.text-center small');
                         if (rankText) {
-                            var forDoc = side === 'left' ? otherDocId : otherDocId;
-                            rankText.innerHTML = 'for <em>' + forDoc + '</em>:<br>most similar #' + data.rank + ' of ' + data.total;
+                            rankText.innerHTML = 'for <em>' + queryDocId + '</em>:<br>most similar #' + data.rank + ' of ' + data.total;
                         }
 
                         simNav.style.visibility = 'visible';
