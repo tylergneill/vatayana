@@ -501,6 +501,9 @@ def api_similar_doc_links():
     if not doc_id or doc_id not in IR_tools.doc_ids:
         return jsonify({'error': 'invalid doc_id'}), 400
 
+    if not similarity_data.find_one({"query_id": doc_id}, {"_id": 1}):
+        return jsonify({'found': False})
+
     similar_doc_links = IR_tools.get_closest_docs(
         query_id=doc_id,
         topic_labels=session['topic_labels'],
