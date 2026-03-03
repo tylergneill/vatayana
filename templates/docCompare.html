@@ -115,7 +115,7 @@
 
                         simNav.style.visibility = 'visible';
                     })
-                    .catch(function() {});
+                    .catch(function(e) { console.error('sim-nav-' + side + ' error:', e); });
             }
 
          	window.onload = function() {
