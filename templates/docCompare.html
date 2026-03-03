@@ -154,37 +154,6 @@
 				});
 			  });
 
-			  // ─── SIMILARITY NAVIGATION: for left & right ─────────────────────────────────────
-			  ['left','right'].forEach(side => {
-				const simNav = document.getElementById(`sim-nav-${side}`);
-				if (!simNav) return;
-
-				const rank  = parseInt(simNav.dataset.rank,  10) || 0;
-				const total = parseInt(simNav.dataset.total, 10) || 0;
-
-				// always show the row
-				simNav.style.display = '';
-
-				// hide entire row if invalid rank
-				if (rank < 1 || rank > total) {
-				  simNav.style.display = 'none';
-				  return;
-				}
-
-				// hide the “more similar” button at rank 1
-				const btnPrev = document.getElementById(`sim-prev-btn-${side}`);
-				if (rank === 1 && btnPrev) {
-				  btnPrev.disabled = true;
-				  btnPrev.classList.add('disabled');
-				}
-
-				// hide the “less similar” button at rank=total
-				const btnNext = document.getElementById(`sim-next-btn-${side}`);
-				if (rank === total && btnNext) {
-				  btnNext.disabled = true;
-				  Next.classList.add('disabled');
-				}
-			  });
             }
 
 			var abbrv2docs = {};
