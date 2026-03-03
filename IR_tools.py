@@ -153,13 +153,6 @@ ex_doc_ids = ['NBhū_104,6^1', 'SŚP_2.21', 'MV_1,i_5,i^1']
 
 disallowed_fulltexts = ['PVin','HB','PSṬ','NV']
 
-# save fresh doc_id list to file
-doc_id_list_relative_path_fn = 'assets/doc_id_list.txt'
-doc_id_list_full_fn = os.path.join(CURRENT_FOLDER, doc_id_list_relative_path_fn)
-with open(doc_id_list_full_fn,'w') as f_out:
-    f_out.write('\n'.join(doc_ids))
-
-
 def parse_complex_doc_id(doc_id):
 # NB: returns only first original doc id from any resizing modifications
     if doc_id is None:
@@ -361,6 +354,23 @@ def get_text_view(text_abbreviation):
 
 
 ##########################################################
+# pre-build normalized theta matrix for vectorized similarity
+##########################################################
+
+# Build matrix where row i corresponds to doc_ids[i]
+theta_matrix = np.array([thetas[doc_id] for doc_id in doc_ids])
+# Pre-compute norms; set zero-norm rows (empty docs) to 1 to avoid division by zero
+_norms = np.linalg.norm(theta_matrix, axis=1, keepdims=True)
+_norms[_norms == 0] = 1.0
+theta_matrix_normed = theta_matrix / _norms
+
+# Mask for non-empty docs (used to zero out empty doc scores)
+_nonempty_mask = np.array([doc_fulltext[doc_id] != '' for doc_id in doc_ids])
+
+# Index lookup for doc_ids
+_doc_id_to_idx = {doc_id: i for i, doc_id in enumerate(doc_ids)}
+
+##########################################################
 # various functions for interface modes (docExplore etc.)
 ##########################################################
 
@@ -391,17 +401,19 @@ def rank_all_candidates_by_topic_similarity(query_id):
 
     if doc_fulltext[query_id] == '': return {}
 
-    query_vector = np.array(thetas[query_id])
-    topic_similiarity_score = {} # e.g. topic_similiarity_score[DOC_ID] = FLOAT
-    for doc_id in doc_ids:
-        candidate_vector = np.array(thetas[doc_id])
-        # use doc_fulltext to check if empty bc exact empty theta vector depends on alpha type (asymmetric etc.)
-        if doc_fulltext[doc_id] == '':
-            topic_similiarity_score[doc_id] = 0
-        else:
-            topic_similiarity_score[doc_id] = round(1-fastdist.cosine(query_vector, candidate_vector), 4)
+    idx = _doc_id_to_idx[query_id]
+    # Single matrix-vector dot product: all cosine similarities at once
+    scores = theta_matrix_normed @ theta_matrix_normed[idx]
+    # Zero out empty docs
+    scores = np.where(_nonempty_mask, scores, 0.0)
+    # Round to 4 decimal places
+    scores = np.round(scores, 4)
 
-    topic_similiarity_score.pop(query_id) # remove query itself
+    topic_similiarity_score = {
+        doc_id: float(scores[i])
+        for i, doc_id in enumerate(doc_ids)
+        if doc_id != query_id
+    }
 
     # return sorted dict in descending order by value
     sorted_results = sort_score_dict(topic_similiarity_score)
@@ -626,12 +638,20 @@ def truncate_dict(dictionary: Dict, n: int) -> Dict:
 
 N_TDIDF_SAVE_LIMIT = 2500
 N_SW_SAVE_LIMIT = 500
+
+_closest_docs_cache = {}
+
 def get_closest_docs_with_db(
         similarity_data: PymongoCollection,
         query_id,
         N_tfidf=N_TDIDF_SAVE_LIMIT,
         N_sw=N_SW_SAVE_LIMIT,
     ) -> Dict[str, Dict[str, float]]:
+
+    cache_key = (query_id, N_tfidf, N_sw)
+    if cache_key in _closest_docs_cache:
+        return _closest_docs_cache[cache_key]
+
     # start = datetime.now().time()
     if not (
             record := similarity_data.find_one({"query_id": query_id})
@@ -713,6 +733,7 @@ def get_closest_docs_with_db(
         upsert=True
     )
 
+    _closest_docs_cache[cache_key] = similar_docs
     return similar_docs
 
 
@@ -1348,53 +1369,7 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
     # print("do actual overall alignment:", calc_dur(start1, datetime.now().time()))
     # print("overall:", calc_dur(start0, datetime.now().time()))
 
-    # also prepare similar_doc_links
-    # start1 = datetime.now().time()
-
-    common_kwargs = {
-        "topic_labels": topic_labels,
-        "selected_texts": selected_texts,
-        "N_tf_idf": N_tf_idf,
-        "N_sw_w": N_sw_w,
-        "results_as_links_only": True,
-        "similarity_data": similarity_data,
-    }
-    similar_doc_links_for_1 = get_closest_docs(doc_id_1, **common_kwargs)
-    similar_doc_links_for_2 = get_closest_docs(doc_id_2, **common_kwargs)
-
-    # print("prepare similar_doc_links:", calc_dur(start1, datetime.now().time()))
-    # print("overall:", calc_dur(start0, datetime.now().time()))
-
-    # make similar doc buttons show up and populate
-    # also anticipate needing numerical position in (ordered) dict (see index() below)
-    # start1 = datetime.now().time()
-
-    if doc_id_2 in similar_doc_links_for_1: # then want buttons to show up on right
-        activate_similar_link_buttons_right = 1
-        ks_1 = list(similar_doc_links_for_1.keys())
-        prev_sim_doc_id_for_1 = similar_doc_links_for_1[doc_id_2]['prev']
-        next_sim_doc_id_for_1 = similar_doc_links_for_1[doc_id_2]['next']
-        sim_rank_of_prev_for_1 = ks_1.index(prev_sim_doc_id_for_1) + 1 if prev_sim_doc_id_for_1 else None
-        sim_rank_of_2_for_1 = ks_1.index(doc_id_2) + 1
-        sim_rank_of_next_for_1 = ks_1.index(next_sim_doc_id_for_1) + 1 if next_sim_doc_id_for_1 else None
-    else:
-        activate_similar_link_buttons_right = ""
-        prev_sim_doc_id_for_1 = next_sim_doc_id_for_1 = sim_rank_of_prev_for_1 = sim_rank_of_2_for_1 = sim_rank_of_next_for_1 = ""
-
-    if doc_id_1 in similar_doc_links_for_2: # then want buttons to show up on left
-        activate_similar_link_buttons_left = 1
-        ks_2 = list(similar_doc_links_for_2.keys())
-        prev_sim_doc_id_for_2 = similar_doc_links_for_2[doc_id_1]['prev']
-        next_sim_doc_id_for_2 = similar_doc_links_for_2[doc_id_1]['next']
-        sim_rank_of_prev_for_2 = ks_2.index(prev_sim_doc_id_for_2) + 1 if prev_sim_doc_id_for_2 else None
-        sim_rank_of_1_for_2 = ks_2.index(doc_id_1) + 1
-        sim_rank_of_next_for_2 = ks_2.index(next_sim_doc_id_for_2) + 1 if next_sim_doc_id_for_2 else None
-    else:
-        activate_similar_link_buttons_left = ""
-        prev_sim_doc_id_for_2 = next_sim_doc_id_for_2 = sim_rank_of_prev_for_2 = sim_rank_of_1_for_2 = sim_rank_of_next_for_2 = ""
-
-    # print("make similar doc buttons show up and populate:", calc_dur(start1, datetime.now().time()))
-    # print("overall:", calc_dur(start0, datetime.now().time()))
+    # similar_doc_links now loaded via AJAX in the template
 
     # format HTML results
     # start1 = datetime.now().time()
@@ -1425,17 +1400,17 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
                     last_doc_id_1=get_full_local_doc_id(doc_links[doc_id_1]['last']),
                     last_doc_id_2=get_full_local_doc_id(doc_links[doc_id_2]['last']),
 
-                    prev_sim_doc_id_for_2=prev_sim_doc_id_for_2, # left
-                    next_sim_doc_id_for_2=next_sim_doc_id_for_2,
-                    sim_rank_of_prev_for_2=sim_rank_of_prev_for_2,
-                    sim_rank_of_1_for_2=sim_rank_of_1_for_2,
-                    sim_rank_of_next_for_2=sim_rank_of_next_for_2,
+                    prev_sim_doc_id_for_2="", # left (populated via AJAX)
+                    next_sim_doc_id_for_2="",
+                    sim_rank_of_prev_for_2="",
+                    sim_rank_of_1_for_2="",
+                    sim_rank_of_next_for_2="",
 
-                    prev_sim_doc_id_for_1=prev_sim_doc_id_for_1, # right
-                    next_sim_doc_id_for_1=next_sim_doc_id_for_1,
-                    sim_rank_of_prev_for_1=sim_rank_of_prev_for_1,
-                    sim_rank_of_2_for_1=sim_rank_of_2_for_1,
-                    sim_rank_of_next_for_1=sim_rank_of_next_for_1,
+                    prev_sim_doc_id_for_1="", # right (populated via AJAX)
+                    next_sim_doc_id_for_1="",
+                    sim_rank_of_prev_for_1="",
+                    sim_rank_of_2_for_1="",
+                    sim_rank_of_next_for_1="",
 
                     N_sw_w=N_sw_w,
 
@@ -1460,7 +1435,7 @@ def compare_doc_pair(   doc_id_1, doc_id_2,
     # print("format HTML results:", calc_dur(start1, datetime.now().time()))
     # print("overall:", calc_dur(start0, datetime.now().time()))
 
-    return results_HTML, activate_similar_link_buttons_left, activate_similar_link_buttons_right
+    return results_HTML
 
 
 

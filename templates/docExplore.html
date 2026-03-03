@@ -116,9 +116,9 @@
 			});
 		}
 
-    	var abbrv2docs = {{ abbrv2docs|tojson|safe }};
-		var abbrev2title = {{ text_abbrev2title|tojson|safe }};
-		var section_labels = {{ section_labels|tojson|safe }};
+    	var abbrv2docs = {};
+		var abbrev2title = {};
+		var section_labels = {};
 
 		var initial_values = {
 			text_abbreviation: "{{ text_abbreviation }}",
@@ -196,15 +196,24 @@
 			}
 		}
 
-		// --- Apply to the trio of dropdowns ---
-		setupSelectorTrio(
-			initial_values.textSelId,
-			initial_values.docSelId,
-			initial_values.docSelId2,
-			initial_values.text_abbreviation,
-			initial_values.local_doc_id,
-			initial_values.local_doc_id_2
-		);
+		// --- Fetch data from API, then apply to the trio of dropdowns ---
+		Promise.all([
+			fetch('/api/abbrv2docs.json').then(r => r.json()),
+			fetch('/api/abbrev2title.json').then(r => r.json()),
+			fetch('/api/section_labels.json').then(r => r.json()),
+		]).then(([a2d, a2t, sl]) => {
+			abbrv2docs = a2d;
+			abbrev2title = a2t;
+			section_labels = sl;
+			setupSelectorTrio(
+				initial_values.textSelId,
+				initial_values.docSelId,
+				initial_values.docSelId2,
+				initial_values.text_abbreviation,
+				initial_values.local_doc_id,
+				initial_values.local_doc_id_2
+			);
+		});
 
     </script>
 

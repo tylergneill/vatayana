@@ -1,8 +1,9 @@
 import logging
 import os
 import html
+from functools import wraps
 
-from flask import Flask, session, redirect, render_template, request, url_for, send_from_directory, abort
+from flask import Flask, session, redirect, render_template, request, url_for, send_from_directory, abort, Response, jsonify
 from flask_pymongo import PyMongo
 
 import IR_tools
@@ -17,7 +18,7 @@ app = Flask(__name__)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app.config["DEBUG"] = True
+app.config["DEBUG"] = os.getenv("FLASK_DEBUG", "0") == "1"
 app.config["SECRET_KEY"] = "safaksdfakjdshfkajshfka" # for session, no actual need for secrecy
 DB_SERVER = os.getenv("DB_SERVER", "localhost")
 app.config["MONGO_URI"] = f"mongodb://{DB_SERVER}:27017/vatayana"
@@ -42,12 +43,37 @@ def serve_files(name):
 def robots_txt():
     return send_from_directory('assets', 'robots.txt')
 
+def require_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or auth.username != 'guest' or auth.password != 'guest':
+            body = (
+                '<html><body style="font-family:sans-serif;padding:2em;max-width:480px;margin:auto;">'
+                '<h2>docCompare requires a login</h2>'
+                '<p>This is just to keep bots out.</p>'
+                '<p>Username: <code>guest</code><br>Password: <code>guest</code></p>'
+                '<p><a href="">Click here to try again</a></p>'
+                '</body></html>'
+            )
+            return Response(
+                body,
+                401,
+                {'WWW-Authenticate': 'Basic realm="docCompare"',
+                 'Content-Type': 'text/html; charset=utf-8'}
+            )
+        return f(*args, **kwargs)
+    return decorated
+
 @app.before_request
 def block_bots():
-    botlist = ['Amazonbot', 'Bytespider']
-    user_agent = request.headers.get('User-Agent')
+    botlist = [
+        'Amazonbot', 'Bytespider', 'GPTBot', 'ChatGPT-User', 'CCBot',
+        'Google-Extended', 'ClaudeBot', 'anthropic-ai', 'Applebot-Extended',
+        'FacebookBot', 'Meta-ExternalAgent', 'PerplexityBot', 'Cohere-ai',
+    ]
+    user_agent = request.headers.get('User-Agent', '')
     if any(bot in user_agent for bot in botlist):
-        # logger.debug("Bot blocked", extra={'agent': user_agent, 'path': request.path})
         abort(403)
     else:
         logger.info("Request handled", extra={'path': request.path, 'method': request.method, 'ip': request.remote_addr})
@@ -206,9 +232,6 @@ def doc_explore():
                                 local_doc_id=local_doc_id,
                                 local_doc_id_2=local_doc_id_2,
                                 docExploreInner_HTML=docExploreInner_HTML,
-                                abbrv2docs=IR_tools.abbrv2docs,
-                                text_abbrev2title=IR_tools.text_abbrev2title,
-                                section_labels=IR_tools.section_labels,
                                 sw_threshold=sw_threshold,
                                 )
 
@@ -218,12 +241,10 @@ def doc_explore():
                                 page_subtitle="docExplore",
                                 doc_id="",
                                 doc_explore_output="",
-                                abbrv2docs=IR_tools.abbrv2docs,
-                                text_abbrev2title=IR_tools.text_abbrev2title,
-                                section_labels=IR_tools.section_labels,
                                 )
 
 @app.route('/docCompare', methods=["GET", "POST"])
+@require_auth
 def doc_compare():
 
     ensure_keys()
@@ -246,12 +267,11 @@ def doc_compare():
             doc_id_2 = text_abbreviation_2 + '_' + local_doc_id_2
 
         valid_doc_ids = IR_tools.doc_ids
-        sim_btn_left = sim_btn_right = ""
         if doc_id_1 == doc_id_2:
             docCompareInner_HTML = "<br><p>Those are the same, please enter two different doc ids to compare.</p>"
         elif doc_id_1 in valid_doc_ids and doc_id_2 in valid_doc_ids:
 
-            docCompareInner_HTML, sim_btn_left, sim_btn_right = IR_tools.compare_doc_pair(
+            docCompareInner_HTML = IR_tools.compare_doc_pair(
                 doc_id_1,
                 doc_id_2,
                 topic_labels=session['topic_labels'],
@@ -271,12 +291,7 @@ def doc_compare():
                                 text_abbreviation_2=text_abbreviation_2,
                                 local_doc_id_1=local_doc_id_1,
                                 local_doc_id_2=local_doc_id_2,
-                                activate_similar_link_buttons_left=sim_btn_left,
-                                activate_similar_link_buttons_right=sim_btn_right,
                                 docCompareInner_HTML=docCompareInner_HTML,
-                                abbrv2docs=IR_tools.abbrv2docs,
-                                text_abbrev2title=IR_tools.text_abbrev2title,
-                                section_labels=IR_tools.section_labels,
                                 )
 
     else: # request.method == "GET" or URL query malformed
@@ -285,10 +300,11 @@ def doc_compare():
                                 page_subtitle="docCompare",
                                 doc_id_1="",
                                 doc_id_2="",
+                                text_abbreviation_1="",
+                                text_abbreviation_2="",
+                                local_doc_id_1="",
+                                local_doc_id_2="",
                                 doc_explore_output="",
-                                abbrv2docs=IR_tools.abbrv2docs,
-                                text_abbrev2title=IR_tools.text_abbrev2title,
-                                section_labels=IR_tools.section_labels,
                                 )
 
 @app.route('/textView', methods=["GET", "POST"])
@@ -329,9 +345,6 @@ def text_view():
                                 local_doc_id=local_doc_id,
                                 text_title=text_title,
                                 text_HTML=text_HTML,
-                                abbrv2docs=IR_tools.abbrv2docs,
-                                text_abbrev2title=IR_tools.text_abbrev2title,
-                                section_labels=IR_tools.section_labels,
                                 )
 
     else: # request.method == "GET" or no URL params
@@ -342,9 +355,6 @@ def text_view():
                                 local_doc_id="",
                                 text_title="",
                                 text_HTML="",
-                                abbrv2docs=IR_tools.abbrv2docs,
-                                text_abbrev2title=IR_tools.text_abbrev2title,
-                                section_labels=IR_tools.section_labels,
                                 )
 
 @app.route('/BrucheionAlign')
@@ -433,8 +443,6 @@ def text_select():
     return render_template(    "textSelect.html",
                             page_subtitle="textSelect",
                             textSelectInner_HTML=textSelectInner_HTML,
-                            abbrv2docs=IR_tools.abbrv2docs,
-                            text_abbrev2title=IR_tools.text_abbrev2title,
                             )
 
 
@@ -466,6 +474,63 @@ def search_depth():
                             page_subtitle="searchDepth",
                             searchDepthInner_HTML=searchDepthInner_HTML
                             )
+
+@app.route('/api/section_labels.json')
+def api_section_labels():
+    resp = jsonify(IR_tools.section_labels)
+    resp.headers['Cache-Control'] = 'public, max-age=86400'
+    return resp
+
+@app.route('/api/abbrv2docs.json')
+def api_abbrv2docs():
+    resp = jsonify(IR_tools.abbrv2docs)
+    resp.headers['Cache-Control'] = 'public, max-age=86400'
+    return resp
+
+@app.route('/api/abbrev2title.json')
+def api_abbrev2title():
+    resp = jsonify(IR_tools.text_abbrev2title)
+    resp.headers['Cache-Control'] = 'public, max-age=86400'
+    return resp
+
+@app.route('/api/similar_doc_links')
+def api_similar_doc_links():
+    ensure_keys()
+    doc_id = request.args.get('doc_id')
+    other_doc_id = request.args.get('other_doc_id')
+    if not doc_id or doc_id not in IR_tools.doc_ids:
+        return jsonify({'error': 'invalid doc_id'}), 400
+
+    similar_doc_links = IR_tools.get_closest_docs(
+        query_id=doc_id,
+        topic_labels=session['topic_labels'],
+        selected_texts=session['selected_texts'],
+        N_tf_idf=session['N_tf_idf'],
+        N_sw_w=session['N_sw_w'],
+        results_as_links_only=True,
+        similarity_data=similarity_data,
+    )
+
+    if other_doc_id and other_doc_id in similar_doc_links:
+        ks = list(similar_doc_links.keys())
+        entry = similar_doc_links[other_doc_id]
+        rank = ks.index(other_doc_id) + 1
+        prev_id = entry['prev']
+        next_id = entry['next']
+        prev_rank = (ks.index(prev_id) + 1) if prev_id else None
+        next_rank = (ks.index(next_id) + 1) if next_id else None
+        return jsonify({
+            'found': True,
+            'rank': rank,
+            'total': session['N_sw_w'],
+            'prev_doc_id': prev_id,
+            'next_doc_id': next_id,
+            'prev_rank': prev_rank,
+            'next_rank': next_rank,
+        })
+    else:
+        return jsonify({'found': False})
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5020)
