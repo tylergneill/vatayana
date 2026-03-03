@@ -126,14 +126,6 @@
             }
 
          	window.onload = function() {
-                var doc1 = "{{ doc_id_1 }}";
-                var doc2 = "{{ doc_id_2 }}";
-                if (doc1 && doc2) {
-                    // left side: doc2's similar docs, checking if doc1 is among them
-                    loadSimilarDocNav(doc2, doc1, 'left');
-                    // right side: doc1's similar docs, checking if doc2 is among them
-                    loadSimilarDocNav(doc1, doc2, 'right');
-                }
 
               // ─── DOCUMENT NAVIGATION: first/prev/next/last for left & right ─────────────────
 			  ['left','right'].forEach(side => {
@@ -166,6 +158,8 @@
 			var abbrv2docs = {};
 			var abbrev2title = {};
 			var section_labels = {};
+			var doc1 = "{{ doc_id_1 }}";
+			var doc2 = "{{ doc_id_2 }}";
 
 			var initial_values = [
 				{
@@ -227,6 +221,10 @@
 				section_labels = results[2];
 				for (var pair of initial_values) {
 					setupSelectorPair(pair.textSelId, pair.docSelId, pair.text_abbreviation, pair.local_doc_id);
+				}
+				if (doc1 && doc2) {
+					loadSimilarDocNav(doc2, doc1, 'left');
+					loadSimilarDocNav(doc1, doc2, 'right');
 				}
 			});
         </script>
