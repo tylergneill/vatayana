@@ -1,8 +1,8 @@
+import html
 import logging
 import os
-import html
-from functools import wraps
 
+import requests
 from flask import Flask, session, redirect, render_template, request, url_for, send_from_directory, abort, Response, jsonify
 from flask_pymongo import PyMongo
 
@@ -43,27 +43,8 @@ def serve_files(name):
 def robots_txt():
     return send_from_directory('assets', 'robots.txt')
 
-def require_auth(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        auth = request.authorization
-        if not auth or auth.username != 'guest' or auth.password != 'guest':
-            body = (
-                '<html><body style="font-family:sans-serif;padding:2em;max-width:480px;margin:auto;">'
-                '<h2>docCompare requires a login</h2>'
-                '<p>This is just to keep bots out.</p>'
-                '<p>Username: <code>guest</code><br>Password: <code>guest</code></p>'
-                '<p><a href="">Click here to try again</a></p>'
-                '</body></html>'
-            )
-            return Response(
-                body,
-                401,
-                {'WWW-Authenticate': 'Basic realm="docCompare"',
-                 'Content-Type': 'text/html; charset=utf-8'}
-            )
-        return f(*args, **kwargs)
-    return decorated
+TURNSTILE_SITE_KEY = os.getenv("TURNSTILE_SITE_KEY", "YOUR_SITE_KEY_HERE")
+TURNSTILE_SECRET_KEY = os.getenv("TURNSTILE_SECRET_KEY", "YOUR_SECRET_KEY_HERE")
 
 @app.before_request
 def block_bots():
@@ -243,9 +224,30 @@ def doc_explore():
                                 doc_explore_output="",
                                 )
 
+@app.route('/turnstile')
+def turnstile_challenge():
+    if session.get('turnstile_passed'):
+        return redirect(url_for('doc_compare'))
+    return render_template('turnstile.html', site_key=TURNSTILE_SITE_KEY)
+
+@app.route('/turnstile/verify', methods=["POST"])
+def turnstile_verify():
+    token = request.form.get('cf-turnstile-response', '')
+    resp = requests.post(
+        'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+        data={'secret': TURNSTILE_SECRET_KEY, 'response': token},
+        timeout=5,
+    )
+    if resp.json().get('success'):
+        session['turnstile_passed'] = True
+        return redirect(url_for('doc_compare'))
+    return redirect(url_for('turnstile_challenge'))
+
 @app.route('/docCompare', methods=["GET", "POST"])
-@require_auth
 def doc_compare():
+
+    if not session.get('turnstile_passed'):
+        return redirect(url_for('turnstile_challenge'))
 
     ensure_keys()
 

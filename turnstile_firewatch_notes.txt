@@ -1,0 +1,33 @@
+Context for Firewatch modifications following Turnstile integration in vatayana
+===============================================================================
+
+Previously, /docCompare was protected by HTTP Basic Auth (guest/guest).
+Bots that failed auth generated 401s on /docCompare.
+~40% of /docCompare traffic was bots (80k hits/month, ~33k were 401s).
+
+Now, /docCompare is protected by Cloudflare Turnstile.
+The old require_auth decorator is gone. Instead:
+
+  - Any request to /docCompare checks session['turnstile_passed'].
+  - If not set, Flask redirects to /turnstile (302).
+  - /turnstile serves the Turnstile challenge widget (200).
+  - On submit, /turnstile/verify POSTs to Cloudflare's siteverify API server-side.
+  - On success: session flag set, redirect back to /docCompare (302 -> 200).
+  - On failure: redirect back to /turnstile (302).
+
+Nginx log implications:
+  - 401s on /docCompare go to zero.
+  - Bots hitting /docCompare directly now show as 302s on that route.
+  - /turnstile becomes the new bot accumulator route (200s, then repeat 302s on failure).
+  - A successful human visit to docCompare produces this sequence of Nginx log entries:
+      /docCompare  GET   302
+      /turnstile   GET   200
+      /turnstile/verify  POST  302
+      /docCompare  GET   200
+
+Suggested Firewatch changes:
+  - Add /turnstile and /turnstile/verify as known routes.
+  - Consider treating a 302 on /docCompare as a "bot redirect" event rather than an error.
+  - The 401 column in "By Status" will drop to zero for vatayana; 302s will increase.
+  - A human successfully reaching docCompare is confirmed by a 200 on /docCompare
+    preceded (in the same session) by a 200 on /turnstile.
