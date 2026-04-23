@@ -6,5 +6,6 @@ flask
 lxml
 numba
 numpy
+requests
 tqdm
 gunicorn
