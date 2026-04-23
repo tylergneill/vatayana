@@ -46,6 +46,8 @@ def robots_txt():
 TURNSTILE_SITE_KEY = os.getenv("TURNSTILE_SITE_KEY", "YOUR_SITE_KEY_HERE")
 TURNSTILE_SECRET_KEY = os.getenv("TURNSTILE_SECRET_KEY", "YOUR_SECRET_KEY_HERE")
 
+TURNSTILE_EXEMPT = {'/turnstile', '/turnstile/verify', '/robots.txt'}
+
 @app.before_request
 def block_bots():
     botlist = [
@@ -58,6 +60,16 @@ def block_bots():
         abort(403)
     else:
         logger.info("Request handled", extra={'path': request.path, 'method': request.method, 'ip': request.remote_addr})
+
+@app.before_request
+def require_turnstile():
+    if request.path in TURNSTILE_EXEMPT:
+        return
+    if request.path.startswith('/assets/'):
+        return
+    if not session.get('turnstile_passed'):
+        session['turnstile_next'] = request.url
+        return redirect(url_for('turnstile_challenge'))
 
 # attempt at serving entire folder at once (not yet successful)
 # @app.route('/assets/')
@@ -240,14 +252,12 @@ def turnstile_verify():
     )
     if resp.json().get('success'):
         session['turnstile_passed'] = True
-        return redirect(url_for('doc_compare'))
+        next_url = session.pop('turnstile_next', None) or url_for('index')
+        return redirect(next_url)
     return redirect(url_for('turnstile_challenge'))
 
 @app.route('/docCompare', methods=["GET", "POST"])
 def doc_compare():
-
-    if not session.get('turnstile_passed'):
-        return redirect(url_for('turnstile_challenge'))
 
     ensure_keys()
 
