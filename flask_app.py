@@ -46,7 +46,7 @@ def robots_txt():
 TURNSTILE_SITE_KEY = os.getenv("TURNSTILE_SITE_KEY", "YOUR_SITE_KEY_HERE")
 TURNSTILE_SECRET_KEY = os.getenv("TURNSTILE_SECRET_KEY", "YOUR_SECRET_KEY_HERE")
 
-TURNSTILE_EXEMPT = {'/turnstile', '/turnstile/verify', '/robots.txt'}
+TURNSTILE_EXEMPT = {'/turnstile', '/turnstile/verify', '/robots.txt', '/', '/textView'}
 
 @app.before_request
 def block_bots():
@@ -368,24 +368,6 @@ def text_view():
                                 text_title="",
                                 text_HTML="",
                                 )
-
-@app.route('/BrucheionAlign')
-def Brucheion_align():
-
-    relative_path_to_assets = "assets"
-    full_path_to_assets = os.path.join(CURRENT_FOLDER, relative_path_to_assets)
-
-    relative_path_to_Brucheion_HTML_body_fn = "assets/Brucheion.html"
-    Brucheion_HTML_body_full_fn = os.path.join(CURRENT_FOLDER, relative_path_to_Brucheion_HTML_body_fn)
-    with open(Brucheion_HTML_body_full_fn, 'r') as f_in:
-        Brucheion_HTML_body = html.unescape(f_in.read())
-
-    return render_template(    "BrucheionAlign.html",
-                            assets_path=relative_path_to_assets,
-                            # page_subtitle="alignFancy",
-                            Brucheion_HTML_body=Brucheion_HTML_body
-                            )
-
 
 @app.route('/topicAdjust', methods=["GET", "POST"])
 def topic_adjust():
