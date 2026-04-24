@@ -46,7 +46,7 @@ def robots_txt():
 TURNSTILE_SITE_KEY = os.getenv("TURNSTILE_SITE_KEY", "YOUR_SITE_KEY_HERE")
 TURNSTILE_SECRET_KEY = os.getenv("TURNSTILE_SECRET_KEY", "YOUR_SECRET_KEY_HERE")
 
-TURNSTILE_EXEMPT = {'/turnstile', '/turnstile/verify', '/robots.txt', '/', '/about', '/tutorial', '/next', '/textView'}
+TURNSTILE_EXEMPT = {'/turnstile', '/turnstile/verify', '/robots.txt', '/', '/about', '/tutorial', '/textView'}
 
 @app.before_request
 def block_bots():
@@ -110,10 +110,6 @@ def about_page():
 @app.route('/tutorial')
 def tutorial_page():
     return render_template("tutorial.html")
-
-@app.route('/next')
-def next_page():
-    return render_template("next.html")
 
 @app.route('/')
 def index():
