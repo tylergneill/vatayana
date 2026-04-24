@@ -1,11 +1,9 @@
 User-agent: *
 Disallow: /docExplore
 Disallow: /docCompare
-Disallow: /textView
 Disallow: /textSelect
 Disallow: /topicAdjust
 Disallow: /searchDepth
 Disallow: /topicVisualizeLDAvis
-Disallow: /BrucheionAlign
 Disallow: /assets/
 Disallow: /api/

@@ -1,0 +1,26 @@
+<html>
+    <head>
+        {% include "shared_head.html" %}
+        <title>vātāyana: verify</title>
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+        <script>
+            function onTurnstileSuccess() {
+                document.getElementById('turnstile-form').submit();
+            }
+        </script>
+    </head>
+    <body>
+        {% include "navbar.html" %}
+        <div class="container">
+            <div class="row" style="margin-top:4em;">
+                <div class="col-md-4 col-md-offset-4 text-center">
+                    <h3>One quick check</h3>
+                    <p>This is just to keep bots out.</p>
+                    <form id="turnstile-form" action="/turnstile/verify" method="POST">
+                        <div class="cf-turnstile" data-sitekey="{{ site_key }}" data-callback="onTurnstileSuccess"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
