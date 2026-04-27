@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app.config["DEBUG"] = os.getenv("FLASK_DEBUG", "0") == "1"
-app.config["SECRET_KEY"] = "safaksdfakjdshfkajshfka" # for session, no actual need for secrecy
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-only-insecure-key")
 DB_SERVER = os.getenv("DB_SERVER", "localhost")
 app.config["MONGO_URI"] = f"mongodb://{DB_SERVER}:27017/vatayana"
 
@@ -43,8 +43,14 @@ def serve_files(name):
 def robots_txt():
     return send_from_directory('assets', 'robots.txt')
 
-TURNSTILE_SITE_KEY = os.getenv("TURNSTILE_SITE_KEY", "YOUR_SITE_KEY_HERE")
-TURNSTILE_SECRET_KEY = os.getenv("TURNSTILE_SECRET_KEY", "YOUR_SECRET_KEY_HERE")
+TURNSTILE_SITE_KEY = os.getenv("TURNSTILE_SITE_KEY")
+TURNSTILE_SECRET_KEY = os.getenv("TURNSTILE_SECRET_KEY")
+TURNSTILE_ENABLED = bool(TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY)
+
+if not TURNSTILE_ENABLED:
+    logger.warning("TURNSTILE_SITE_KEY / TURNSTILE_SECRET_KEY not set — turnstile gate disabled")
+if not app.config["SECRET_KEY"]:
+    logger.warning("SECRET_KEY not set — Flask sessions will error if used")
 
 TURNSTILE_EXEMPT = {'/turnstile', '/turnstile/verify', '/robots.txt', '/', '/about', '/tutorial', '/textView'}
 
@@ -63,6 +69,8 @@ def block_bots():
 
 @app.before_request
 def require_turnstile():
+    if not TURNSTILE_ENABLED:
+        return
     if request.path in TURNSTILE_EXEMPT:
         return
     if request.path.startswith('/assets/'):
