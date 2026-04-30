@@ -9,5 +9,5 @@ COPY --chown=sanskrit:appgroup templates /app/templates
 COPY --chown=sanskrit:appgroup ./*.py /app/
 COPY --chown=sanskrit:appgroup ./VERSION /app/
 USER sanskrit
-CMD gunicorn --bind 0.0.0.0:5020 --workers 2 --threads 5 --timeout 120 --max-requests 1000 --max-requests-jitter 50 --log-level info --error-logfile - flask_app:app
-EXPOSE 5020
+CMD gunicorn --bind 0.0.0.0:5030 --workers 2 --threads 5 --timeout 120 --max-requests 1000 --max-requests-jitter 50 --log-level info --error-logfile - flask_app:app
+EXPOSE 5030
